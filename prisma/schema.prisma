@@ -29,6 +29,8 @@ model Workspace {
   requireIdentityVerification Boolean @default(false)
   // { primaryColor, textColor, backgroundColor, radius, fontFamily }
   theme     Json
+  // What the product is and who uses it; given to the AI when drafting guides.
+  aiContext String?  @db.Text
   createdAt DateTime @default(now())
 
   memberships Membership[]

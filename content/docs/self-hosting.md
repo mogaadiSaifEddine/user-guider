@@ -17,7 +17,8 @@ Locatify Guides is one Next.js application and one MySQL database. The app serve
 | `NEXT_PUBLIC_APP_URL` | `https://guides.example.com` | Public address of the app, used in the snippet on the Install page. Set it **before building**. |
 | `PORT` | `3000` | Port for `npm start`. |
 | `GEMINI_API_KEY` | from [Google AI Studio](https://aistudio.google.com/apikey) | Optional. Turns on [AI drafting](ai) in the builder. Without it, the AI options are hidden. |
-| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Optional. Gemini model used for drafting. Defaults to `gemini-3.1-flash-lite`. |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Optional. Gemini model used for drafting. Defaults to `gemini-3.8-flash` (about 5 seconds per draft). Lighter models such as `gemini-3.1-flash-lite` are faster and cheaper but pick weaker steps. |
+| `GEMINI_THINKING` | `LOW` | Optional. For Gemini 3 models: `LOW` (default), `MEDIUM` or `HIGH`. Higher can improve drafts on complex pages but takes longer. |
 
 ## Build and run
 

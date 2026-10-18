@@ -10,7 +10,7 @@ Multi-tenant: each workspace is one website or app with its own snippet, guides 
 
 ## AI drafting
 
-With `GEMINI_API_KEY` set, the builder can draft tours and hotspots: `sdk/snapshot.ts` describes the page (labels, regions, positions; never field values), `POST /api/builder/ai` sends it to Gemini (`src/lib/ai.ts`, model `GEMINI_MODEL`, default `gemini-3.1-flash-lite`) with a JSON schema, and maps the chosen element ids back to selectors. Nothing is saved until the author saves.
+With `GEMINI_API_KEY` set, the builder can draft tours and hotspots: `sdk/snapshot.ts` describes the page (labels, sections, visible text, positions; never field values) and `sdk/capture.ts` adds a screenshot with numbered boxes and fields painted over, `POST /api/builder/ai` sends it to Gemini (`src/lib/ai.ts`, model `GEMINI_MODEL`, default `gemini-3.8-flash`) with a JSON schema, and maps the chosen element ids back to selectors. Nothing is saved until the author saves.
 
 ## Run locally
 

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
 import { parseTheme } from "@/lib/guide-schema";
 import { PageHeader } from "@/components/ui";
+import { aiEnabled } from "@/lib/ai";
 import { SettingsForms } from "./settings-forms";
 
 export default async function SettingsPage({ params }: { params: Promise<{ ws: string }> }) {
@@ -26,8 +27,10 @@ export default async function SettingsPage({ params }: { params: Promise<{ ws: s
           // Only owners see the secret.
           secretKey: role === "OWNER" ? workspace.secretKey : null,
           requireIdentityVerification: workspace.requireIdentityVerification,
+          aiContext: workspace.aiContext ?? "",
           theme: parseTheme(workspace.theme),
         }}
+        aiEnabled={aiEnabled()}
         members={members.map((m) => ({ id: m.user.id, name: m.user.name, email: m.user.email, role: m.role }))}
       />
     </>

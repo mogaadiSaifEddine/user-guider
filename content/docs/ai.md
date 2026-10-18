@@ -4,6 +4,13 @@ AI can read a page of your app, decide which features are worth pointing out, an
 
 This feature appears only if the server has a Gemini API key; see [Deploy](self-hosting#environment-variables).
 
+## Get better drafts
+
+- **Describe your product once.** In **Settings → About your product (for AI drafting)**, write a few sentences on what your app does, who uses it and the words they use (e.g. what a "project" or "pin" is). The AI reads it before every draft. This makes the biggest difference for specialised products.
+- **Give a goal.** "Show a first-time editor how to add a pin with audio" produces a focused workflow. Without a goal, the AI covers what a new user of the page needs most.
+- **Open the right state first.** The AI sees what's on screen: open the tab, menu or dialog you want to explain before choosing **Generate**.
+- **Make sure buttons have names.** Icon-only buttons with no `aria-label` or tooltip are hard to explain. Adding labels also helps people using screen readers.
+
 ## From the dashboard
 
 1. Open a tour or hotspot guide.
@@ -32,9 +39,18 @@ Open the right page, menu or tab first: the AI only sees what's on screen in tha
 Treat it as a first draft:
 
 - **Preview** the tour and check that each step points at the right element.
-- Rewrite the text in your product's voice; the AI only knows what's visible on the page, not your business.
+- Rewrite the text in your product's voice; the AI only knows what's on the page and in your product description.
 - Delete steps you don't need, reorder, and set *Advance on: Click on element* where users should really click.
 - Then **Save**, and **Publish** in the dashboard.
+
+## How it decides
+
+The AI first works out what the page is for and the main task on it, then picks the few elements that matter most for that task, and only then writes. It's told to skip:
+
+- the link to the page you're on, and generic navigation (unless the goal is orientation);
+- obvious controls (Save, Cancel, Close) unless they behave unusually;
+- disabled elements, and destructive or exit actions (delete, archive, unpublish, sign out); these are also filtered out after the AI answers;
+- individual records in lists and tables (only the first row of a repeated list is offered at all).
 
 ## What the AI does and doesn't do
 
@@ -49,7 +65,10 @@ Treat it as a first draft:
 When you choose **Generate**, the builder collects from the current page:
 
 - the page address, title, language and description;
-- the visible headings (h1–h3);
-- each visible button, link, tab, menu item and form field: its type, its label text (button text, `aria-label`, `title`, placeholder), the page region it's in (header, navigation, main…), its position and size, and any `data-onboarding` tag.
+- the headings (including bold titles that act as headings) and the page's visible text, up to about 2,500 characters;
+- each visible button, link, tab, menu item and form field: its type, its label (button text, `aria-label`, `<label>`, `title` or tooltip, placeholder), the section and page region it's in, whether it's disabled or the current page's link, its position and size, and any `data-onboarding` tag;
+- a **screenshot of the visible part of the page** with a numbered box on each element. Before it's taken, **every form field is painted over in grey**, so values typed into fields (including passwords and keys) never appear in it. The builder panel itself isn't included.
 
-It does **not** send what anyone has typed into fields, the page's HTML, screenshots, cookies, or anything about your app's end users. The snapshot goes to the Locatify Guides server, which forwards it to Google's Gemini API to get the draft. Only authors with builder access can trigger it.
+It does **not** send field values, the page's HTML, cookies, or anything about your app's end users. Visible page text and the screenshot can include data shown on the page (for example names in a list), so draft on pages with test or non-sensitive data when you can.
+
+The snapshot goes to the Locatify Guides server, which forwards it with your product description to Google's Gemini API. Only authors with builder access can trigger it, and nothing is stored.

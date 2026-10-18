@@ -21,8 +21,9 @@ export async function POST(req: Request) {
   const parsed = generateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return json({ error: "Invalid request" }, 400);
 
+  const workspace = await prisma.workspace.findUnique({ where: { id: claims.workspaceId }, select: { aiContext: true } });
   try {
-    return json({ items: await draftGuide(parsed.data) });
+    return json({ items: await draftGuide(parsed.data, workspace?.aiContext ?? "") });
   } catch (e) {
     if (e instanceof AiError) return json({ error: e.message }, e.status);
     throw e;

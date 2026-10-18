@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import type { Theme } from "@/lib/guide-schema";
-import { Badge, Button, Card, Field, Input, Select, cx } from "@/components/ui";
+import { Badge, Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { addMember, deleteWorkspace, removeMember, rotateKey, updateWorkspace, type ActionResult } from "../actions";
 
 type Props = {
@@ -14,9 +14,11 @@ type Props = {
     publicKey: string;
     secretKey: string | null;
     requireIdentityVerification: boolean;
+    aiContext: string;
     theme: Theme;
   };
   members: { id: string; name: string; email: string; role: "OWNER" | "EDITOR" }[];
+  aiEnabled: boolean;
 };
 
 function Notice({ result }: { result: ActionResult | null }) {
@@ -40,9 +42,10 @@ function Section({ title, description, children }: { title: string; description?
   );
 }
 
-export function SettingsForms({ ws, isOwner, currentUserId, workspace, members }: Props) {
+export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, aiEnabled }: Props) {
   const [name, setName] = useState(workspace.name);
   const [verify, setVerify] = useState(workspace.requireIdentityVerification);
+  const [aiContext, setAiContext] = useState(workspace.aiContext);
   const [theme, setTheme] = useState(workspace.theme);
   const [general, setGeneral] = useState<ActionResult | null>(null);
   const [keys, setKeys] = useState<ActionResult | null>(null);
@@ -105,6 +108,21 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members }
           </div>
         </div>
 
+        {aiEnabled && (
+          <Field
+            label="About your product (for AI drafting)"
+            hint="What your app does, who uses it and the words they use. The AI reads this before drafting guides, so it can explain features in your terms."
+          >
+            <Textarea
+              rows={4}
+              maxLength={4000}
+              value={aiContext}
+              placeholder="e.g. Locatify CMS lets museums and tourism boards build location-based audio tours and games for the Locatify app. Users are content editors, usually not technical. A 'project' is one tour or game; 'pins' are map locations with media."
+              onChange={(e) => setAiContext(e.target.value)}
+            />
+          </Field>
+        )}
+
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={verify} onChange={(e) => setVerify(e.target.checked)} />
           <span>
@@ -117,7 +135,7 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members }
         <div className="flex items-center gap-3">
           <Button
             disabled={pending}
-            onClick={() => start(async () => setGeneral(await updateWorkspace(ws, { name, requireIdentityVerification: verify, theme })))}
+            onClick={() => start(async () => setGeneral(await updateWorkspace(ws, { name, requireIdentityVerification: verify, theme, aiContext })))}
           >
             Save
           </Button>

@@ -1,6 +1,6 @@
 import type { Block, Hotspot, HotspotContent, Theme, TourContent, TourStep } from "../src/lib/guide-schema";
 import { selectorFor } from "./selector";
-import { takeSnapshot } from "./snapshot";
+import { takeSnapshot, type PageSnapshot } from "./snapshot";
 import { applyTheme, el, escapeHtml, findTarget, isOwnElement, shadow } from "./ui";
 import { runHotspots, runTour } from "./widgets";
 
@@ -266,6 +266,7 @@ export async function startBuilder(apiBase: string, token: string) {
     render();
     try {
       const snapshot = takeSnapshot();
+      const screenshot = await captureScreenshot(apiBase, snapshot);
       const res = await fetch(apiBase + "/api/builder/ai", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
@@ -275,6 +276,7 @@ export async function startBuilder(apiBase: string, token: string) {
           maxItems: ai.count,
           existing: ai.mode === "append" ? items.map(titleOf).filter(Boolean) : [],
           snapshot,
+          screenshot,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -493,6 +495,31 @@ export async function startBuilder(apiBase: string, token: string) {
       ai.open = true;
       setTimeout(runAi, 1500);
     }
+  }
+}
+
+// The screenshot helper is a separate script, loaded on first use only.
+let captureScript: Promise<void> | null = null;
+
+async function captureScreenshot(apiBase: string, snapshot: PageSnapshot): Promise<string | undefined> {
+  try {
+    captureScript ??= new Promise<void>((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = apiBase + "/sdk-capture.js";
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("capture script failed to load"));
+      document.head.appendChild(s);
+    });
+    await captureScript;
+    const capture = (window as unknown as { __lgCapture?: (m: unknown[]) => Promise<string | null> }).__lgCapture;
+    if (!capture) return undefined;
+    const marks = snapshot.elements.filter((e) => e.inView).map((e) => ({ id: e.id, ...e.rect }));
+    const timeout = new Promise<null>((r) => setTimeout(() => r(null), 8000));
+    return (await Promise.race([capture(marks), timeout])) ?? undefined;
+  } catch (e) {
+    // The AI still works from the element list alone.
+    console.warn("[LocatifyGuides] screenshot skipped", e);
+    return undefined;
   }
 }
 

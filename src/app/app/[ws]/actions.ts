@@ -147,6 +147,7 @@ export async function builderLink(
 const settingsSchema = z.object({
   name: z.string().trim().min(1).max(100),
   requireIdentityVerification: z.boolean(),
+  aiContext: z.string().max(4000).default(""),
   theme: themeSchema,
 });
 
@@ -159,6 +160,7 @@ export async function updateWorkspace(ws: string, input: unknown): Promise<Actio
     data: {
       name: parsed.data.name,
       requireIdentityVerification: parsed.data.requireIdentityVerification,
+      aiContext: parsed.data.aiContext.trim() || null,
       theme: parsed.data.theme as Prisma.InputJsonObject,
     },
   });
