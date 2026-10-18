@@ -34,14 +34,50 @@ Below the chart, each guide type gets its own breakdown:
 | Product tour | **Step funnel**: how many people reached each step, as a share of those who reached step 1. The step after a big drop is the one to fix. |
 | Checklist | **Items completed**: how many people did each item, as a share of those who saw the checklist. |
 | Hotspots | **Hotspots opened**: how many people opened each hotspot. |
+| Survey | **Question funnel**, then the answers to every question. See [Surveys](surveys#results). |
 
 Steps and items are labelled using the live version of the guide.
 
-## Users
+## Users and companies
 
-**Users** lists everyone the snippet has seen, most recent first. Search by the id your app uses. Open a person to see:
+The **Analytics** page is about the people using your site rather than single guides. Pick 7, 30 or 90 days at the top right.
 
+| Figure | Meaning |
+| --- | --- |
+| **All users** | Everyone the snippet has seen. |
+| **New** | People seen for the first time in the chosen period. |
+| **Active today** | People who loaded a page with the snippet today (UTC). |
+| **Weekly active** | Seen in the last 7 days. |
+| **Monthly active** | Seen in the last 30 days. **Stickiness** is the average daily actives over the last week divided by monthly actives: how many of your monthly users come back on a typical day. |
+| **Inactive** | Not seen for 30 days or more. |
+
+Click a figure to open the matching list on **Users**.
+
+- **Active users** chart: for each day, the daily, weekly (7 days up to that day) and monthly (30 days up to that day) active users. A rising daily line with a flat monthly line means the same people come more often; a rising monthly line means more people overall.
+- **New users per day**.
+- **Browser, Operating system, Device, Language**: how the people active in the period split. Click a value to list those users. *Other / unknown* folds the rarer values together with people whose details aren't known yet (users last seen before this was recorded).
+- **Most active companies**: see below.
+
+"Active" means the snippet loaded on a page for that person, whether or not they saw a guide.
+
+### Companies
+
+Users are grouped into **companies** (in the Locatify CMS: publishers) using attributes your app sends with [identify()](identify#companies). The **Companies** page lists each company with its users, new users in the last 7 days, weekly and monthly actives, inactive users, guides completed and when someone from it was last seen. Sort by size, activity or most recent, search by name or id, and click any number to list those users.
+
+### Users
+
+**Users** lists everyone the snippet has seen, most recent first, with their company, browser, operating system, device and language.
+
+- **Tabs** split the list into *All*, *New*, *Weekly active*, *Monthly active* and *Inactive*, with a count on each.
+- **Filters** narrow it to one company, browser, operating system, device or language. Choose *No … / unknown* to find users without one.
+- **Search** matches the user id or the company.
+- **Export CSV** downloads the filtered list, including attributes.
+
+Open a person to see:
+
+- their **details**: company, browser, operating system, device, language, time zone and how many days they were active in the last 30,
 - their **attributes** (what targeting rules test against),
+- their **survey answers**,
 - each **guide** they've met and its state: started, completed or dismissed,
 - their latest **activity**: guides seen, steps, completions and tracked events.
 

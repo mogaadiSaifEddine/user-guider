@@ -9,6 +9,7 @@ const descriptions = {
   CHECKLIST: "A list of onboarding tasks with a progress launcher.",
   ANNOUNCEMENT: "A modal or top banner for news and updates.",
   HOTSPOT: "Pulsing beacons that reveal a hint when clicked.",
+  SURVEY: "NPS, ratings, multiple choice and open questions.",
 } as const;
 
 export function NewGuideButton({ ws }: { ws: string }) {

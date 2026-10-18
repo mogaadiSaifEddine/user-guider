@@ -32,5 +32,5 @@ Locatify Guides shows onboarding content inside your website or web app: product
 
 1. A user opens a page of your app. The snippet loads and asks the server which live guides this user may see.
 2. The server checks the guide's user rules (plan, role, sign-up date…) and the user's history (already completed? dismissed?).
-3. In the browser, the snippet checks the page rules against the current address, then shows the guide. Only one tour or announcement is on screen at a time; checklists and hotspots can appear alongside.
+3. In the browser, the snippet checks the page rules against the current address, then shows the guide. Only one tour, announcement or survey is on screen at a time; checklists and hotspots can appear alongside.
 4. Views, steps, completions and dismissals are sent back and show up in [Analytics](analytics).

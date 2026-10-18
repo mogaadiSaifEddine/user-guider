@@ -36,7 +36,7 @@ A step's content is a stack of **blocks**. Click a block to edit it, use ↑ ↓
 | Finish the guide | Ends the tour and counts it as **completed**. |
 | Close | Ends the tour and counts it as **dismissed**. |
 | Open a link | Opens an address, in a new tab or the same tab. The tour stays on the step. |
-| Start another guide | Completes this tour and starts another tour or announcement. |
+| Start another guide | Completes this tour and starts another tour, announcement or survey. |
 
 ## Step settings
 
@@ -61,7 +61,7 @@ Reorder steps with ↑ and ↓, remove one with ✕. A tour can have up to 50 st
 - **Tours across pages.** A step can point at an element on a different page. Make the previous step's action take the user there (for example *Advance on: Click on element* on a menu link) and the tour picks up when the element appears.
 - **Resuming.** If someone leaves mid-tour (closes the tab, navigates away), the tour resumes at the step they reached the next time it shows.
 - **Finishing.** Pressing **Done** on the last step counts as *completed*. Closing with × or Esc counts as *dismissed*. With the default frequency, either one means the tour won't show again for that user.
-- **One at a time.** Only one tour or announcement is on screen. If several match a page, the one with the highest **Priority** goes first; the next one can show after it ends.
+- **One at a time.** Only one tour, announcement or survey is on screen. If several match a page, the one with the highest **Priority** goes first; the next one can show after it ends.
 
 ## Starting a tour on demand
 

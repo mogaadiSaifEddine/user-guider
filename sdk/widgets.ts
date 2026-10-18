@@ -3,6 +3,9 @@ import type {
   ButtonAction,
   ChecklistContent,
   HotspotContent,
+  SurveyAnswerValue,
+  SurveyContent,
+  SurveyQuestion,
   TourContent,
 } from "../src/lib/guide-schema";
 import { bannerButtons, bannerText, buttonAt, CARD_WIDTH, label, openUrl, renderBlocks } from "./blocks";
@@ -14,9 +17,10 @@ export type EventType =
   | "guide_completed"
   | "guide_dismissed"
   | "checklist_item_completed"
-  | "hotspot_opened";
+  | "hotspot_opened"
+  | "survey_answered";
 
-export type Report = (type: EventType, extra?: { name?: string; stepIndex?: number }) => void;
+export type Report = (type: EventType, extra?: { name?: string; stepIndex?: number; value?: SurveyAnswerValue }) => void;
 export type EndReason = "completed" | "dismissed" | "lost";
 export type Handle = { stop(): void };
 
@@ -416,4 +420,166 @@ export function runChecklist(
       render();
     },
   };
+}
+
+// ---------- Survey ----------
+
+// One question at a time in a corner card (or a centered modal). NPS, rating
+// and single choice move on as soon as the user picks; multiple choice and
+// text have a Next button. Each answer is sent as it's given, so partial
+// responses still count.
+export function runSurvey(content: SurveyContent, opts: { report: Report; onEnd: (r: EndReason) => void }): Handle {
+  const questions = content.questions;
+  const layer = el("div", { class: "lg" });
+  shadow().appendChild(layer);
+  const center = content.position === "center";
+  const card = el("div", {
+    class: "lg-card lg-survey" + (center ? "" : " lg-corner"),
+    role: "dialog",
+    "aria-label": "Survey",
+    style: center ? "width:min(460px, 100%)" : `${content.position === "bottom-left" ? "left" : "right"}:20px`,
+  });
+  if (center) {
+    const wrap = el("div", { class: "lg-modal-wrap" });
+    wrap.appendChild(card);
+    layer.appendChild(wrap);
+  } else {
+    layer.appendChild(card);
+  }
+
+  let index = 0;
+  let stopped = false;
+  let submitted = false;
+  let timer = 0;
+
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === "Escape") close();
+  };
+  document.addEventListener("keydown", onKey);
+
+  function cleanup() {
+    stopped = true;
+    clearTimeout(timer);
+    layer.remove();
+    document.removeEventListener("keydown", onKey);
+  }
+
+  function close() {
+    if (stopped) return;
+    cleanup();
+    if (submitted) return opts.onEnd("completed");
+    opts.report("guide_dismissed", { stepIndex: index });
+    opts.onEnd("dismissed");
+  }
+
+  function answer(q: SurveyQuestion, value: SurveyAnswerValue | null) {
+    if (stopped) return;
+    if (value !== null) opts.report("survey_answered", { name: q.id, stepIndex: index, value });
+    if (index + 1 < questions.length) {
+      index++;
+      render();
+      return;
+    }
+    submitted = true;
+    opts.report("guide_completed");
+    if (!content.thankYou.show) return close();
+    card.innerHTML = `<button class="lg-close" aria-label="Close">×</button>
+      <div class="lg-thanks">
+        <div class="lg-thanks-mark" aria-hidden="true">✓</div>
+        ${content.thankYou.heading ? `<h3>${richText(content.thankYou.heading)}</h3>` : ""}
+        ${content.thankYou.text ? `<p>${richText(content.thankYou.text)}</p>` : ""}
+      </div>`;
+    card.querySelector(".lg-close")!.addEventListener("click", close);
+    timer = window.setTimeout(close, 4000);
+  }
+
+  function render() {
+    const q = questions[index];
+    const last = index === questions.length - 1;
+    opts.report("step_viewed", { stepIndex: index });
+
+    let body: string;
+    let needsButton = false;
+    if (q.type === "nps" || q.type === "rating") {
+      const from = q.type === "nps" ? 0 : 1;
+      const to = q.type === "nps" ? 10 : q.scale;
+      const cells = Array.from({ length: to - from + 1 }, (_, i) => from + i);
+      body = `<div class="lg-scale${q.type === "nps" ? " lg-nps" : ""}" role="radiogroup">${cells
+        .map((n) => `<button class="lg-scale-btn" data-v="${n}" role="radio" aria-checked="false">${n}</button>`)
+        .join("")}</div>
+        ${q.lowLabel || q.highLabel ? `<div class="lg-scale-labels"><span>${escapeHtml(q.lowLabel)}</span><span>${escapeHtml(q.highLabel)}</span></div>` : ""}`;
+    } else if (q.type === "single" || q.type === "multiple") {
+      body = `<div class="lg-options" role="${q.type === "single" ? "radiogroup" : "group"}">${q.options
+        .map(
+          (o) => `<button class="lg-option" data-v="${escapeHtml(o.id)}" role="${q.type === "single" ? "radio" : "checkbox"}" aria-checked="false">
+            <span class="lg-mark${q.type === "single" ? " lg-round" : ""}"></span><span>${escapeHtml(o.label)}</span></button>`,
+        )
+        .join("")}</div>`;
+      needsButton = q.type === "multiple";
+    } else {
+      body = `<textarea class="lg-input" rows="3" maxlength="2000" placeholder="${escapeHtml(q.placeholder)}"></textarea>`;
+      needsButton = true;
+    }
+
+    const count = content.showProgress && questions.length > 1 ? `${index + 1} of ${questions.length}` : "";
+    const footer =
+      needsButton || !q.required || count
+        ? `<div class="lg-footer"><span class="lg-count">${count}</span>
+             ${!q.required ? `<button class="lg-btn lg-ghost" data-act="skip">Skip</button>` : ""}
+             ${needsButton ? `<button class="lg-btn" data-act="next"${q.required ? " disabled" : ""}>${escapeHtml(last ? content.submitLabel : content.nextLabel)}</button>` : ""}
+           </div>`
+        : "";
+    card.innerHTML = `<button class="lg-close" aria-label="Close">×</button>
+      ${q.title ? `<h3 class="lg-q">${richText(q.title)}</h3>` : ""}
+      ${q.description ? `<div class="lg-body lg-q-desc">${richText(q.description)}</div>` : ""}
+      ${body}${footer}`;
+
+    card.querySelector(".lg-close")!.addEventListener("click", close);
+    card.querySelector('[data-act="skip"]')?.addEventListener("click", () => answer(q, null));
+    const next = card.querySelector<HTMLButtonElement>('[data-act="next"]');
+
+    if (q.type === "nps" || q.type === "rating" || q.type === "single") {
+      const buttons = [...card.querySelectorAll<HTMLButtonElement>("[data-v]")];
+      for (const b of buttons) {
+        b.addEventListener("click", () => {
+          for (const x of buttons) x.setAttribute("aria-checked", String(x === b));
+          const raw = b.dataset.v!;
+          // Brief pause so the choice is visible before moving on.
+          clearTimeout(timer);
+          timer = window.setTimeout(() => answer(q, q.type === "single" ? raw : Number(raw)), 250);
+        });
+      }
+    } else if (q.type === "multiple") {
+      const picked = new Set<string>();
+      for (const b of card.querySelectorAll<HTMLButtonElement>("[data-v]")) {
+        b.addEventListener("click", () => {
+          const v = b.dataset.v!;
+          if (picked.has(v)) picked.delete(v);
+          else picked.add(v);
+          b.setAttribute("aria-checked", String(picked.has(v)));
+          if (next && q.required) next.disabled = picked.size === 0;
+        });
+      }
+      next?.addEventListener("click", () => answer(q, picked.size ? [...picked] : null));
+    } else {
+      const input = card.querySelector<HTMLTextAreaElement>("textarea")!;
+      input.addEventListener("input", () => {
+        if (next && q.required) next.disabled = !input.value.trim();
+      });
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && next && !next.disabled) next.click();
+      });
+      next?.addEventListener("click", () => answer(q, input.value.trim() || null));
+      input.focus();
+    }
+  }
+
+  if (!questions.length) {
+    cleanup();
+    opts.onEnd("lost");
+  } else {
+    opts.report("guide_shown");
+    render();
+  }
+  return { stop: cleanup };
 }

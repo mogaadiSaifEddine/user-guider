@@ -25,7 +25,15 @@ export default async function OverviewPage({ params }: { params: Promise<{ ws: s
 
   return (
     <>
-      <PageHeader title="Overview" description="Last 30 days" actions={<ButtonLink href={`/app/${ws}/guides`}>Guides</ButtonLink>} />
+      <PageHeader title="Overview" description="Last 30 days" actions={
+          <>
+            <ButtonLink variant="secondary" href={`/app/${ws}/analytics`}>
+              Users &amp; companies
+            </ButtonLink>
+            <ButtonLink href={`/app/${ws}/guides`}>Guides</ButtonLink>
+          </>
+        }
+      />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Active users" value={o.activeUsers} sub={`${o.identifiedUsers} identified`} />
         <Stat label="All-time users" value={o.totalUsers} />

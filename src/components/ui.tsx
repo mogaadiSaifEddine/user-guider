@@ -120,6 +120,7 @@ export const typeLabels = {
   CHECKLIST: "Checklist",
   ANNOUNCEMENT: "Announcement",
   HOTSPOT: "Hotspots",
+  SURVEY: "Survey",
 } as const;
 
 export const statusColors = { DRAFT: "gray", PUBLISHED: "green", ARCHIVED: "yellow" } as const;

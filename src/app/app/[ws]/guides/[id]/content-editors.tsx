@@ -12,16 +12,16 @@ import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 
 export type OtherGuide = { id: string; name: string; type: string };
 
-const TEXT_HINT = "Supports **bold**, *italic*, [links](https://…) and line breaks.";
+export const TEXT_HINT = "Supports **bold**, *italic*, [links](https://…) and line breaks.";
 const placements = ["auto", "top", "bottom", "left", "right"] as const;
 
-function move<T>(list: T[], i: number, dir: -1 | 1) {
+export function move<T>(list: T[], i: number, dir: -1 | 1) {
   const next = [...list];
   [next[i], next[i + dir]] = [next[i + dir], next[i]];
   return next;
 }
 
-function ListItem({
+export function ListItem({
   index,
   total,
   title,
@@ -128,7 +128,7 @@ export function ChecklistEditor({
   const patch = (p: Partial<ChecklistContent>) => onChange({ ...value, ...p });
   const setItems = (items: ChecklistItem[]) => patch({ items });
   const patchItem = (i: number, p: Partial<ChecklistItem>) => setItems(value.items.map((it, j) => (j === i ? { ...it, ...p } : it)));
-  const tours = others.filter((g) => g.type === "TOUR" || g.type === "ANNOUNCEMENT");
+  const tours = others.filter((g) => g.type === "TOUR" || g.type === "ANNOUNCEMENT" || g.type === "SURVEY");
 
   return (
     <div className="space-y-4">

@@ -42,7 +42,7 @@ Examples:
 
 ## Delay
 
-Seconds to wait after a matching page loads before a tour or announcement starts (0–600). Use a few seconds so users get their bearings first. If the user leaves the page during the delay, the guide waits for the next matching page.
+Seconds to wait after a matching page loads before a tour, announcement or survey starts (0–600). Use a few seconds so users get their bearings first. If the user leaves the page during the delay, the guide waits for the next matching page.
 
 ## How often
 
@@ -54,7 +54,7 @@ Seconds to wait after a matching page loads before a tour or announcement starts
 | **On later visits until completed** | Dismissing hides it for the rest of that page load only; it returns on later page loads until completed. |
 | **On every page load** | Shown on every page load, even after completion. Mostly useful for testing. |
 
-Within a single page load, a tour or announcement starts automatically at most once. In a single-page app, a "page load" lasts until the browser fully reloads; moving between screens of the app doesn't count as a new one.
+Within a single page load, a tour, announcement or survey starts automatically at most once. In a single-page app, a "page load" lasts until the browser fully reloads; moving between screens of the app doesn't count as a new one.
 
 ## Priority
 

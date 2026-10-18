@@ -167,11 +167,53 @@ export const hotspotContentSchema = z.object({
   hotspots: z.array(hotspotSchema).max(30).default([]),
 });
 
+// ---------- Survey ----------
+
+export const questionTypes = ["nps", "rating", "single", "multiple", "text"] as const;
+
+export const surveyOptionSchema = z.object({
+  id: z.string().min(1).max(64),
+  label: z.string().max(200).default(""),
+});
+
+export const surveyQuestionSchema = z.object({
+  id: z.string().min(1).max(64),
+  type: z.enum(questionTypes).default("nps"),
+  title: z.string().max(300).default(""),
+  description: z.string().max(1000).default(""),
+  required: z.boolean().default(true),
+  // single / multiple
+  options: z.array(surveyOptionSchema).max(12).default([]),
+  // rating: 1..scale
+  scale: z.number().int().min(3).max(10).default(5),
+  // nps / rating: words under the ends of the scale
+  lowLabel: z.string().max(60).default(""),
+  highLabel: z.string().max(60).default(""),
+  // text
+  placeholder: z.string().max(200).default(""),
+});
+
+export const surveyContentSchema = z.object({
+  questions: z.array(surveyQuestionSchema).max(20).default([]),
+  position: z.enum(["bottom-right", "bottom-left", "center"]).default("bottom-right"),
+  showProgress: z.boolean().default(true),
+  nextLabel: z.string().max(40).default("Next"),
+  submitLabel: z.string().max(40).default("Submit"),
+  thankYou: z
+    .object({
+      show: z.boolean().default(true),
+      heading: z.string().max(200).default("Thank you!"),
+      text: z.string().max(1000).default("Your feedback helps us improve."),
+    })
+    .prefault({}),
+});
+
 export const contentSchemas = {
   TOUR: tourContentSchema,
   CHECKLIST: checklistContentSchema,
   ANNOUNCEMENT: announcementContentSchema,
   HOTSPOT: hotspotContentSchema,
+  SURVEY: surveyContentSchema,
 } as const;
 
 export type GuideTypeName = keyof typeof contentSchemas;
@@ -188,6 +230,55 @@ export type ChecklistContent = z.infer<typeof checklistContentSchema>;
 export type AnnouncementContent = z.infer<typeof announcementContentSchema>;
 export type Hotspot = z.infer<typeof hotspotSchema>;
 export type HotspotContent = z.infer<typeof hotspotContentSchema>;
+export type QuestionType = (typeof questionTypes)[number];
+export type SurveyQuestion = z.infer<typeof surveyQuestionSchema>;
+export type SurveyContent = z.infer<typeof surveyContentSchema>;
+export type SurveyAnswerValue = number | string | string[];
+
+// Checks one answer against its question; returns the value to store, or null if invalid.
+export function normalizeAnswer(q: SurveyQuestion, value: unknown): SurveyAnswerValue | null {
+  switch (q.type) {
+    case "nps":
+      return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 10 ? (value as number) : null;
+    case "rating":
+      return Number.isInteger(value) && (value as number) >= 1 && (value as number) <= q.scale ? (value as number) : null;
+    case "single":
+      return typeof value === "string" && q.options.some((o) => o.id === value) ? value : null;
+    case "multiple": {
+      if (!Array.isArray(value)) return null;
+      const ids = [...new Set(value.filter((v): v is string => typeof v === "string" && q.options.some((o) => o.id === v)))];
+      return ids.length ? ids : null;
+    }
+    case "text": {
+      const t = typeof value === "string" ? value.trim().slice(0, 2000) : "";
+      return t || null;
+    }
+  }
+}
+
+export function newQuestion(type: QuestionType): SurveyQuestion {
+  const base = { id: newId(), type };
+  switch (type) {
+    case "nps":
+      return surveyQuestionSchema.parse({
+        ...base,
+        title: "How likely are you to recommend us to a friend or colleague?",
+        lowLabel: "Not likely",
+        highLabel: "Very likely",
+      });
+    case "rating":
+      return surveyQuestionSchema.parse({ ...base, title: "How easy was that?", lowLabel: "Hard", highLabel: "Easy" });
+    case "single":
+    case "multiple":
+      return surveyQuestionSchema.parse({
+        ...base,
+        title: type === "single" ? "What do you use us for most?" : "Which features do you use?",
+        options: ["Option 1", "Option 2", "Option 3"].map((label) => ({ id: newId(), label })),
+      });
+    case "text":
+      return surveyQuestionSchema.parse({ ...base, title: "Anything we could do better?", required: false, placeholder: "Type your answer" });
+  }
+}
 
 export function parseContent(type: GuideTypeName, raw: unknown) {
   return contentSchemas[type].parse(raw ?? {});
@@ -266,6 +357,8 @@ export function defaultContent(type: GuideTypeName) {
       return announcementContentSchema.parse({ title: "What's new", body: "", buttonText: "Got it" });
     case "HOTSPOT":
       return hotspotContentSchema.parse({ hotspots: [] });
+    case "SURVEY":
+      return surveyContentSchema.parse({ questions: [newQuestion("nps"), newQuestion("text")] });
   }
 }
 

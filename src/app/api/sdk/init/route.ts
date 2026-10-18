@@ -7,7 +7,12 @@ export async function POST(req: Request) {
   const parsed = initSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return json({ error: "Invalid request" }, 400);
   try {
-    return json(await sdkInit(parsed.data));
+    return json(
+      await sdkInit(parsed.data, {
+        userAgent: req.headers.get("user-agent"),
+        acceptLanguage: req.headers.get("accept-language"),
+      }),
+    );
   } catch (e) {
     if (e instanceof SdkError) return json({ error: e.message }, e.status);
     throw e;

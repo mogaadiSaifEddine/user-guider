@@ -15,13 +15,15 @@ import {
   targetingSchema,
   themeSchema,
   type GuideTypeName,
+  type SurveyContent,
 } from "@/lib/guide-schema";
+import { companyFrom } from "@/lib/companies";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
 // ---------- Guides ----------
 
-const guideTypes = ["TOUR", "CHECKLIST", "ANNOUNCEMENT", "HOTSPOT"] as const;
+const guideTypes = ["TOUR", "CHECKLIST", "ANNOUNCEMENT", "HOTSPOT", "SURVEY"] as const;
 
 export async function createGuide(ws: string, form: FormData) {
   await requireWorkspace(ws);
@@ -85,6 +87,16 @@ function publishProblem(type: GuideTypeName, content: unknown): string | null {
   const c = content as Record<string, unknown[]>;
   if (type === "TOUR" && !c.steps.length) return "Add at least one step before publishing.";
   if (type === "CHECKLIST" && !c.items.length) return "Add at least one item before publishing.";
+  if (type === "SURVEY") {
+    const qs = (content as SurveyContent).questions;
+    if (!qs.length) return "Add at least one question before publishing.";
+    const noText = qs.findIndex((q) => !q.title.trim());
+    if (noText >= 0) return `Question ${noText + 1} has no text.`;
+    const fewOptions = qs.findIndex(
+      (q) => (q.type === "single" || q.type === "multiple") && q.options.filter((o) => o.label.trim()).length < 2,
+    );
+    if (fewOptions >= 0) return `Question ${fewOptions + 1} needs at least two answer options.`;
+  }
   if (type === "HOTSPOT") {
     const hs = c.hotspots as { selector: string }[];
     if (!hs.length) return "Add at least one hotspot before publishing.";
@@ -148,13 +160,19 @@ const settingsSchema = z.object({
   name: z.string().trim().min(1).max(100),
   requireIdentityVerification: z.boolean(),
   aiContext: z.string().max(4000).default(""),
+  companyIdAttribute: z.string().trim().max(100).default(""),
+  companyNameAttribute: z.string().trim().max(100).default(""),
   theme: themeSchema,
 });
 
 export async function updateWorkspace(ws: string, input: unknown): Promise<ActionResult> {
-  await requireWorkspace(ws);
+  const { workspace } = await requireWorkspace(ws);
   const parsed = settingsSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describe(parsed.error) };
+  const company = {
+    companyIdAttribute: parsed.data.companyIdAttribute || null,
+    companyNameAttribute: parsed.data.companyNameAttribute || null,
+  };
   await prisma.workspace.update({
     where: { id: ws },
     data: {
@@ -162,10 +180,35 @@ export async function updateWorkspace(ws: string, input: unknown): Promise<Actio
       requireIdentityVerification: parsed.data.requireIdentityVerification,
       aiContext: parsed.data.aiContext.trim() || null,
       theme: parsed.data.theme as Prisma.InputJsonObject,
+      ...company,
     },
   });
+  const changed =
+    company.companyIdAttribute !== workspace.companyIdAttribute || company.companyNameAttribute !== workspace.companyNameAttribute;
+  const regrouped = changed ? await regroupCompanies(ws, company) : null;
   revalidatePath(`/app/${ws}`, "layout");
-  return { ok: true, message: "Saved." };
+  return { ok: true, message: regrouped === null ? "Saved." : `Saved. Regrouped ${regrouped} users by company.` };
+}
+
+// Recomputes every user's company after the company attributes change.
+async function regroupCompanies(ws: string, config: Parameters<typeof companyFrom>[1]) {
+  let cursor: string | undefined;
+  let count = 0;
+  for (;;) {
+    const batch = await prisma.endUser.findMany({
+      where: { workspaceId: ws },
+      select: { id: true, attributes: true },
+      orderBy: { id: "asc" },
+      take: 500,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
+    if (!batch.length) return count;
+    await prisma.$transaction(
+      batch.map((u) => prisma.endUser.update({ where: { id: u.id }, data: companyFrom(u.attributes as Record<string, unknown>, config) })),
+    );
+    count += batch.length;
+    cursor = batch[batch.length - 1].id;
+  }
 }
 
 export async function rotateKey(ws: string, which: "public" | "secret"): Promise<ActionResult> {

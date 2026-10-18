@@ -19,7 +19,7 @@ Each item has a title, an optional description, and two rules: what happens when
 | Option | Effect |
 | --- | --- |
 | Nothing | Clicking does nothing (useful with *Done when: The item is clicked* for "read this" items). |
-| Start a guide | Closes the panel and starts a tour or announcement. Pair it with a tour whose trigger is *Only manually*. |
+| Start a guide | Closes the panel and starts a tour, announcement or survey. Pair it with a tour whose trigger is *Only manually*. |
 | Go to a page | Navigates to an address, e.g. `/projects/new` or `https://help.example.com`. |
 
 **Done when**

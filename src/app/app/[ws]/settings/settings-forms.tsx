@@ -15,6 +15,8 @@ type Props = {
     secretKey: string | null;
     requireIdentityVerification: boolean;
     aiContext: string;
+    companyIdAttribute: string;
+    companyNameAttribute: string;
     theme: Theme;
   };
   members: { id: string; name: string; email: string; role: "OWNER" | "EDITOR" }[];
@@ -46,6 +48,8 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
   const [name, setName] = useState(workspace.name);
   const [verify, setVerify] = useState(workspace.requireIdentityVerification);
   const [aiContext, setAiContext] = useState(workspace.aiContext);
+  const [companyIdAttribute, setCompanyIdAttribute] = useState(workspace.companyIdAttribute);
+  const [companyNameAttribute, setCompanyNameAttribute] = useState(workspace.companyNameAttribute);
   const [theme, setTheme] = useState(workspace.theme);
   const [general, setGeneral] = useState<ActionResult | null>(null);
   const [keys, setKeys] = useState<ActionResult | null>(null);
@@ -123,6 +127,33 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
           </Field>
         )}
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            label="Company id attribute"
+            hint="The identify() attribute that groups users into companies, e.g. publisher. Empty: detect company_id, publisher, …"
+          >
+            <Input
+              className="font-mono text-xs"
+              maxLength={100}
+              placeholder="auto"
+              value={companyIdAttribute}
+              onChange={(e) => setCompanyIdAttribute(e.target.value)}
+            />
+          </Field>
+          <Field
+            label="Company name attribute"
+            hint="Shown instead of the id, e.g. publisher_alias. Empty: detect company_name, publisher_alias, …"
+          >
+            <Input
+              className="font-mono text-xs"
+              maxLength={100}
+              placeholder="auto"
+              value={companyNameAttribute}
+              onChange={(e) => setCompanyNameAttribute(e.target.value)}
+            />
+          </Field>
+        </div>
+
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1" checked={verify} onChange={(e) => setVerify(e.target.checked)} />
           <span>
@@ -135,7 +166,14 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
         <div className="flex items-center gap-3">
           <Button
             disabled={pending}
-            onClick={() => start(async () => setGeneral(await updateWorkspace(ws, { name, requireIdentityVerification: verify, theme, aiContext })))}
+            onClick={() => start(async () => setGeneral(await updateWorkspace(ws, {
+                    name,
+                    requireIdentityVerification: verify,
+                    theme,
+                    aiContext,
+                    companyIdAttribute,
+                    companyNameAttribute,
+                  })))}
           >
             Save
           </Button>

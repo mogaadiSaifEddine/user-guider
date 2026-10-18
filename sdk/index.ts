@@ -2,6 +2,8 @@ import type {
   AnnouncementContent,
   ChecklistContent,
   HotspotContent,
+  SurveyAnswerValue,
+  SurveyContent,
   Theme,
   TourContent,
 } from "../src/lib/guide-schema";
@@ -12,6 +14,7 @@ import {
   runAnnouncement,
   runChecklist,
   runHotspots,
+  runSurvey,
   runTour,
   type ChecklistHandle,
   type EventType,
@@ -27,7 +30,7 @@ type Progress = {
 type SdkGuide = {
   id: string;
   name: string;
-  type: "TOUR" | "CHECKLIST" | "ANNOUNCEMENT" | "HOTSPOT";
+  type: "TOUR" | "CHECKLIST" | "ANNOUNCEMENT" | "HOTSPOT" | "SURVEY";
   priority: number;
   content: unknown;
   targeting: { urlRules: UrlRule[]; trigger: "auto" | "manual"; delaySeconds: number };
@@ -35,7 +38,14 @@ type SdkGuide = {
   progress: Progress;
 };
 
-type QueuedEvent = { type: EventType | "custom"; guideId?: string; name?: string; stepIndex?: number; url: string };
+type QueuedEvent = {
+  type: EventType | "custom";
+  guideId?: string;
+  name?: string;
+  stepIndex?: number;
+  value?: SurveyAnswerValue;
+  url: string;
+};
 type Attributes = Record<string, string | number | boolean | null>;
 
 type Stub = { q?: [string, ArrayLike<unknown>][]; key?: string; apiBase?: string };
@@ -140,7 +150,7 @@ const ANON_KEY = "lg_anon_id";
       const res = await fetch(apiBase + "/api/sdk/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, user: userPayload(true), url: location.href }),
+        body: JSON.stringify({ key, user: userPayload(true), url: location.href, context: clientContext() }),
       });
       const data = await res.json();
       if (seq !== initSeq) return;
@@ -183,7 +193,8 @@ const ANON_KEY = "lg_anon_id";
   }
 
   function reporter(guideId: string) {
-    return (type: EventType, extra?: { name?: string; stepIndex?: number }) => queue({ type, guideId, ...extra });
+    return (type: EventType, extra?: { name?: string; stepIndex?: number; value?: SurveyAnswerValue }) =>
+      queue({ type, guideId, ...extra });
   }
 
   // The server tells us when checklist items complete (custom events, finished tours).
@@ -250,11 +261,11 @@ const ANON_KEY = "lg_anon_id";
       }
     }
 
-    // One tour or announcement at a time, highest priority first.
+    // One tour, announcement or survey at a time, highest priority first.
     if (modal || modalPending) return;
     const next = guides.find(
       (g) =>
-        (g.type === "TOUR" || g.type === "ANNOUNCEMENT") &&
+        isModal(g) &&
         g.autoShow &&
         g.targeting.trigger === "auto" &&
         !shownThisLoad.has(g.id) &&
@@ -277,7 +288,7 @@ const ANON_KEY = "lg_anon_id";
   function startGuide(guideId: string) {
     const g = guides.find((x) => x.id === guideId);
     if (!g) return console.warn("[LocatifyGuides] Guide not available for this user:", guideId);
-    if (g.type !== "TOUR" && g.type !== "ANNOUNCEMENT") return;
+    if (!isModal(g)) return;
     modal?.handle.stop();
     modal = null;
     shownThisLoad.add(g.id);
@@ -296,12 +307,36 @@ const ANON_KEY = "lg_anon_id";
     const handle =
       g.type === "TOUR"
         ? runTour(g.content as TourContent, { startAt, report: reporter(g.id), onEnd, startGuide })
-        : runAnnouncement(g.content as AnnouncementContent, { report: reporter(g.id), onEnd, startGuide });
+        : g.type === "SURVEY"
+          ? runSurvey(g.content as SurveyContent, { report: reporter(g.id), onEnd })
+          : runAnnouncement(g.content as AnnouncementContent, { report: reporter(g.id), onEnd, startGuide });
     // An empty tour ends synchronously; don't hold the modal slot for it.
     if (!ended) modal = { guideId: g.id, handle };
   }
 
   // ---------- helpers ----------
+
+  function isModal(g: SdkGuide) {
+    return g.type === "TOUR" || g.type === "ANNOUNCEMENT" || g.type === "SURVEY";
+  }
+
+  // Language, time zone and touch support for the audience breakdowns; the
+  // server reads browser and OS from the User-Agent header.
+  function clientContext() {
+    const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
+    let timezone: string | undefined;
+    try {
+      timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      // old browser
+    }
+    return {
+      language: nav.language?.slice(0, 35),
+      timezone: timezone?.slice(0, 64),
+      touch: nav.maxTouchPoints > 1,
+      mobile: nav.userAgentData?.mobile,
+    };
+  }
 
   function loadAnonId() {
     try {

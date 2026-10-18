@@ -1,5 +1,4 @@
 import "server-only";
-import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 
 // Counts are distinct end users, not raw events, so a user who sees a tour on
@@ -119,24 +118,6 @@ export async function guideAnalytics(guideId: string, days = 30) {
     items: new Map(items.map((r) => [r.name, Number(r.c)])),
     daily: toSeries(daily, days),
   };
-}
-
-export async function endUserList(workspaceId: string, opts: { q?: string; page: number; pageSize: number }) {
-  const where: Prisma.EndUserWhereInput = {
-    workspaceId,
-    ...(opts.q ? { externalId: { contains: opts.q } } : {}),
-  };
-  const [total, users] = await Promise.all([
-    prisma.endUser.count({ where }),
-    prisma.endUser.findMany({
-      where,
-      orderBy: { lastSeenAt: "desc" },
-      skip: (opts.page - 1) * opts.pageSize,
-      take: opts.pageSize,
-      include: { _count: { select: { progress: { where: { status: "COMPLETED" } } } } },
-    }),
-  ]);
-  return { total, users };
 }
 
 export function pct(part: number, whole: number) {

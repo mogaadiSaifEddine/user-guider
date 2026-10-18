@@ -28,6 +28,8 @@ export default async function SettingsPage({ params }: { params: Promise<{ ws: s
           secretKey: role === "OWNER" ? workspace.secretKey : null,
           requireIdentityVerification: workspace.requireIdentityVerification,
           aiContext: workspace.aiContext ?? "",
+          companyIdAttribute: workspace.companyIdAttribute ?? "",
+          companyNameAttribute: workspace.companyNameAttribute ?? "",
           theme: parseTheme(workspace.theme),
         }}
         aiEnabled={aiEnabled()}

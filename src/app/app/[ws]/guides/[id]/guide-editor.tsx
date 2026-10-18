@@ -8,6 +8,7 @@ import type {
   ChecklistContent,
   GuideTypeName,
   HotspotContent,
+  SurveyContent,
   Targeting,
   Theme,
   TourContent,
@@ -26,6 +27,7 @@ import {
 } from "../../actions";
 import { ChecklistEditor, HotspotEditor, type OtherGuide } from "./content-editors";
 import { AnnouncementEditor, TourEditor } from "./block-content-editors";
+import { SurveyEditor } from "./survey-editor";
 
 type EditorGuide = {
   id: string;
@@ -204,6 +206,7 @@ export function GuideEditor({
               {guide.type === "CHECKLIST" && (
                 <ChecklistEditor value={content as ChecklistContent} onChange={edit(setContent)} others={others} />
               )}
+              {guide.type === "SURVEY" && <SurveyEditor value={content as SurveyContent} onChange={edit(setContent)} theme={theme} />}
             </>
           ) : (
             <TargetingEditor
@@ -383,7 +386,7 @@ function TargetingEditor({
   onPriority: (v: number) => void;
 }) {
   const patch = (p: Partial<Targeting>) => onChange({ ...value, ...p });
-  const manualAllowed = type === "TOUR" || type === "ANNOUNCEMENT";
+  const manualAllowed = type === "TOUR" || type === "ANNOUNCEMENT" || type === "SURVEY";
 
   return (
     <div className="space-y-4">
@@ -504,7 +507,7 @@ function TargetingEditor({
             <option value="always">On every page load</option>
           </Select>
         </Field>
-        <Field label="Delay (seconds)" hint={manualAllowed ? undefined : "Only used by tours and announcements."}>
+        <Field label="Delay (seconds)" hint={manualAllowed ? undefined : "Only used by tours, announcements and surveys."}>
           <Input
             type="number"
             min={0}

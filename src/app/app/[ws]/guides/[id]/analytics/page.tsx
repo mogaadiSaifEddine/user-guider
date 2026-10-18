@@ -7,8 +7,11 @@ import {
   type ChecklistContent,
   type GuideTypeName,
   type HotspotContent,
+  type SurveyContent,
   type TourContent,
 } from "@/lib/guide-schema";
+import { surveyResults } from "@/lib/survey-results";
+import { SurveyResults } from "./survey-results";
 import { FunnelBars, TrendChart } from "@/components/charts";
 import { Badge, ButtonLink, Card, PageHeader, Stat, cx, typeLabels } from "@/components/ui";
 
@@ -28,6 +31,7 @@ export default async function GuideAnalyticsPage({
   const type = guide.type as GuideTypeName;
   // Label steps/items from the live version when there is one.
   const content = parseContent(type, guide.publishedContent ?? guide.content);
+  const survey = type === "SURVEY" ? await surveyResults(id, content as SurveyContent, days) : null;
 
   let breakdown: { title: string; note: string; rows: { label: string; value: number }[] } | null = null;
   if (type === "TOUR") {
@@ -41,6 +45,12 @@ export default async function GuideAnalyticsPage({
       title: "Items completed",
       note: "Users who completed each item, out of users who saw the checklist.",
       rows: (content as ChecklistContent).items.map((it) => ({ label: it.title || "Untitled", value: a.items.get(it.id) ?? 0 })),
+    };
+  } else if (type === "SURVEY") {
+    breakdown = {
+      title: "Question funnel",
+      note: "Users who reached each question. A big drop shows where people stop answering.",
+      rows: (content as SurveyContent).questions.map((q, i) => ({ label: q.title || `Question ${i + 1}`, value: a.steps.get(i) ?? 0 })),
     };
   } else if (type === "HOTSPOT") {
     breakdown = {
@@ -95,13 +105,34 @@ export default async function GuideAnalyticsPage({
             <h2 className="text-sm font-semibold text-gray-900">{breakdown.title}</h2>
             <p className="mb-4 text-xs text-gray-500">{breakdown.note}</p>
             {breakdown.rows.length ? (
-              <FunnelBars rows={breakdown.rows} base={type === "TOUR" ? (breakdown.rows[0]?.value ?? 0) : a.seen} />
+              <FunnelBars rows={breakdown.rows} base={type === "TOUR" || type === "SURVEY" ? (breakdown.rows[0]?.value ?? 0) : a.seen} />
             ) : (
               <p className="text-sm text-gray-500">Nothing to show yet.</p>
             )}
           </Card>
         )}
       </div>
+
+      {survey && (
+        <div className="mt-8">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Responses</h2>
+              <p className="text-sm text-gray-500">
+                {survey.respondents} {survey.respondents === 1 ? "person" : "people"} answered in the last {days} days. Each person&apos;s latest
+                answer counts.
+              </p>
+            </div>
+            <a
+              href={`/app/${ws}/guides/${id}/responses`}
+              className="inline-flex items-center rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-gray-300 hover:bg-gray-50"
+            >
+              Export CSV
+            </a>
+          </div>
+          <SurveyResults ws={ws} results={survey.results} />
+        </div>
+      )}
 
       {a.seen === 0 && (
         <Card className="mt-6 p-5 text-sm text-gray-600">

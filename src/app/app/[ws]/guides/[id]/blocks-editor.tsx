@@ -322,7 +322,7 @@ function ButtonFields({
   others: OtherGuide[];
   context: Ctx;
 }) {
-  const startable = others.filter((g) => g.type === "TOUR" || g.type === "ANNOUNCEMENT");
+  const startable = others.filter((g) => g.type === "TOUR" || g.type === "ANNOUNCEMENT" || g.type === "SURVEY");
   const actions = (Object.keys(actionLabels) as ButtonAction["type"][]).filter(
     (a) => context === "tour" || (a !== "next" && a !== "back") || btn.action.type === a,
   );

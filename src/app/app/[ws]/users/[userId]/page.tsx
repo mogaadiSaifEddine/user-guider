@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
+import { fieldLabel } from "@/lib/audience";
+import { parseContent, type SurveyContent } from "@/lib/guide-schema";
 import { Badge, Card, PageHeader } from "@/components/ui";
 
 const eventLabels: Record<string, string> = {
@@ -11,6 +13,7 @@ const eventLabels: Record<string, string> = {
   guide_dismissed: "Dismissed",
   checklist_item_completed: "Checked item",
   hotspot_opened: "Opened hotspot",
+  survey_answered: "Answered",
   custom: "Event",
 };
 
@@ -24,9 +27,26 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
     include: {
       progress: { include: { guide: { select: { id: true, name: true } } }, orderBy: { updatedAt: "desc" } },
       events: { orderBy: { createdAt: "desc" }, take: 100, include: { guide: { select: { name: true } } } },
+      surveyAnswers: {
+        orderBy: { updatedAt: "desc" },
+        take: 50,
+        include: { guide: { select: { id: true, name: true, publishedContent: true, content: true } } },
+      },
     },
   });
   if (!user) notFound();
+  const activeDays = await prisma.userActivity.count({
+    where: { endUserId: user.id, day: { gte: new Date(Date.now() - 30 * 86_400_000) } },
+  });
+  const details: [string, string | null][] = [
+    ["Company", user.companyName ?? user.companyId],
+    ["Browser", user.browser],
+    ["Operating system", user.os],
+    ["Device", user.device && fieldLabel("device", user.device)],
+    ["Language", user.language && `${fieldLabel("language", user.language)} (${user.language})`],
+    ["Time zone", user.timezone],
+    ["Active days (30d)", String(activeDays)],
+  ];
   const attrs = Object.entries(user.attributes as Record<string, unknown>);
 
   return (
@@ -42,6 +62,25 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
       />
       <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
         <div className="space-y-6">
+          <Card className="p-5">
+            <h2 className="mb-3 text-sm font-semibold">Details</h2>
+            <dl className="space-y-2 text-sm">
+              {details.map(([k, v]) => (
+                <div key={k} className="flex justify-between gap-3">
+                  <dt className="text-xs text-gray-500">{k}</dt>
+                  <dd className="truncate text-right">
+                    {k === "Company" && user.companyId ? (
+                      <Link href={`/app/${ws}/users?company=${encodeURIComponent(user.companyId)}`} className="hover:text-indigo-600">
+                        {v}
+                      </Link>
+                    ) : (
+                      (v ?? <span className="text-gray-400">Unknown</span>)
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
           <Card className="p-5">
             <h2 className="mb-3 text-sm font-semibold">Attributes</h2>
             {attrs.length ? (
@@ -75,6 +114,34 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
             )}
           </Card>
         </div>
+        <div className="min-w-0 space-y-6">
+        {user.surveyAnswers.length > 0 && (
+          <Card className="p-5">
+            <h2 className="mb-3 text-sm font-semibold">Survey answers</h2>
+            <ul className="space-y-3 text-sm">
+              {user.surveyAnswers.map((a) => {
+                const content = parseContent("SURVEY", a.guide.publishedContent ?? a.guide.content) as SurveyContent;
+                const q = content.questions.find((x) => x.id === a.questionId);
+                const ids = Array.isArray(a.value) ? a.value : [a.value];
+                const text = ids
+                  .map((v) => (typeof v === "string" ? (q?.options.find((o) => o.id === v)?.label ?? v) : String(v)))
+                  .join(", ");
+                return (
+                  <li key={a.id.toString()}>
+                    <div className="text-xs text-gray-500">
+                      <Link href={`/app/${ws}/guides/${a.guide.id}/analytics`} className="hover:text-indigo-600">
+                        {a.guide.name}
+                      </Link>{" "}
+                      · {a.updatedAt.toLocaleString()}
+                    </div>
+                    <div className="text-gray-600">{q?.title || "Removed question"}</div>
+                    <div className="font-medium whitespace-pre-wrap">{text}</div>
+                  </li>
+                );
+              })}
+            </ul>
+          </Card>
+        )}
         <Card className="p-5">
           <h2 className="mb-3 text-sm font-semibold">Recent activity</h2>
           {user.events.length ? (
@@ -100,6 +167,7 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
             <p className="text-sm text-gray-500">No events.</p>
           )}
         </Card>
+        </div>
       </div>
     </>
   );

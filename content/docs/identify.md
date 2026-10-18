@@ -41,6 +41,30 @@ LocatifyGuides.identify(String(user.id), {
 - Tell your guide authors which attribute names exist. They can see each person's attributes on the **Users** page.
 - Don't send sensitive personal data you don't need for targeting. Attributes are stored on the Locatify Guides server.
 
+## Companies
+
+To group users by company (in [Analytics](analytics#companies)), send the company's id and name as attributes. By default the first of these that's present is used:
+
+| | Attributes looked for, in order |
+| --- | --- |
+| Company id | `company_id`, `companyId`, `publisher`, `publisher_id`, `organization_id`, `org_id`, `account_id` |
+| Company name | `company_name`, `companyName`, `publisher_alias`, `publisher_name`, `organization_name`, `account_name`, `company` |
+
+```js
+LocatifyGuides.identify(String(user.id), {
+  company_id: String(user.companyId),
+  company_name: user.companyName,
+});
+```
+
+If your attributes have other names, set them under **Settings → Company id attribute / Company name attribute**. Saving regroups everyone the snippet has already seen. A user with only a name is grouped by the name.
+
+The Locatify CMS sends `publisher` and `publisher_alias`, which are picked up automatically.
+
+## Browser, device and language
+
+You don't need to send these. On every page load the snippet reports the browser's language and time zone, and the server reads the browser, operating system and device type (desktop, mobile or tablet) from the user agent. They're shown on **Users** and **Analytics**, and kept up to date with the latest browser each person used. No IP address or location is stored.
+
 ## Anonymous visitors
 
 Before `identify()` is called (and without `data-wait-for-identify`), the visitor is anonymous with a random id stored in the browser. They only see guides marked *Also show to anonymous visitors*. When you later identify them, they become a separate, identified user; anonymous progress isn't carried over.

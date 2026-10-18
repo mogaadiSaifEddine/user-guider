@@ -2,13 +2,17 @@
 
 import { useMemo, useRef, useState } from "react";
 
-// Colors follow the reference categorical order (slot 1 blue, slot 2 orange).
-const SERIES = [
-  { key: "seen", label: "Saw a guide", color: "#2a78d6" },
-  { key: "completed", label: "Completed", color: "#eb6834" },
-] as const;
+// Colors follow the reference categorical order (slot 1 blue, slot 2 orange, slot 3 aqua).
+export const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a"] as const;
 
-type Point = { date: string; seen: number; completed: number };
+export type Series = { key: string; label: string; color: string };
+
+const GUIDE_SERIES: Series[] = [
+  { key: "seen", label: "Saw a guide", color: CATEGORICAL[0] },
+  { key: "completed", label: "Completed", color: CATEGORICAL[1] },
+];
+
+type Point = { date: string } & Record<string, number | string>;
 
 const W = 720;
 const H = 220;
@@ -25,20 +29,30 @@ function shortDate(iso: string) {
   return new Date(iso + "T00:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
 }
 
-export function TrendChart({ data, title }: { data: Point[]; title: string }) {
+export function TrendChart({
+  data,
+  title,
+  series: SERIES = GUIDE_SERIES,
+  description = "daily users who saw and completed guides",
+}: {
+  data: Point[];
+  title: string;
+  series?: Series[];
+  description?: string;
+}) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
   const [showTable, setShowTable] = useState(false);
 
   const { max, x, y, paths } = useMemo(() => {
-    const max = niceMax(Math.max(1, ...data.flatMap((d) => [d.seen, d.completed])));
+    const max = niceMax(Math.max(1, ...data.flatMap((d) => SERIES.map((s) => Number(d[s.key]) || 0))));
     const iw = W - PAD.left - PAD.right;
     const ih = H - PAD.top - PAD.bottom;
     const x = (i: number) => PAD.left + (data.length > 1 ? (i / (data.length - 1)) * iw : iw / 2);
     const y = (v: number) => PAD.top + ih - (v / max) * ih;
-    const paths = SERIES.map((s) => data.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(d[s.key]).toFixed(1)}`).join(""));
+    const paths = SERIES.map((s) => data.map((d, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(Number(d[s.key]) || 0).toFixed(1)}`).join(""));
     return { max, x, y, paths };
-  }, [data]);
+  }, [data, SERIES]);
 
   const ticks = [0, max / 2, max];
   const labelEvery = Math.ceil(data.length / 6);
@@ -88,8 +102,11 @@ export function TrendChart({ data, title }: { data: Point[]; title: string }) {
               {data.map((d) => (
                 <tr key={d.date}>
                   <td className="px-3 py-1.5">{shortDate(d.date)}</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{d.seen}</td>
-                  <td className="px-3 py-1.5 text-right tabular-nums">{d.completed}</td>
+                  {SERIES.map((s) => (
+                    <td key={s.key} className="px-3 py-1.5 text-right tabular-nums">
+                      {d[s.key]}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -102,7 +119,7 @@ export function TrendChart({ data, title }: { data: Point[]; title: string }) {
             viewBox={`0 0 ${W} ${H}`}
             className="h-auto w-full touch-none select-none"
             role="img"
-            aria-label={`${title}: daily users who saw and completed guides`}
+            aria-label={`${title}: ${description}`}
             onPointerMove={onMove}
             onPointerLeave={() => setHover(null)}
           >
@@ -129,7 +146,7 @@ export function TrendChart({ data, title }: { data: Point[]; title: string }) {
             ))}
             {h &&
               SERIES.map((s) => (
-                <circle key={s.key} cx={x(hover!)} cy={y(h[s.key])} r={4} fill={s.color} stroke="#fff" strokeWidth={2} />
+                <circle key={s.key} cx={x(hover!)} cy={y(Number(h[s.key]) || 0)} r={4} fill={s.color} stroke="#fff" strokeWidth={2} />
               ))}
           </svg>
           {h && (
@@ -184,5 +201,38 @@ export function FunnelBars({ rows, base }: { rows: { label: string; value: numbe
         );
       })}
     </ol>
+  );
+}
+
+// Share of users per value (browser, OS, …): one bar each, scaled to the total.
+// Single hue; the value and percentage are always written out.
+export function ShareBars({ rows, total }: { rows: { label: string; value: number; href?: string }[]; total: number }) {
+  const max = Math.max(1, ...rows.map((r) => r.value));
+  return (
+    <ul className="space-y-2.5">
+      {rows.map((r) => {
+        const share = total ? Math.round((r.value / total) * 100) : 0;
+        const label = r.href ? (
+          <a href={r.href} className="truncate text-gray-700 hover:text-indigo-600 hover:underline">
+            {r.label}
+          </a>
+        ) : (
+          <span className="truncate text-gray-700">{r.label}</span>
+        );
+        return (
+          <li key={r.label} className="group" title={`${r.label}: ${r.value} users (${share}%)`}>
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-sm">
+              {label}
+              <span className="shrink-0 tabular-nums text-gray-900">
+                {r.value} <span className="text-xs text-gray-500">· {share}%</span>
+              </span>
+            </div>
+            <div className="h-2 rounded bg-gray-100">
+              <div className="h-2 rounded bg-[#2a78d6] transition-opacity group-hover:opacity-80" style={{ width: `${(r.value / max) * 100}%` }} />
+            </div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

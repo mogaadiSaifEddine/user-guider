@@ -14,7 +14,7 @@ Go through these in order:
    - If the guide is listed as *completed* or *dismissed*, the **Show again** setting may keep it hidden. See [How often](targeting#how-often).
 4. **Is it this page?** Check the page rules against the address in the browser. *Path is* and *Path starts with* ignore the domain and `?query`; *URL contains* includes them.
 5. **Is the trigger manual?** Then it only starts from a checklist or `start()`.
-6. **Is something else on screen?** Only one tour or announcement shows at a time; a higher-priority one may be first. A tour or announcement also starts at most once per page load, so reload the page after dismissing one while testing.
+6. **Is something else on screen?** Only one tour, announcement or survey shows at a time; a higher-priority one may be first. A tour or announcement also starts at most once per page load, so reload the page after dismissing one while testing.
 7. **Is the element there?** For tours, the first step's element must appear within 15 seconds. Open the [builder](builder) on that page: an amber dot means the selector doesn't match anything there.
 8. **Is `data-wait-for-identify` set** while your code never calls `identify()`? Then nothing loads.
 

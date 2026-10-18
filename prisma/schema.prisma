@@ -31,6 +31,10 @@ model Workspace {
   theme     Json
   // What the product is and who uses it; given to the AI when drafting guides.
   aiContext String?  @db.Text
+  // Which identify() attributes hold the user's company (e.g. publisher / publisher_alias).
+  // Null: look for common names, see src/lib/companies.ts.
+  companyIdAttribute   String? @db.VarChar(100)
+  companyNameAttribute String? @db.VarChar(100)
   createdAt DateTime @default(now())
 
   memberships Membership[]
@@ -38,6 +42,8 @@ model Workspace {
   endUsers    EndUser[]
   events      Event[]
   assets      Asset[]
+  activity    UserActivity[]
+  surveyAnswers SurveyAnswer[]
 }
 
 enum Role {
@@ -62,6 +68,7 @@ enum GuideType {
   CHECKLIST
   ANNOUNCEMENT
   HOTSPOT
+  SURVEY
 }
 
 enum GuideStatus {
@@ -90,6 +97,7 @@ model Guide {
   workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   progress  GuideProgress[]
   events    Event[]
+  surveyAnswers SurveyAnswer[]
 
   @@index([workspaceId, status])
 }
@@ -119,13 +127,63 @@ model EndUser {
   attributes  Json
   firstSeenAt DateTime @default(now())
   lastSeenAt  DateTime @default(now())
+  // Company (publisher) taken from attributes, see src/lib/companies.ts.
+  companyId   String?  @db.VarChar(191)
+  companyName String?  @db.VarChar(191)
+  // Last browser context seen by /api/sdk/init.
+  browser     String?  @db.VarChar(40)
+  os          String?  @db.VarChar(40)
+  // desktop | mobile | tablet
+  device      String?  @db.VarChar(20)
+  // BCP 47 tag from navigator.language, e.g. en-US.
+  language    String?  @db.VarChar(35)
+  timezone    String?  @db.VarChar(64)
 
   workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   progress  GuideProgress[]
   events    Event[]
+  activity  UserActivity[]
+  surveyAnswers SurveyAnswer[]
 
   @@unique([workspaceId, externalId])
   @@index([workspaceId, lastSeenAt])
+  @@index([workspaceId, firstSeenAt])
+  @@index([workspaceId, companyId])
+}
+
+// One row per user per UTC day the snippet loaded. Drives daily/weekly/monthly active users.
+model UserActivity {
+  endUserId   String
+  workspaceId String
+  day         DateTime @db.Date
+
+  endUser   EndUser   @relation(fields: [endUserId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([endUserId, day])
+  @@index([workspaceId, day])
+}
+
+// Latest answer of a user to one survey question.
+model SurveyAnswer {
+  id          BigInt   @id @default(autoincrement())
+  workspaceId String
+  guideId     String
+  endUserId   String
+  questionId  String   @db.VarChar(64)
+  // number (nps, rating), option id (single), option ids (multiple) or text.
+  value       Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  guide     Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  endUser   EndUser   @relation(fields: [endUserId], references: [id], onDelete: Cascade)
+
+  @@unique([guideId, endUserId, questionId])
+  @@index([guideId, updatedAt])
+  @@index([workspaceId])
+  @@index([endUserId])
 }
 
 enum ProgressStatus {
@@ -155,7 +213,7 @@ model Event {
   workspaceId String
   endUserId   String
   guideId     String?
-  // guide_shown | step_viewed | guide_completed | guide_dismissed | checklist_item_completed | hotspot_opened | custom
+  // guide_shown | step_viewed | guide_completed | guide_dismissed | checklist_item_completed | hotspot_opened | survey_answered | custom
   type        String   @db.VarChar(64)
   // Custom event name (track()) or checklist item id.
   name        String?  @db.VarChar(191)

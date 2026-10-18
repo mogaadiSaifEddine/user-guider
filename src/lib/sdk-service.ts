@@ -3,14 +3,18 @@ import { z } from "zod";
 import { Prisma, type EndUser, type Guide, type GuideProgress, type Workspace } from "@prisma/client";
 import { prisma } from "./db";
 import { verifyUserHash } from "./keys";
+import { companyFrom } from "./companies";
+import { parseUserAgent, primaryLanguage } from "./user-agent";
 import {
   matchesUser,
+  normalizeAnswer,
   parseContent,
   parseTargeting,
   parseTheme,
   type ChecklistContent,
   type HotspotContent,
   type GuideTypeName,
+  type SurveyContent,
 } from "./guide-schema";
 
 // ---------- Request shapes ----------
@@ -26,11 +30,22 @@ export const sdkUserSchema = z
   })
   .refine((u) => u.id || u.anonymousId, "id or anonymousId is required");
 
+// Browser details the SDK adds to init; the user agent itself comes from the request header.
+const contextSchema = z.object({
+  language: z.string().max(35).optional(),
+  timezone: z.string().max(64).optional(),
+  touch: z.boolean().optional(),
+  mobile: z.boolean().optional(),
+});
+
 export const initSchema = z.object({
   key: z.string().min(1).max(100),
   user: sdkUserSchema,
   url: z.string().max(2000).optional(),
+  context: contextSchema.optional(),
 });
+
+export type RequestInfo = { userAgent: string | null; acceptLanguage: string | null };
 
 export const eventTypes = [
   "guide_shown",
@@ -39,6 +54,7 @@ export const eventTypes = [
   "guide_dismissed",
   "checklist_item_completed",
   "hotspot_opened",
+  "survey_answered",
   "custom",
 ] as const;
 
@@ -53,6 +69,8 @@ export const eventsSchema = z.object({
         name: z.string().max(191).optional(),
         stepIndex: z.number().int().min(0).max(1000).optional(),
         url: z.string().max(1024).optional(),
+        // survey_answered: the answer (checked against the question on the server).
+        value: z.union([z.number(), z.string().max(2000), z.array(z.string().max(64)).max(12)]).optional(),
       }),
     )
     .min(1)
@@ -70,7 +88,23 @@ export class SdkError extends Error {
 
 // ---------- Identity ----------
 
-async function resolveEndUser(workspace: Workspace, user: z.infer<typeof sdkUserSchema>, touch: boolean) {
+type Client = Partial<Pick<EndUser, "browser" | "os" | "device" | "language" | "timezone">>;
+
+function clientFields(context: z.infer<typeof contextSchema> | undefined, req: RequestInfo): Client {
+  const fields: Client = {};
+  if (req.userAgent) Object.assign(fields, parseUserAgent(req.userAgent, { touch: context?.touch, mobile: context?.mobile }));
+  const language = context?.language?.trim() || primaryLanguage(req.acceptLanguage);
+  if (language) fields.language = language;
+  if (context?.timezone) fields.timezone = context.timezone;
+  return fields;
+}
+
+async function resolveEndUser(
+  workspace: Workspace,
+  user: z.infer<typeof sdkUserSchema>,
+  touch: boolean,
+  client: Client = {},
+) {
   const identified = Boolean(user.id);
   const externalId = identified ? user.id! : `anon:${user.anonymousId}`;
 
@@ -93,6 +127,8 @@ async function resolveEndUser(workspace: Workspace, user: z.infer<typeof sdkUser
           externalId,
           anonymous: !identified,
           attributes: user.attributes ?? {},
+          ...companyFrom(user.attributes ?? {}, workspace),
+          ...client,
         },
       });
     } catch (e) {
@@ -107,13 +143,13 @@ async function resolveEndUser(workspace: Workspace, user: z.infer<typeof sdkUser
   }
 
   if (!touch && !user.attributes) return existing;
+  const attributes = user.attributes ? { ...(existing.attributes as Record<string, unknown>), ...user.attributes } : null;
   return prisma.endUser.update({
     where: { id: existing.id },
     data: {
       lastSeenAt: new Date(),
-      ...(user.attributes
-        ? { attributes: { ...(existing.attributes as Record<string, unknown>), ...user.attributes } as Prisma.InputJsonObject }
-        : {}),
+      ...client,
+      ...(attributes ? { attributes: attributes as Prisma.InputJsonObject, ...companyFrom(attributes, workspace) } : {}),
     },
   });
 }
@@ -139,9 +175,18 @@ function autoShowAllowed(frequency: string, p: GuideProgress | undefined) {
   return p.status === "STARTED";
 }
 
-export async function sdkInit(input: z.infer<typeof initSchema>) {
+function utcDay(d = new Date()) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInfo = { userAgent: null, acceptLanguage: null }) {
   const workspace = await workspaceByKey(input.key);
-  const endUser = await resolveEndUser(workspace, input.user, true);
+  const endUser = await resolveEndUser(workspace, input.user, true, clientFields(input.context, req));
+  // Daily/weekly/monthly active users count the days the snippet loaded.
+  await prisma.userActivity.createMany({
+    data: [{ endUserId: endUser.id, workspaceId: workspace.id, day: utcDay() }],
+    skipDuplicates: true,
+  });
 
   const [guides, progress] = await Promise.all([
     prisma.guide.findMany({
@@ -171,6 +216,7 @@ export async function sdkInit(input: z.infer<typeof initSchema>) {
           delaySeconds: targeting.delaySeconds,
         },
         // Checklists and hotspots can't be started by hand, so they always run automatically.
+        // Surveys can, like tours and announcements.
         autoShow:
           (targeting.trigger === "auto" || g.type === "CHECKLIST" || g.type === "HOTSPOT") &&
           autoShowAllowed(targeting.frequency, p),
@@ -261,6 +307,19 @@ export async function sdkEvents(input: z.infer<typeof eventsSchema>) {
         if (guide && guide.type === "HOTSPOT" && e.name) {
           const content = parseContent("HOTSPOT", guide.publishedContent) as HotspotContent;
           await completeItem(workspace, endUser, guide, content.hotspots.map((h) => h.id), e.name, touched);
+        }
+        break;
+      case "survey_answered":
+        if (guide && guide.type === "SURVEY" && e.name) {
+          const content = parseContent("SURVEY", guide.publishedContent) as SurveyContent;
+          const question = content.questions.find((q) => q.id === e.name);
+          const value = question ? normalizeAnswer(question, e.value) : null;
+          if (value === null) break;
+          await prisma.surveyAnswer.upsert({
+            where: { guideId_endUserId_questionId: { guideId: guide.id, endUserId: endUser.id, questionId: e.name } },
+            create: { workspaceId: workspace.id, guideId: guide.id, endUserId: endUser.id, questionId: e.name, value },
+            update: { value },
+          });
         }
         break;
       case "custom":
