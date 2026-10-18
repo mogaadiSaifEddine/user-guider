@@ -9,7 +9,7 @@ The dashboard's **Install** page shows the snippet with your workspace's key and
 ```html
 <script>
   window.LocatifyGuides = window.LocatifyGuides || { q: [] };
-  ["identify", "track", "start", "page", "reset"].forEach(function (m) {
+  ["identify", "track", "start", "page", "reset", "setLocale", "openResourceCenter", "closeResourceCenter"].forEach(function (m) {
     LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
   });
 </script>
@@ -64,7 +64,7 @@ import Script from "next/script";
 
 <Script id="lg-stub" strategy="beforeInteractive">{`
   window.LocatifyGuides = window.LocatifyGuides || { q: [] };
-  ["identify","track","start","page","reset"].forEach(function (m) {
+  ["identify","track","start","page","reset","setLocale","openResourceCenter","closeResourceCenter"].forEach(function (m) {
     LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
   });
 `}</Script>

@@ -16,7 +16,7 @@ export default async function InstallPage({ params }: { params: Promise<{ ws: st
 
   const snippet = `<script>
   window.LocatifyGuides = window.LocatifyGuides || { q: [] };
-  ["identify", "track", "start", "page", "reset"].forEach(function (m) {
+  ["identify", "track", "start", "page", "reset", "setLocale", "openResourceCenter", "closeResourceCenter"].forEach(function (m) {
     LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
   });
 </script>
