@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { GuideStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
-import { Badge, Card, EmptyState, PageHeader, cx, statusColors, typeLabels } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, PageHeader, cx, statusColors, typeLabels } from "@/components/ui";
 import { NewGuideButton } from "./new-guide";
 
 const tabs: { key: GuideStatus | "ALL"; label: string }[] = [
@@ -37,7 +37,14 @@ export default async function GuidesPage({
       <PageHeader
         title="Guides"
         description="Tours, checklists, announcements and hotspots shown on your site."
-        actions={<NewGuideButton ws={ws} />}
+        actions={
+          <>
+            <ButtonLink variant="secondary" href={`/app/${ws}/import`}>
+              Import from UserGuiding
+            </ButtonLink>
+            <NewGuideButton ws={ws} />
+          </>
+        }
       />
       <div className="mb-4 flex gap-1 overflow-x-auto">
         {tabs.map((t) => (

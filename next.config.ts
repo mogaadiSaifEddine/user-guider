@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // UserGuiding imports can upload the account's JSON file (often several MB).
+    serverActions: { bodySizeLimit: "20mb" },
+  },
   async headers() {
     return [
       {

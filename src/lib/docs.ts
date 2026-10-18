@@ -30,6 +30,7 @@ export const docSections: DocSection[] = [
       { slug: "publishing", title: "Publishing and editing", description: "Drafts, live versions, archiving." },
       { slug: "analytics", title: "Analytics", description: "Reach, completion and where people drop off." },
       { slug: "workspace", title: "Workspace, team and theme", description: "Members, roles, colors and keys." },
+      { slug: "import-userguiding", title: "Import from UserGuiding", description: "Bring your UserGuiding guides and checklists over." },
     ],
   },
   {
