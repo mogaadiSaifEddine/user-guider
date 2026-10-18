@@ -1,0 +1,73 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState } from "react";
+import { Button, Field, Input } from "@/components/ui";
+import type { AuthState } from "./actions";
+
+export function AuthForm({
+  mode,
+  action,
+  next,
+}: {
+  mode: "login" | "signup";
+  action: (s: AuthState, f: FormData) => Promise<AuthState>;
+  next?: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, undefined);
+  return (
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
+            L
+          </div>
+          <h1 className="text-xl font-semibold">
+            {mode === "login" ? "Sign in to Locatify Guides" : "Create your account"}
+          </h1>
+        </div>
+        <form action={formAction} className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+          {mode === "signup" && (
+            <Field label="Name">
+              <Input name="name" autoComplete="name" required />
+            </Field>
+          )}
+          <Field label="Email">
+            <Input name="email" type="email" autoComplete="email" required />
+          </Field>
+          <Field label="Password">
+            <Input
+              name="password"
+              type="password"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
+              minLength={mode === "signup" ? 8 : undefined}
+              required
+            />
+          </Field>
+          {next && <input type="hidden" name="next" value={next} />}
+          {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
+          <Button className="w-full" disabled={pending}>
+            {pending ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+          </Button>
+        </form>
+        <p className="mt-4 text-center text-sm text-gray-500">
+          {mode === "login" ? (
+            <>
+              No account?{" "}
+              <Link className="font-semibold text-indigo-600" href="/signup">
+                Sign up
+              </Link>
+            </>
+          ) : (
+            <>
+              Already have an account?{" "}
+              <Link className="font-semibold text-indigo-600" href="/login">
+                Sign in
+              </Link>
+            </>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
