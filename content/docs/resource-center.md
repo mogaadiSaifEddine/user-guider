@@ -18,7 +18,7 @@ Create one under **Guides → New guide → Resource center**. It starts with a 
 | **Show a launcher button** | Turn off to use your own help button or menu item instead; see [Open it from your app](#open-it-from-your-app). |
 | **Label** | Text on the button, e.g. *Help*. Leave it empty for a round icon-only button. |
 | **Icon** | Question mark, book, chat bubble, sparkle or rocket. |
-| **Position** | Bottom right or bottom left. |
+| **Position** | Bottom, top or center, on the right or the left. In the center positions the launcher is a vertical tab on the edge of the screen and the panel opens next to it. |
 
 When the panel contains a checklist, the launcher shows how many checklist items are left.
 

@@ -4,12 +4,14 @@ import { useState, type CSSProperties } from "react";
 import {
   launcherIcons,
   newId,
+  rcPositions,
   newRcModule,
   rcModuleTypes,
   type LauncherIcon,
   type RcArticle,
   type RcModule,
   type RcModuleType,
+  type RcPosition,
   type ResourceCenterContent,
   type Theme,
 } from "@/lib/guide-schema";
@@ -36,6 +38,15 @@ const moduleHints: Record<RcModuleType, string> = {
 };
 
 const iconNames: Record<LauncherIcon, string> = { help: "Question mark", book: "Book", chat: "Chat bubble", sparkle: "Sparkle", rocket: "Rocket" };
+
+const positionNames: Record<RcPosition, string> = {
+  "bottom-right": "Bottom right",
+  "bottom-left": "Bottom left",
+  "center-right": "Center right (side tab)",
+  "center-left": "Center left (side tab)",
+  "top-right": "Top right",
+  "top-left": "Top left",
+};
 
 const startable = (g: OtherGuide) => g.type === "TOUR" || g.type === "ANNOUNCEMENT" || g.type === "SURVEY";
 
@@ -105,10 +116,13 @@ export function ResourceCenterEditor({
               <Field label="Position">
                 <Select
                   value={value.launcher.position}
-                  onChange={(e) => launcher({ position: e.target.value as ResourceCenterContent["launcher"]["position"] })}
+                  onChange={(e) => launcher({ position: e.target.value as RcPosition })}
                 >
-                  <option value="bottom-right">Bottom right</option>
-                  <option value="bottom-left">Bottom left</option>
+                  {rcPositions.map((p) => (
+                    <option key={p} value={p}>
+                      {positionNames[p]}
+                    </option>
+                  ))}
                 </Select>
               </Field>
             </div>
@@ -445,7 +459,7 @@ function RcPreview({
 }) {
   const font = theme.fontFamily === "inherit" ? FONT_STACK : theme.fontFamily;
   const iconBox: CSSProperties = { background: `color-mix(in srgb, ${theme.primaryColor} 12%, transparent)`, color: theme.primaryColor };
-  const right = value.launcher.position === "bottom-right";
+  const [vertical, side] = value.launcher.position.split("-") as ["bottom" | "center" | "top", "left" | "right"];
 
   const row = (key: string, label: string, description: string, icon: string, onClick?: () => void) => (
     <li key={key} className={cx("flex items-start gap-3 rounded-lg px-2 py-2", onClick && "cursor-pointer hover:bg-black/[.04]")} onClick={onClick}>
@@ -466,8 +480,7 @@ function RcPreview({
     </section>
   );
 
-  return (
-    <div className={cx("flex w-full flex-col gap-3", right ? "items-end" : "items-start")} style={{ fontFamily: font, fontSize: 14, lineHeight: 1.5 }}>
+  const panel = (
       <div
         className="flex w-full max-w-[380px] flex-col overflow-hidden"
         style={{ background: theme.backgroundColor, color: theme.textColor, borderRadius: theme.radius, boxShadow: "0 16px 48px rgba(0,0,0,.2)" }}
@@ -531,14 +544,46 @@ function RcPreview({
           {!value.modules.length && <p className="px-5 py-6 text-center text-sm opacity-60">Add sections to fill the panel.</p>}
         </div>
       </div>
-      {value.launcher.show && (
-        <span
-          className={cx("flex items-center gap-2 font-semibold text-white shadow-lg", value.launcher.label ? "rounded-full py-2.5 pr-4 pl-3" : "h-[52px] w-[52px] justify-center rounded-full")}
-          style={{ background: theme.primaryColor }}
-        >
-          <span className="flex" dangerouslySetInnerHTML={{ __html: svgIcon(LAUNCHER_ICONS[value.launcher.icon]) }} />
-          {value.launcher.label}
-        </span>
+  );
+
+  const tab = vertical === "center";
+  const launcherEl = value.launcher.show && (
+    <span
+      className={cx(
+        "flex shrink-0 items-center gap-2 font-semibold text-white shadow-lg",
+        tab
+          ? cx("px-2.5 py-3.5 [writing-mode:vertical-rl]", side === "right" ? "rounded-l-[var(--r)]" : "rotate-180 rounded-r-[var(--r)]")
+          : value.launcher.label
+            ? "rounded-full py-2.5 pr-4 pl-3"
+            : "h-[52px] w-[52px] justify-center rounded-full",
+      )}
+      style={{ background: theme.primaryColor, ["--r" as string]: `${theme.radius}px` }}
+    >
+      <span className={cx("flex", tab && side === "left" && "rotate-180")} dangerouslySetInnerHTML={{ __html: svgIcon(LAUNCHER_ICONS[value.launcher.icon]) }} />
+      {value.launcher.label}
+    </span>
+  );
+
+  return (
+    <div
+      className={cx("flex w-full gap-3", tab ? "items-center" : "flex-col", side === "right" ? "items-end" : "items-start")}
+      style={{ fontFamily: font, fontSize: 14, lineHeight: 1.5 }}
+    >
+      {tab ? (
+        <div className={cx("flex w-full items-center gap-3", side === "right" ? "justify-end" : "flex-row-reverse justify-end")}>
+          {panel}
+          {launcherEl}
+        </div>
+      ) : vertical === "top" ? (
+        <>
+          {launcherEl}
+          {panel}
+        </>
+      ) : (
+        <>
+          {panel}
+          {launcherEl}
+        </>
       )}
     </div>
   );

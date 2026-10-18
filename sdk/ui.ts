@@ -248,11 +248,13 @@ const CSS = `
 .lg-rc-launcher.lg-pos-center-right, .lg-rc-launcher.lg-pos-center-left { top:50%; bottom:auto; translate:0 -50%; writing-mode:vertical-rl;
   padding:14px 10px; gap:8px; }
 .lg-rc-launcher.lg-pos-center-right { right:0; border-radius:var(--lg-radius) 0 0 var(--lg-radius); }
-.lg-rc-launcher.lg-pos-center-left { left:0; border-radius:0 var(--lg-radius) var(--lg-radius) 0; rotate:180deg; translate:0 50%; }
+/* Rotated so the text reads bottom to top; corners are given pre-rotation. */
+.lg-rc-launcher.lg-pos-center-left { left:0; border-radius:var(--lg-radius) 0 0 var(--lg-radius); rotate:180deg; }
 .lg-rc-launcher.lg-pos-center-right.lg-round, .lg-rc-launcher.lg-pos-center-left.lg-round { width:44px; height:52px; padding:0; }
 .lg-rc-launcher.lg-pos-center-left svg { rotate:180deg; }
-.lg-rc-launcher.lg-pos-center-right .lg-badge, .lg-rc-launcher.lg-pos-center-left .lg-badge { padding:6px 1px; }
-.lg-rc.lg-pos-center-right, .lg-rc.lg-pos-center-left { top:50%; bottom:auto; translate:0 -50%; max-height:min(620px, calc(100vh - 40px)); }
+.lg-rc-launcher.lg-pos-center-right .lg-badge, .lg-rc-launcher.lg-pos-center-left .lg-badge { padding:6px 1px; text-combine-upright:all; }
+.lg-rc.lg-pos-center-right, .lg-rc.lg-pos-center-left { top:50%; bottom:auto; translate:0 -50%; width:min(380px, calc(100vw - 80px));
+  max-height:min(620px, calc(100vh - 40px)); }
 .lg-rc.lg-pos-center-right { right:60px; }
 .lg-rc.lg-pos-center-left { left:60px; }
 .lg-rc.lg-nolauncher.lg-pos-center-right { right:20px; }
