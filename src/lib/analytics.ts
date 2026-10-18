@@ -44,15 +44,15 @@ export async function workspaceOverview(workspaceId: string, days = 30) {
     prisma.endUser.count({ where: { workspaceId } }),
     prisma.guide.count({ where: { workspaceId, status: "PUBLISHED" } }),
     prisma.$queryRaw<{ guideId: string; type: string; c: bigint }[]>`
-      SELECT guideId, type, COUNT(DISTINCT endUserId) AS c
-      FROM Event
-      WHERE workspaceId = ${workspaceId} AND createdAt >= ${from} AND guideId IS NOT NULL
+      SELECT "guideId", type, COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "workspaceId" = ${workspaceId} AND "createdAt" >= ${from} AND "guideId" IS NOT NULL
         AND type IN ('guide_shown', 'guide_completed', 'guide_dismissed')
-      GROUP BY guideId, type`,
+      GROUP BY "guideId", type`,
     prisma.$queryRaw<DailyRow[]>`
-      SELECT DATE(createdAt) AS d, type, COUNT(DISTINCT endUserId) AS c
-      FROM Event
-      WHERE workspaceId = ${workspaceId} AND createdAt >= ${from}
+      SELECT "createdAt"::date AS d, type, COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "workspaceId" = ${workspaceId} AND "createdAt" >= ${from}
         AND type IN ('guide_shown', 'guide_completed')
       GROUP BY d, type`,
   ]);
@@ -85,26 +85,26 @@ export async function guideAnalytics(guideId: string, days = 30) {
   const from = since(days);
   const [totals, steps, items, daily] = await Promise.all([
     prisma.$queryRaw<{ type: string; c: bigint }[]>`
-      SELECT type, COUNT(DISTINCT endUserId) AS c
-      FROM Event
-      WHERE guideId = ${guideId} AND createdAt >= ${from}
+      SELECT type, COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "guideId" = ${guideId} AND "createdAt" >= ${from}
       GROUP BY type`,
     prisma.$queryRaw<{ stepIndex: number; c: bigint }[]>`
-      SELECT stepIndex, COUNT(DISTINCT endUserId) AS c
-      FROM Event
-      WHERE guideId = ${guideId} AND createdAt >= ${from} AND type = 'step_viewed'
-      GROUP BY stepIndex`,
+      SELECT "stepIndex", COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "guideId" = ${guideId} AND "createdAt" >= ${from} AND type = 'step_viewed'
+      GROUP BY "stepIndex"`,
     // Checklist items, hotspots and resource center items all carry their id in `name`.
     prisma.$queryRaw<{ name: string; c: bigint }[]>`
-      SELECT name, COUNT(DISTINCT endUserId) AS c
-      FROM Event
-      WHERE guideId = ${guideId} AND createdAt >= ${from}
+      SELECT name, COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "guideId" = ${guideId} AND "createdAt" >= ${from}
         AND type IN ('checklist_item_completed', 'hotspot_opened', 'resource_clicked') AND name IS NOT NULL
       GROUP BY name`,
     prisma.$queryRaw<DailyRow[]>`
-      SELECT DATE(createdAt) AS d, type, COUNT(DISTINCT endUserId) AS c
-      FROM Event
-      WHERE guideId = ${guideId} AND createdAt >= ${from}
+      SELECT "createdAt"::date AS d, type, COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "guideId" = ${guideId} AND "createdAt" >= ${from}
         AND type IN ('guide_shown', 'guide_completed')
       GROUP BY d, type`,
   ]);

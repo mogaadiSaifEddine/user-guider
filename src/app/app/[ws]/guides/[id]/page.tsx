@@ -51,7 +51,7 @@ export default async function GuidePage({ params }: { params: Promise<{ ws: stri
   );
 }
 
-// MySQL reorders JSON object keys, so compare with sorted keys.
+// Postgres jsonb reorders object keys, so compare with sorted keys.
 function sortedJson(v: unknown): string {
   return JSON.stringify(v, (_, x) =>
     x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x,

@@ -74,7 +74,13 @@ export function userWhere(workspaceId: string, f: UserFilters): Prisma.EndUserWh
     workspaceId,
     ...segmentWhere(f.segment),
     ...(f.q
-      ? { OR: [{ externalId: { contains: f.q } }, { companyName: { contains: f.q } }, { companyId: { contains: f.q } }] }
+      ? {
+          OR: [
+            { externalId: { contains: f.q, mode: "insensitive" } },
+            { companyName: { contains: f.q, mode: "insensitive" } },
+            { companyId: { contains: f.q, mode: "insensitive" } },
+          ],
+        }
       : {}),
     ...(f.company !== undefined ? { companyId: fieldValue(f.company) } : {}),
     ...(f.browser !== undefined ? { browser: fieldValue(f.browser) } : {}),
@@ -154,23 +160,22 @@ export async function audienceOverview(workspaceId: string, days = 30) {
     prisma.userActivity.count({ where: { workspaceId, day: to } }),
     // For every day in range: users active that day, in the 7 days and the 30 days ending that day.
     prisma.$queryRaw<{ d: Date | string; dau: bigint; wau: bigint; mau: bigint }[]>`
-      WITH RECURSIVE cal (d) AS (
-        SELECT CAST(${from} AS DATE)
-        UNION ALL SELECT d + INTERVAL 1 DAY FROM cal WHERE d < CAST(${to} AS DATE)
+      WITH cal AS (
+        SELECT g::date AS d FROM generate_series(${from}::date, ${to}::date, INTERVAL '1 day') AS g
       )
       SELECT cal.d AS d,
-        COUNT(DISTINCT CASE WHEN a.day = cal.d THEN a.endUserId END) AS dau,
-        COUNT(DISTINCT CASE WHEN a.day > cal.d - INTERVAL 7 DAY THEN a.endUserId END) AS wau,
-        COUNT(DISTINCT a.endUserId) AS mau
+        COUNT(DISTINCT CASE WHEN a.day = cal.d THEN a."endUserId" END) AS dau,
+        COUNT(DISTINCT CASE WHEN a.day > cal.d - 7 THEN a."endUserId" END) AS wau,
+        COUNT(DISTINCT a."endUserId") AS mau
       FROM cal
-      LEFT JOIN UserActivity a
-        ON a.workspaceId = ${workspaceId} AND a.day <= cal.d AND a.day > cal.d - INTERVAL 30 DAY
+      LEFT JOIN "UserActivity" a
+        ON a."workspaceId" = ${workspaceId} AND a.day <= cal.d AND a.day > cal.d - 30
       GROUP BY cal.d
       ORDER BY cal.d`,
     prisma.$queryRaw<{ d: Date | string; c: bigint }[]>`
-      SELECT DATE(firstSeenAt) AS d, COUNT(*) AS c
-      FROM EndUser
-      WHERE workspaceId = ${workspaceId} AND firstSeenAt >= ${from}
+      SELECT "firstSeenAt"::date AS d, COUNT(*) AS c
+      FROM "EndUser"
+      WHERE "workspaceId" = ${workspaceId} AND "firstSeenAt" >= ${from}
       GROUP BY d`,
   ]);
 
@@ -239,7 +244,7 @@ export async function companyList(workspaceId: string, opts: { q?: string; limit
   const monthAgo = ago(30);
   const like = opts.q ? `%${opts.q}%` : null;
   const order =
-    opts.sort === "active" ? Prisma.sql`monthly DESC, users DESC` : opts.sort === "recent" ? Prisma.sql`lastSeenAt DESC` : Prisma.sql`users DESC`;
+    opts.sort === "active" ? Prisma.sql`monthly DESC, users DESC` : opts.sort === "recent" ? Prisma.sql`"lastSeenAt" DESC` : Prisma.sql`users DESC`;
   const rows = await prisma.$queryRaw<
     {
       companyId: string;
@@ -252,20 +257,20 @@ export async function companyList(workspaceId: string, opts: { q?: string; limit
       completions: bigint;
     }[]
   >`
-    SELECT u.companyId, MAX(u.companyName) AS companyName,
+    SELECT u."companyId", MAX(u."companyName") AS "companyName",
       COUNT(*) AS users,
-      SUM(u.firstSeenAt >= ${weekAgo}) AS newUsers,
-      SUM(u.lastSeenAt >= ${weekAgo}) AS weekly,
-      SUM(u.lastSeenAt >= ${monthAgo}) AS monthly,
-      MAX(u.lastSeenAt) AS lastSeenAt,
-      COALESCE(SUM(p.c), 0) AS completions
-    FROM EndUser u
+      COUNT(*) FILTER (WHERE u."firstSeenAt" >= ${weekAgo}) AS "newUsers",
+      COUNT(*) FILTER (WHERE u."lastSeenAt" >= ${weekAgo}) AS weekly,
+      COUNT(*) FILTER (WHERE u."lastSeenAt" >= ${monthAgo}) AS monthly,
+      MAX(u."lastSeenAt") AS "lastSeenAt",
+      COALESCE(SUM(p.c), 0)::bigint AS completions
+    FROM "EndUser" u
     LEFT JOIN (
-      SELECT endUserId, COUNT(*) AS c FROM GuideProgress WHERE status = 'COMPLETED' GROUP BY endUserId
-    ) p ON p.endUserId = u.id
-    WHERE u.workspaceId = ${workspaceId} AND u.companyId IS NOT NULL
-      ${like ? Prisma.sql`AND (u.companyId LIKE ${like} OR u.companyName LIKE ${like})` : Prisma.empty}
-    GROUP BY u.companyId
+      SELECT "endUserId", COUNT(*) AS c FROM "GuideProgress" WHERE status = 'COMPLETED' GROUP BY "endUserId"
+    ) p ON p."endUserId" = u.id
+    WHERE u."workspaceId" = ${workspaceId} AND u."companyId" IS NOT NULL
+      ${like ? Prisma.sql`AND (u."companyId" ILIKE ${like} OR u."companyName" ILIKE ${like})` : Prisma.empty}
+    GROUP BY u."companyId"
     ORDER BY ${order}
     LIMIT ${opts.limit ?? 200}`;
   const [count, withoutCompany] = await Promise.all([

@@ -6,7 +6,7 @@ Multi-tenant: each workspace is one website or app with its own snippet, guides 
 - **Dashboard** (Next.js App Router): author guides, target them, publish, read analytics.
 - **Embed script** (`sdk/` → `public/sdk.js`): renders guides on the customer's site inside a shadow root and reports events.
 - **Builder mode**: from a tour or hotspot guide, *Open builder* loads the customer's site with `?lg_builder=<token>`; the author clicks elements on the real page and saves the draft.
-- **MySQL** via Prisma.
+- **PostgreSQL** via Prisma (hosted on [Neon](https://neon.tech)).
 
 ## AI drafting
 
@@ -15,9 +15,8 @@ With `GEMINI_API_KEY` set, the builder can draft tours and hotspots: `sdk/snapsh
 ## Run locally
 
 ```bash
-cp .env.example .env        # then set AUTH_SECRET
+cp .env.example .env        # then set DATABASE_URL, DIRECT_URL (Neon) and AUTH_SECRET
 npm install
-npm run db:up               # MySQL 8.4 in Docker on port 3307
 npm run db:migrate
 npm run db:seed             # optional: demo@locatify.local / demo1234
 npm run dev                 # builds sdk.js, starts Next on :3000
@@ -64,7 +63,7 @@ Script tag attributes: `data-key` (required), `data-api` (API origin if not the 
 
 ## Deploy
 
-Any Node host plus MySQL 8. Set `DATABASE_URL`, `AUTH_SECRET` and `NEXT_PUBLIC_APP_URL`, run `npm run build`, `npm run db:deploy`, `npm start`.
+Any Node host plus PostgreSQL (Neon). Set `DATABASE_URL` (pooled), `DIRECT_URL` (direct), `AUTH_SECRET` and `NEXT_PUBLIC_APP_URL`, run `npm run build`, `npm run db:deploy`, `npm start`.
 `sdk.js` is cached for 5 minutes (`next.config.ts`).
 
 ## Not built yet

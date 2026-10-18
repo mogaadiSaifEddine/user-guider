@@ -1,18 +1,19 @@
 # Deploy
 
-Locatify Guides is one Next.js application and one MySQL database. The app serves the dashboard, the docs, the API and the `sdk.js` embed script.
+Locatify Guides is one Next.js application and one PostgreSQL database. The app serves the dashboard, the docs, the API and the `sdk.js` embed script.
 
 ## Requirements
 
 - Node.js 20 or newer
-- MySQL 8.0 or newer (a database and a user that can create tables)
+- PostgreSQL 14 or newer, for example [Neon](https://neon.tech) (a database and a user that can create tables)
 - HTTPS in front of the app. In production the login cookie is only sent over HTTPS, so sign-in fails on plain HTTP.
 
 ## Environment variables
 
 | Variable | Example | Notes |
 | --- | --- | --- |
-| `DATABASE_URL` | `mysql://guides:secret@db.internal:3306/guides` | Prisma connection string. |
+| `DATABASE_URL` | `postgresql://guides:secret@ep-xxx-pooler.eu-central-1.aws.neon.tech/guides?sslmode=require` | Connection string the app uses. On Neon, use the pooled one (host contains `-pooler`). |
+| `DIRECT_URL` | `postgresql://guides:secret@ep-xxx.eu-central-1.aws.neon.tech/guides?sslmode=require` | Direct (unpooled) connection, used by `npm run db:deploy`. Without a pooler, set it to the same value as `DATABASE_URL`. |
 | `AUTH_SECRET` | output of `openssl rand -base64 48` | Signs login sessions and builder links. At least 32 random characters. Changing it signs everyone out. |
 | `NEXT_PUBLIC_APP_URL` | `https://guides.example.com` | Public address of the app, used in the snippet on the Install page. Set it **before building**. |
 | `PORT` | `3000` | Port for `npm start`. |
@@ -41,9 +42,8 @@ Open `/signup` and create an account, then a workspace. Sign-up is open to anyon
 ## Local development
 
 ```bash
-cp .env.example .env
+cp .env.example .env # then set DATABASE_URL and DIRECT_URL to a Neon branch
 npm install
-npm run db:up        # MySQL in Docker on port 3307
 npm run db:migrate
 npm run db:seed      # optional demo data: demo@locatify.local / demo1234
 npm run dev          # http://localhost:3000, demo site at /demo.html

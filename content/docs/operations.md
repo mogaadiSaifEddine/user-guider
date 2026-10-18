@@ -16,13 +16,13 @@ Migrations are additive in normal releases; take a backup before upgrading anywa
 
 ## Backups
 
-All state is in MySQL. Back it up like any other database, for example nightly:
+All state is in PostgreSQL. Neon keeps point-in-time history for you (restore a branch to an earlier moment from the Neon console). For your own copies, or on another host, dump it, for example nightly:
 
 ```bash
-mysqldump --single-transaction --routines guides | gzip > guides-$(date +%F).sql.gz
+pg_dump "$DIRECT_URL" --format=custom --file=guides-$(date +%F).dump
 ```
 
-Restore into an empty database, then run `npm run db:deploy`.
+Restore into an empty database with `pg_restore --no-owner --dbname "$DIRECT_URL" guides-<date>.dump`, then run `npm run db:deploy`.
 
 ## Data retention
 
