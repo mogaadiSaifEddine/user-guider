@@ -1,6 +1,6 @@
 # JavaScript API
 
-All methods live on `window.LocatifyGuides`. They can be called before the script has loaded; calls are queued and run in order once it does. None of them return a value or throw.
+All methods live on `window.LocatifyGuides`. They can be called before the script has loaded; calls are queued and run in order once it does. None of them throw, and only `getLocale()` returns a value.
 
 ## identify(userId, attributes?, options?)
 
@@ -50,6 +50,18 @@ document.querySelector("#help-menu").addEventListener("click", () => {
 ## closeResourceCenter()
 
 Closes the resource center panel if it's open.
+
+## setLocale(locale)
+
+Shows guides in another language, for example right after the user switches language in your app. Pass a language code like `"de"` or `"pt-BR"`; guides on screen are closed and reloaded in that language. An empty string goes back to automatic detection. See [Languages and translation](localization#which-language-a-user-sees) for how the language is picked otherwise.
+
+```js
+LocatifyGuides.setLocale("is");
+```
+
+## getLocale()
+
+Returns the language guides are currently shown in: one of your workspace's languages, or `"en"`. Unlike the other methods it returns a value, so call it only after the script has loaded.
 
 ## page()
 

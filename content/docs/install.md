@@ -24,6 +24,7 @@ Put it in the `<head>` of every page, then [identify signed-in users](identify).
 | --- | --- | --- |
 | `data-key` | yes | The workspace's public key. Identifies which workspace's guides to load. It isn't secret. |
 | `data-wait-for-identify` | no | Show nothing until `identify()` is called. Use it on apps where everyone is signed in, so guides never flash for an anonymous visitor first. Remove it on pages where you want to reach anonymous visitors. |
+| `data-locale` | no | The language to show guides in, e.g. `de`. Without it the language comes from the user's attributes, `<html lang>` or the browser. See [Languages and translation](localization). |
 | `data-api` | no | Address of the Locatify Guides server, if it differs from where `sdk.js` is served (for example when you host `sdk.js` on your own CDN). |
 
 ## Framework notes

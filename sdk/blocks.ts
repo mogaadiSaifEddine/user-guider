@@ -1,4 +1,5 @@
 import type { Block, ButtonAction } from "../src/lib/guide-schema";
+import { t, te } from "./i18n";
 import { CARD_WIDTH, escapeHtml, plainText, richText, safeUrl, videoEmbed } from "../src/lib/format";
 
 export { CARD_WIDTH };
@@ -28,7 +29,7 @@ export function renderBlocks(blocks: Block[]) {
           if (!v) return "";
           return `<div class="lg-b lg-video${first}">${
             v.kind === "iframe"
-              ? `<iframe src="${v.src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="Video"></iframe>`
+              ? `<iframe src="${v.src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="${te("video")}"></iframe>`
               : `<video src="${v.src}" controls playsinline preload="metadata"></video>`
           }</div>`;
         }
@@ -81,5 +82,5 @@ export function openUrl(url: string, newTab: boolean) {
 
 export function label(blocks: Block[]) {
   for (const b of blocks) if ((b.type === "heading" || b.type === "text") && b.text) return plainText(b.text).slice(0, 80);
-  return "Guide";
+  return t("guide");
 }

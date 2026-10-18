@@ -21,6 +21,7 @@
     "jose": "^6.2.12",
     "marked": "^15.0.12",
     "next": "15.5.28",
+    "node-html-parser": "^7.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "server-only": "^0.0.1",

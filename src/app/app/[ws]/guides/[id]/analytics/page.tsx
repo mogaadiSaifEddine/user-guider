@@ -60,6 +60,10 @@ export default async function GuideAnalyticsPage({
     const names = new Map(
       (await prisma.guide.findMany({ where: { workspaceId: ws }, select: { id: true, name: true } })).map((g) => [g.id, g.name]),
     );
+    // Knowledge base clicks are named by article id; list the ones people opened.
+    const kbArticles = rc.modules.some((m) => m.type === "knowledge")
+      ? await prisma.kbArticle.findMany({ where: { workspaceId: ws, id: { in: [...a.items.keys()] } }, select: { id: true, title: true } })
+      : [];
     const rows = rc.modules.flatMap((m) => {
       switch (m.type) {
         case "guides":
@@ -70,6 +74,8 @@ export default async function GuideAnalyticsPage({
           return m.links.map((l) => ({ label: `↗ ${plainText(l.label) || l.url}`, id: l.id }));
         case "contact":
           return [{ label: `✉ ${m.buttonLabel}`, id: m.id }];
+        case "knowledge":
+          return kbArticles.map((k) => ({ label: `≡ ${plainText(k.title) || "Untitled article"}`, id: k.id }));
         case "checklist":
           return [];
       }
@@ -77,7 +83,10 @@ export default async function GuideAnalyticsPage({
     breakdown = {
       title: "Most used",
       note: "Users who clicked each guide, article, link or contact button, out of users who opened the panel.",
-      rows: rows.map((r) => ({ label: r.label, value: a.items.get(r.id) ?? 0 })).sort((x, y) => y.value - x.value),
+      rows: rows
+        .filter((r, i) => rows.findIndex((x) => x.id === r.id) === i)
+        .map((r) => ({ label: r.label, value: a.items.get(r.id) ?? 0 }))
+        .sort((x, y) => y.value - x.value),
     };
   } else if (type === "HOTSPOT") {
     breakdown = {

@@ -35,6 +35,11 @@ model Workspace {
   // Null: look for common names, see src/lib/companies.ts.
   companyIdAttribute   String? @db.VarChar(100)
   companyNameAttribute String? @db.VarChar(100)
+  // BCP 47 tags guides are translated into, besides English (the source and the fallback).
+  // Null: English only. See src/lib/i18n.ts.
+  languages Json?
+  // Overrides of the SDK's interface text (Close, Back, Search…): { [locale]: { [key]: text } }.
+  uiStrings Json?
   createdAt DateTime @default(now())
 
   memberships Membership[]
@@ -44,6 +49,8 @@ model Workspace {
   assets      Asset[]
   activity    UserActivity[]
   surveyAnswers SurveyAnswer[]
+  kbCollections KbCollection[]
+  kbArticles    KbArticle[]
 }
 
 enum Role {
@@ -88,6 +95,9 @@ model Guide {
   content     Json
   // Snapshot served to end users; copied from `content` on publish.
   publishedContent Json?
+  // { [locale]: { [fieldKey]: { text, source } } }; fieldKey and source explained in src/lib/i18n.ts.
+  translations          Json?
+  publishedTranslations Json?
   // { urlRules, userRules, trigger, delaySeconds, frequency }
   targeting   Json
   priority    Int         @default(0)
@@ -115,6 +125,68 @@ model Asset {
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+}
+
+// ---------- Knowledge base ----------
+
+enum KbSource {
+  MANUAL
+  ZENDESK
+  INTERCOM
+}
+
+enum KbStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model KbCollection {
+  id          String   @id @default(cuid())
+  workspaceId String
+  name        String   @db.VarChar(191)
+  description String?  @db.Text
+  position    Int      @default(0)
+  // { [locale]: { name, description } }
+  translations Json?
+  source      KbSource @default(MANUAL)
+  // Id in Zendesk / Intercom, so a re-import updates instead of duplicating.
+  externalId  String?  @db.VarChar(64)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  articles  KbArticle[]
+
+  @@unique([workspaceId, source, externalId])
+  @@index([workspaceId, position])
+}
+
+model KbArticle {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  collectionId String?
+  status       KbStatus  @default(DRAFT)
+  // English title, for lists.
+  title        String    @db.VarChar(255)
+  // English: { title, summary, blocks }, see src/lib/kb.ts.
+  content      Json
+  // { [locale]: { title, summary, blocks, source } }; source = hash of the English content it was made from.
+  translations Json?
+  // Lower-cased words of every language, for search.
+  searchText   String?   @db.MediumText
+  position     Int       @default(0)
+  source       KbSource  @default(MANUAL)
+  externalId   String?   @db.VarChar(64)
+  externalUrl  String?   @db.VarChar(1024)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  workspace  Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  collection KbCollection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, source, externalId])
+  @@index([workspaceId, status])
+  @@index([collectionId])
 }
 
 // ---------- End-user side (people using the customer's site) ----------

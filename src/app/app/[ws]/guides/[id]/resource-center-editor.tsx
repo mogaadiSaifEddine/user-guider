@@ -25,6 +25,7 @@ import { ListItem, move, type OtherGuide } from "./content-editors";
 const moduleNames: Record<RcModuleType, string> = {
   guides: "Guides",
   checklist: "Checklist",
+  knowledge: "Knowledge base",
   articles: "Articles",
   links: "Links",
   contact: "Contact",
@@ -33,6 +34,7 @@ const moduleNames: Record<RcModuleType, string> = {
 const moduleHints: Record<RcModuleType, string> = {
   guides: "Tours, announcements and surveys people can start themselves.",
   checklist: "An onboarding checklist, shown inside the panel instead of its own launcher.",
+  knowledge: "Articles from your knowledge base, in each user's language. Searchable.",
   articles: "Short help articles that open inside the panel.",
   links: "Docs, videos, your status page…",
   contact: "A button to email you, open a page, or open your chat widget.",
@@ -49,6 +51,8 @@ const positionNames: Record<RcPosition, string> = {
   "top-left": "Top left",
 };
 
+export type KbCollectionOption = { id: string; name: string };
+
 const startable = (g: OtherGuide) => g.type === "TOUR" || g.type === "ANNOUNCEMENT" || g.type === "SURVEY";
 
 export function ResourceCenterEditor({
@@ -57,12 +61,14 @@ export function ResourceCenterEditor({
   onChange,
   others,
   theme,
+  kbCollections,
 }: {
   ws: string;
   value: ResourceCenterContent;
   onChange: (v: ResourceCenterContent) => void;
   others: OtherGuide[];
   theme: Theme;
+  kbCollections: KbCollectionOption[];
 }) {
   const [article, setArticle] = useState<RcArticle | null>(null);
   const patch = (p: Partial<ResourceCenterContent>) => onChange({ ...value, ...p });
@@ -141,7 +147,14 @@ export function ResourceCenterEditor({
             onMove={(d) => setModules(move(value.modules, i, d))}
             onDelete={() => setModules(value.modules.filter((_, j) => j !== i))}
           >
-            <ModuleFields ws={ws} module={m} onChange={(nm) => setModule(i, nm)} others={others} onPreviewArticle={setArticle} />
+            <ModuleFields
+              ws={ws}
+              module={m}
+              onChange={(nm) => setModule(i, nm)}
+              others={others}
+              onPreviewArticle={setArticle}
+              kbCollections={kbCollections}
+            />
           </ListItem>
         ))}
         <Card className="p-4">
@@ -176,7 +189,7 @@ export function ResourceCenterEditor({
           {article ? (
             <StepPreview blocks={article.blocks} theme={theme} kind="modal" size="sm" interactive />
           ) : (
-            <RcPreview value={value} theme={theme} others={others} onArticle={setArticle} />
+            <RcPreview value={value} theme={theme} others={others} onArticle={setArticle} kbCollections={kbCollections} />
           )}
         </div>
         <p className="mt-2 text-xs text-gray-500">
@@ -195,12 +208,14 @@ function ModuleFields({
   onChange,
   others,
   onPreviewArticle,
+  kbCollections,
 }: {
   ws: string;
   module: RcModule;
   onChange: (m: RcModule) => void;
   others: OtherGuide[];
   onPreviewArticle: (a: RcArticle) => void;
+  kbCollections: KbCollectionOption[];
 }) {
   const titleField =
     m.type !== "checklist" ? (
@@ -270,6 +285,41 @@ function ModuleFields({
             ))}
           </Select>
         </Field>
+      );
+    }
+    case "knowledge": {
+      const toggle = (id: string, on: boolean) =>
+        onChange({ ...m, collectionIds: on ? [...m.collectionIds, id] : m.collectionIds.filter((x) => x !== id) });
+      return (
+        <>
+          {titleField}
+          <div>
+            <div className="mb-1 text-xs font-semibold text-gray-700">Collections</div>
+            {kbCollections.length ? (
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={!m.collectionIds.length} onChange={() => onChange({ ...m, collectionIds: [] })} />
+                  All collections
+                </label>
+                {kbCollections.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={m.collectionIds.includes(c.id)} onChange={(e) => toggle(c.id, e.target.checked)} />
+                    <span className="truncate">{c.name}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">No collections yet: every published article shows.</p>
+            )}
+          </div>
+          <p className="text-xs text-gray-500">
+            Shows published articles from your{" "}
+            <a href={`/app/${ws}/knowledge`} target="_blank" className="font-medium text-indigo-600 hover:underline">
+              knowledge base
+            </a>{" "}
+            in each user&apos;s language. With several collections, people browse by collection. The search box searches the full text.
+          </p>
+        </>
       );
     }
     case "articles":
@@ -456,11 +506,13 @@ function RcPreview({
   theme,
   others,
   onArticle,
+  kbCollections,
 }: {
   value: ResourceCenterContent;
   theme: Theme;
   others: OtherGuide[];
   onArticle: (a: RcArticle) => void;
+  kbCollections: KbCollectionOption[];
 }) {
   const font = theme.fontFamily === "inherit" ? FONT_STACK : theme.fontFamily;
   const iconBox: CSSProperties = { background: `color-mix(in srgb, ${theme.primaryColor} 12%, transparent)`, color: theme.primaryColor };
@@ -517,6 +569,18 @@ function RcPreview({
                 return m.articles.length
                   ? section(m, m.title, <ul>{m.articles.map((a) => row(a.id, a.title, a.summary, "≡", () => onArticle(a)))}</ul>)
                   : null;
+              case "knowledge": {
+                const cols = m.collectionIds.length ? kbCollections.filter((c) => m.collectionIds.includes(c.id)) : kbCollections;
+                return section(
+                  m,
+                  m.title,
+                  cols.length > 1 ? (
+                    <ul>{cols.map((c) => row(c.id, c.name.replace(/[\\*_~+[\]]/g, "\\$&"), "", "▤"))}</ul>
+                  ) : (
+                    <p className="mx-2 mb-2 text-[13px] opacity-70">Articles from {cols[0]?.name ?? "your knowledge base"} load here.</p>
+                  ),
+                );
+              }
               case "links":
                 return m.links.length ? section(m, m.title, <ul>{m.links.map((l) => row(l.id, l.label, l.description, "↗"))}</ul>) : null;
               case "checklist":

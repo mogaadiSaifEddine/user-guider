@@ -5,6 +5,8 @@ import { prisma } from "./db";
 import { verifyUserHash } from "./keys";
 import { companyFrom } from "./companies";
 import { parseUserAgent, primaryLanguage } from "./user-agent";
+import { applyTranslations, DEFAULT_LOCALE, matchLocale, workspaceLanguages, type Translations } from "./i18n";
+import { resolveUi } from "./ui-strings-builtin";
 import {
   matchesUser,
   normalizeAnswer,
@@ -33,6 +35,8 @@ export const sdkUserSchema = z
 // Browser details the SDK adds to init; the user agent itself comes from the request header.
 const contextSchema = z.object({
   language: z.string().max(35).optional(),
+  // <html lang> of the page: the language the host app is showing.
+  pageLanguage: z.string().max(35).optional(),
   timezone: z.string().max(64).optional(),
   touch: z.boolean().optional(),
   mobile: z.boolean().optional(),
@@ -43,6 +47,8 @@ export const initSchema = z.object({
   user: sdkUserSchema,
   url: z.string().max(2000).optional(),
   context: contextSchema.optional(),
+  // Set by the host: data-locale on the script tag or LocatifyGuides.setLocale().
+  locale: z.string().max(35).optional(),
 });
 
 export type RequestInfo = { userAgent: string | null; acceptLanguage: string | null };
@@ -199,6 +205,7 @@ export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInf
   ]);
   const progressByGuide = new Map(progress.map((p) => [p.guideId, p]));
   const attributes = endUser.attributes as Record<string, unknown>;
+  const locale = pickLocale(workspace, input, attributes, req);
 
   const visible = guides.flatMap((g) => {
     const targeting = parseTargeting(g.targeting);
@@ -211,7 +218,7 @@ export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInf
         name: g.name,
         type: g.type,
         priority: g.priority,
-        content: parseContent(g.type as GuideTypeName, g.publishedContent),
+        content: localized(g, locale),
         targeting: {
           urlRules: targeting.urlRules,
           trigger: targeting.trigger,
@@ -231,8 +238,41 @@ export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInf
   return {
     user: { id: endUser.externalId, anonymous: endUser.anonymous },
     theme: parseTheme(workspace.theme),
+    locale,
+    strings: resolveUi(locale, workspace.uiStrings),
     guides: visible,
   };
+}
+
+// The user's language among the workspace's, most explicit signal first:
+// the host's setLocale()/data-locale, a locale or language attribute from
+// identify(), the page's <html lang>, the browser, the Accept-Language header.
+// Nothing matches: English.
+export function pickLocale(
+  workspace: Pick<Workspace, "languages">,
+  input: { locale?: string; context?: z.infer<typeof contextSchema> },
+  attributes: Record<string, unknown>,
+  req: RequestInfo,
+) {
+  const accept = (req.acceptLanguage ?? "")
+    .split(",")
+    .map((p) => p.split(";")[0].trim())
+    .filter(Boolean);
+  const wanted = [
+    input.locale,
+    typeof attributes.locale === "string" ? attributes.locale : null,
+    typeof attributes.language === "string" ? attributes.language : null,
+    input.context?.pageLanguage,
+    input.context?.language,
+    ...accept,
+  ];
+  return matchLocale(wanted, workspaceLanguages(workspace.languages)) ?? DEFAULT_LOCALE;
+}
+
+function localized(g: Guide, locale: string) {
+  const content = parseContent(g.type as GuideTypeName, g.publishedContent);
+  if (locale === DEFAULT_LOCALE) return content;
+  return applyTranslations(content, (g.publishedTranslations as Translations | null)?.[locale]);
 }
 
 // ---------- events ----------

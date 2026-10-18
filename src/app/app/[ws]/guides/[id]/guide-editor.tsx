@@ -30,6 +30,8 @@ import { ChecklistEditor, HotspotEditor, type OtherGuide } from "./content-edito
 import { AnnouncementEditor, TourEditor } from "./block-content-editors";
 import { SurveyEditor } from "./survey-editor";
 import { ResourceCenterEditor } from "./resource-center-editor";
+import { TranslationsEditor } from "./translations-editor";
+import type { Translations } from "@/lib/i18n";
 
 type EditorGuide = {
   id: string;
@@ -39,6 +41,7 @@ type EditorGuide = {
   priority: number;
   content: unknown;
   targeting: Targeting;
+  translations: Translations;
   unpublishedChanges: boolean;
   updatedAt: string;
 };
@@ -49,20 +52,25 @@ export function GuideEditor({
   others,
   aiEnabled,
   theme,
+  languages,
+  kbCollections,
 }: {
   ws: string;
   guide: EditorGuide;
   others: OtherGuide[];
   aiEnabled: boolean;
   theme: Theme;
+  languages: string[];
+  kbCollections: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [name, setName] = useState(guide.name);
   const [priority, setPriority] = useState(guide.priority);
   const [content, setContent] = useState(guide.content);
   const [targeting, setTargeting] = useState(guide.targeting);
+  const [translations, setTranslations] = useState(guide.translations);
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState<"content" | "targeting" | "builder">("content");
+  const [tab, setTab] = useState<"content" | "translations" | "targeting" | "builder">("content");
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -73,6 +81,7 @@ export function GuideEditor({
     setPriority(guide.priority);
     setContent(guide.content);
     setTargeting(guide.targeting);
+    setTranslations(guide.translations);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guide.updatedAt]);
 
@@ -104,7 +113,7 @@ export function GuideEditor({
     startTransition(async () => {
       try {
         if (dirty) {
-          const r = await saveGuide(ws, guide.id, { name, priority, content, targeting });
+          const r = await saveGuide(ws, guide.id, { name, priority, content, targeting, translations });
           if (!report(r)) return;
           setDirty(false);
           if (!then) setNotice({ kind: "ok", text: guide.status === "PUBLISHED" ? "Saved. Publish to update the live version." : "Saved." });
@@ -182,7 +191,7 @@ export function GuideEditor({
 
       <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f7f7f9]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
         <div className="flex gap-1">
-          {(usesBuilder ? (["content", "targeting", "builder"] as const) : (["content", "targeting"] as const)).map((t) => (
+          {(usesBuilder ? (["content", "translations", "targeting", "builder"] as const) : (["content", "translations", "targeting"] as const)).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -244,9 +253,25 @@ export function GuideEditor({
             )}
             {guide.type === "SURVEY" && <SurveyEditor value={content as SurveyContent} onChange={edit(setContent)} theme={theme} />}
             {guide.type === "RESOURCE_CENTER" && (
-              <ResourceCenterEditor ws={ws} value={content as ResourceCenterContent} onChange={edit(setContent)} others={others} theme={theme} />
+              <ResourceCenterEditor
+                ws={ws}
+                value={content as ResourceCenterContent}
+                onChange={edit(setContent)}
+                others={others}
+                theme={theme}
+                kbCollections={kbCollections}
+              />
             )}
           </>
+        ) : tab === "translations" ? (
+          <TranslationsEditor
+            ws={ws}
+            content={content}
+            languages={languages}
+            value={translations}
+            onChange={edit(setTranslations)}
+            aiEnabled={aiEnabled}
+          />
         ) : tab === "builder" ? (
           <div className="max-w-xl">
             <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />
@@ -288,7 +313,7 @@ function CopyCode({ code }: { code: string }) {
   );
 }
 
-const tabLabels = { content: "Content", targeting: "Targeting", builder: "Visual builder" } as const;
+const tabLabels = { content: "Content", translations: "Translations", targeting: "Targeting", builder: "Visual builder" } as const;
 
 // ---------- Builder ----------
 

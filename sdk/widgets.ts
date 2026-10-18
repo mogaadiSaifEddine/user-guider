@@ -10,6 +10,7 @@ import type {
 } from "../src/lib/guide-schema";
 import { bannerButtons, bannerText, buttonAt, CARD_WIDTH, label, openUrl, renderBlocks } from "./blocks";
 import { plainText } from "../src/lib/format";
+import { t, te } from "./i18n";
 import { el, escapeHtml, everyFrame, findTarget, inViewport, placeBox, richText, safeUrl, shadow, waitForTarget } from "./ui";
 
 export type EventType =
@@ -107,7 +108,7 @@ export function runTour(
     const footer =
       f.show && (showNext || (f.showBack && index > 0) || (f.showProgress && steps.length > 1))
         ? `<div class="lg-footer">
-           <span class="lg-count">${f.showProgress && steps.length > 1 ? `${index + 1} of ${steps.length}` : ""}</span>
+           <span class="lg-count">${f.showProgress && steps.length > 1 ? te("stepCount", { n: index + 1, total: steps.length }) : ""}</span>
            ${f.showBack && index > 0 ? `<button class="lg-btn lg-ghost" data-act="back">${escapeHtml(f.backLabel)}</button>` : ""}
            ${showNext ? `<button class="lg-btn" data-act="next">${escapeHtml(last ? f.doneLabel : f.nextLabel)}</button>` : ""}
          </div>`
@@ -116,7 +117,7 @@ export function runTour(
     const card = el(
       "div",
       { class: "lg-card", role: "dialog", "aria-label": label(step.blocks), style: `width:min(${width}px, calc(100vw - 16px))` },
-      `<button class="lg-close" aria-label="Close">×</button>${renderBlocks(step.blocks)}${footer}`,
+      `<button class="lg-close" aria-label="${te("close")}">×</button>${renderBlocks(step.blocks)}${footer}`,
     );
     card.querySelector(".lg-close")!.addEventListener("click", () => end("dismissed"));
     card.querySelector('[data-act="back"]')?.addEventListener("click", () => go(index - 1));
@@ -203,7 +204,7 @@ export function runAnnouncement(
       el(
         "div",
         { class: "lg-banner", role: "status" },
-        `<span>${bannerText(content.blocks)}</span>${bannerButtons(content.blocks)}<button class="lg-close" aria-label="Close">×</button>`,
+        `<span>${bannerText(content.blocks)}</span>${bannerButtons(content.blocks)}<button class="lg-close" aria-label="${te("close")}">×</button>`,
       ),
     );
   } else {
@@ -212,7 +213,7 @@ export function runAnnouncement(
       { class: "lg-modal-wrap" },
       `<div class="lg-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(label(content.blocks))}"
             style="width:min(${CARD_WIDTH.modal[content.size]}px, 100%)">
-         <button class="lg-close" aria-label="Close">×</button>${renderBlocks(content.blocks)}
+         <button class="lg-close" aria-label="${te("close")}">×</button>${renderBlocks(content.blocks)}
        </div>`,
     );
     wrap.addEventListener("click", (e) => {
@@ -263,7 +264,7 @@ export function runHotspots(
         continue;
       }
       if (!b) {
-        b = el("button", { class: "lg-beacon", "aria-label": h.title || "Hint" });
+        b = el("button", { class: "lg-beacon", "aria-label": plainText(h.title) || t("hint") });
         b.addEventListener("click", () => openTip(h.id));
         layer.appendChild(b);
         beacons.set(h.id, b);
@@ -287,7 +288,7 @@ export function runHotspots(
     const card = el(
       "div",
       { class: "lg-card", role: "dialog" },
-      `<button class="lg-close" aria-label="Close">×</button>
+      `<button class="lg-close" aria-label="${te("close")}">×</button>
        ${h.title ? `<h3>${richText(h.title)}</h3>` : ""}
        <div class="lg-body">${richText(h.body)}</div>
        <div class="lg-footer"><span class="lg-count"></span><button class="lg-btn">Got it</button></div>`,
@@ -354,7 +355,7 @@ export function runChecklist(
       "div",
       { class: "lg-panel", style: `${side}:20px`, role: "dialog", "aria-label": plainText(content.title) },
       `<header>
-         <button class="lg-close" aria-label="Minimize">–</button>
+         <button class="lg-close" aria-label="${te("minimize")}">–</button>
          <h3>${richText(content.title)}</h3>
          ${content.description ? `<p>${richText(content.description)}</p>` : ""}
          <div class="lg-progress"><span style="width:${total ? (done / total) * 100 : 0}%"></span></div>
@@ -369,7 +370,7 @@ export function runChecklist(
            )
            .join("")}
        </ul>
-       <footer><button class="lg-link" data-act="dismiss">${done === total && total ? "Close checklist" : "Dismiss checklist"}</button></footer>`,
+       <footer><button class="lg-link" data-act="dismiss">${done === total && total ? t("closeChecklist") : t("dismissChecklist")}</button></footer>`,
     );
     panel.querySelector(".lg-close")!.addEventListener("click", () => {
       open = false;
@@ -438,7 +439,7 @@ export function runSurvey(content: SurveyContent, opts: { report: Report; onEnd:
   const card = el("div", {
     class: "lg-card lg-survey" + (center ? "" : " lg-corner"),
     role: "dialog",
-    "aria-label": "Survey",
+    "aria-label": t("survey"),
     style: center ? "width:min(460px, 100%)" : `${content.position === "bottom-left" ? "left" : "right"}:20px`,
   });
   if (center) {
@@ -485,7 +486,7 @@ export function runSurvey(content: SurveyContent, opts: { report: Report; onEnd:
     submitted = true;
     opts.report("guide_completed");
     if (!content.thankYou.show) return close();
-    card.innerHTML = `<button class="lg-close" aria-label="Close">×</button>
+    card.innerHTML = `<button class="lg-close" aria-label="${te("close")}">×</button>
       <div class="lg-thanks">
         <div class="lg-thanks-mark" aria-hidden="true">✓</div>
         ${content.thankYou.heading ? `<h3>${richText(content.thankYou.heading)}</h3>` : ""}
@@ -523,15 +524,15 @@ export function runSurvey(content: SurveyContent, opts: { report: Report; onEnd:
       needsButton = true;
     }
 
-    const count = content.showProgress && questions.length > 1 ? `${index + 1} of ${questions.length}` : "";
+    const count = content.showProgress && questions.length > 1 ? te("stepCount", { n: index + 1, total: questions.length }) : "";
     const footer =
       needsButton || !q.required || count
         ? `<div class="lg-footer"><span class="lg-count">${count}</span>
-             ${!q.required ? `<button class="lg-btn lg-ghost" data-act="skip">Skip</button>` : ""}
+             ${!q.required ? `<button class="lg-btn lg-ghost" data-act="skip">${te("skip")}</button>` : ""}
              ${needsButton ? `<button class="lg-btn" data-act="next"${q.required ? " disabled" : ""}>${escapeHtml(last ? content.submitLabel : content.nextLabel)}</button>` : ""}
            </div>`
         : "";
-    card.innerHTML = `<button class="lg-close" aria-label="Close">×</button>
+    card.innerHTML = `<button class="lg-close" aria-label="${te("close")}">×</button>
       ${q.title ? `<h3 class="lg-q">${richText(q.title)}</h3>` : ""}
       ${q.description ? `<div class="lg-body lg-q-desc">${richText(q.description)}</div>` : ""}
       ${body}${footer}`;

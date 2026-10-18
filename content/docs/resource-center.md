@@ -9,7 +9,7 @@ Create one under **Guides → New guide → Resource center**. It starts with a 
 | Setting | What it does |
 | --- | --- |
 | **Title** and **Subtitle** | The colored header at the top of the panel. |
-| **Search box** | Searches guide names, article titles, summaries and text, and link labels. When nothing matches, the Contact section is shown instead. |
+| **Search box** | Searches guide names, article titles, summaries and text, link labels, and the full text of knowledge base articles. When nothing matches, the Contact section is shown instead. |
 
 ## Launcher
 
@@ -30,6 +30,7 @@ Add sections at the bottom of the Content tab and order them with the arrows. A 
 | --- | --- | --- |
 | **Guides** | A list of tours, announcements and surveys. Clicking one closes the panel and starts it from the beginning. | Each entry can have its own label (default: the guide's name) and a one-line description. A guide someone has completed gets a tick. Tours set to *Only manually* work well here. |
 | **Checklist** | One of your [checklists](checklists), with its progress bar and items. | The checklist's own corner launcher is hidden on pages where the resource center shows, so users don't see it twice. Items behave exactly as in the checklist. |
+| **Knowledge base** | Articles from your [knowledge base](knowledge-base), in the user's language. | Pick collections or show them all. With several collections people browse by collection. The search box searches every article's full text. |
 | **Articles** | Help articles written right here. Clicking one opens it inside the panel. | Articles use the same blocks as announcements: headings, text, images, videos, buttons. A button that goes to a page or starts a guide works as usual; *Close* closes the panel; any other button goes back to the list. |
 | **Links** | Links to your docs, videos, status page… | Each link opens in a new tab unless you untick it. |
 | **Contact** | A short text and a button. | The button can open an email to an address, open a page, or send an event your app listens to (see below). |

@@ -12,6 +12,7 @@ import { matchesUrl, type UrlRule } from "../src/lib/targeting";
 import { builderToken, startBuilder } from "./builder";
 import { runResourceCenter, type RcHandle } from "./resource-center";
 import { applyTheme } from "./ui";
+import { currentLocale, setUi } from "./i18n";
 import {
   runAnnouncement,
   runChecklist,
@@ -63,6 +64,8 @@ const ANON_KEY = "lg_anon_id";
   const key = script?.dataset.key ?? stub.key;
   const apiBase = (script?.dataset.api ?? stub.apiBase ?? (script?.src ? new URL(script.src).origin : "")).replace(/\/$/, "");
   const waitForIdentify = script?.hasAttribute("data-wait-for-identify") ?? false;
+  // The host's language choice; otherwise the server picks from identify() attributes, <html lang> and the browser.
+  let explicitLocale = script?.dataset.locale ?? "";
 
   // ---------- state ----------
   let user: { id?: string; hash?: string; attributes?: Attributes } = {};
@@ -103,6 +106,16 @@ const ANON_KEY = "lg_anon_id";
     page() {
       evaluate();
     },
+    // Show guides in another language, e.g. after the user switches language in your app.
+    setLocale(locale: string) {
+      const next = String(locale ?? "").slice(0, 35);
+      if (next === explicitLocale) return;
+      explicitLocale = next;
+      if (loaded || identified) scheduleInit();
+    },
+    getLocale() {
+      return currentLocale();
+    },
     openResourceCenter() {
       if (resourceCenter) resourceCenter.handle.open();
       else if (!loaded) openRcWhenReady = true;
@@ -134,6 +147,7 @@ const ANON_KEY = "lg_anon_id";
       track() {},
       start() {},
       page() {},
+      setLocale() {},
       reset() {},
       openResourceCenter() {},
       closeResourceCenter() {},
@@ -146,8 +160,8 @@ const ANON_KEY = "lg_anon_id";
   let identified = false;
   for (const [method, args] of stub.q ?? []) {
     const fn = (api as Record<string, unknown>)[method];
-    if (typeof fn === "function") fn(...Array.from(args));
     if (method === "identify") identified = true;
+    if (typeof fn === "function") fn(...Array.from(args));
   }
   if (!identified && !waitForIdentify) scheduleInit();
   watchLocation(evaluate);
@@ -172,7 +186,13 @@ const ANON_KEY = "lg_anon_id";
       const res = await fetch(apiBase + "/api/sdk/init", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key, user: userPayload(true), url: location.href, context: clientContext() }),
+        body: JSON.stringify({
+          key,
+          user: userPayload(true),
+          url: location.href,
+          context: clientContext(),
+          ...(explicitLocale ? { locale: explicitLocale } : {}),
+        }),
       });
       const data = await res.json();
       if (seq !== initSeq) return;
@@ -182,6 +202,7 @@ const ANON_KEY = "lg_anon_id";
       }
       teardown();
       applyTheme(data.theme as Theme);
+      setUi(data.strings, data.locale);
       guides = data.guides;
       loaded = true;
       evaluate();
@@ -345,6 +366,7 @@ const ANON_KEY = "lg_anon_id";
         reporter(checklistId)("checklist_item_completed", { name: itemId });
       },
       startGuide,
+      kb: { apiBase, key: key! },
     });
   }
 
@@ -397,6 +419,7 @@ const ANON_KEY = "lg_anon_id";
     }
     return {
       language: nav.language?.slice(0, 35),
+      pageLanguage: document.documentElement.lang?.slice(0, 35) || undefined,
       timezone: timezone?.slice(0, 64),
       touch: nav.maxTouchPoints > 1,
       mobile: nav.userAgentData?.mobile,

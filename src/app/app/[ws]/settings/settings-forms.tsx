@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import type { Theme } from "@/lib/guide-schema";
 import { Badge, Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
+import { LanguagesForm, type LanguageInfo } from "./languages-form";
+import type { UiStrings } from "@/lib/ui-strings";
 import { addMember, deleteWorkspace, removeMember, rotateKey, updateWorkspace, type ActionResult } from "../actions";
 
 type Props = {
@@ -21,6 +23,7 @@ type Props = {
   };
   members: { id: string; name: string; email: string; role: "OWNER" | "EDITOR" }[];
   aiEnabled: boolean;
+  i18n: { languages: string[]; uiStrings: Record<string, Partial<UiStrings>>; builtins: Record<string, LanguageInfo> };
 };
 
 function Notice({ result }: { result: ActionResult | null }) {
@@ -32,9 +35,9 @@ function Notice({ result }: { result: ActionResult | null }) {
   );
 }
 
-function Section({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+function Section({ title, description, children, id }: { title: string; description?: string; children: React.ReactNode; id?: string }) {
   return (
-    <div className="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
+    <div id={id} className="grid scroll-mt-6 gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
       <div>
         <h2 className="text-sm font-semibold">{title}</h2>
         {description && <p className="mt-1 text-xs text-gray-500">{description}</p>}
@@ -44,7 +47,7 @@ function Section({ title, description, children }: { title: string; description?
   );
 }
 
-export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, aiEnabled }: Props) {
+export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, aiEnabled, i18n }: Props) {
   const [name, setName] = useState(workspace.name);
   const [verify, setVerify] = useState(workspace.requireIdentityVerification);
   const [aiContext, setAiContext] = useState(workspace.aiContext);
@@ -179,6 +182,10 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
           </Button>
           <Notice result={general} />
         </div>
+      </Section>
+
+      <Section id="languages" title="Languages" description="The languages guides and help articles are shown in.">
+        <LanguagesForm ws={ws} {...i18n} aiEnabled={aiEnabled} Notice={Notice} />
       </Section>
 
       <Section title="Keys" description="The public key goes in the snippet. The secret key signs user hashes on your server.">

@@ -33,12 +33,14 @@ export function BlocksEditor({
   onChange,
   others,
   context,
+  maxBlocks = 20,
 }: {
   ws: string;
   blocks: Block[];
   onChange: (b: Block[]) => void;
   others: OtherGuide[];
   context: Ctx;
+  maxBlocks?: number;
 }) {
   const [openId, setOpenId] = useState<string | null>(blocks[0]?.id ?? null);
   const set = (i: number, b: Block) => onChange(blocks.map((x, j) => (j === i ? b : x)));
@@ -84,7 +86,7 @@ export function BlocksEditor({
           <button
             key={t}
             type="button"
-            disabled={blocks.length >= 20}
+            disabled={blocks.length >= maxBlocks}
             onClick={() => {
               const b = newBlock(t);
               onChange([...blocks, b]);

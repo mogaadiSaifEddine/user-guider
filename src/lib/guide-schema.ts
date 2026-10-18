@@ -251,6 +251,13 @@ export const rcModuleSchema = z.discriminatedUnion("type", [
   // Help articles written here, opened inside the panel.
   z.object({ type: z.literal("articles"), id: blockId, title: moduleTitle("Help articles"), articles: z.array(rcArticleSchema).max(50).default([]) }),
   z.object({ type: z.literal("links"), id: blockId, title: moduleTitle("Resources"), links: z.array(rcLinkSchema).max(30).default([]) }),
+  // Articles from the workspace's knowledge base (src/lib/kb.ts), in the user's language. No collections picked: all of them.
+  z.object({
+    type: z.literal("knowledge"),
+    id: blockId,
+    title: moduleTitle("Knowledge base"),
+    collectionIds: z.array(z.string().max(64)).max(50).default([]),
+  }),
   z.object({
     type: z.literal("contact"),
     id: blockId,
@@ -264,7 +271,7 @@ export const rcModuleSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const rcModuleTypes = ["guides", "checklist", "articles", "links", "contact"] as const;
+export const rcModuleTypes = ["guides", "checklist", "knowledge", "articles", "links", "contact"] as const;
 
 export const resourceCenterContentSchema = z.object({
   title: z.string().max(120).default("Help center"),
@@ -340,6 +347,7 @@ export function newRcModule(type: RcModuleType, guideId = ""): RcModule {
     case "links":
       return rcModuleSchema.parse({ type, id, links: [{ id: newId(), label: "Documentation", url: "" }] });
     case "contact":
+    case "knowledge":
       return rcModuleSchema.parse({ type, id });
   }
 }

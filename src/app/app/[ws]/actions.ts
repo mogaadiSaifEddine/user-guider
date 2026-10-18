@@ -19,6 +19,18 @@ import {
   type SurveyContent,
 } from "@/lib/guide-schema";
 import { companyFrom } from "@/lib/companies";
+import { AiError, aiEnabled } from "@/lib/ai";
+import { translateTexts } from "@/lib/ai-translate";
+import {
+  languageName,
+  normalizeLocale,
+  pruneTranslations,
+  textFields,
+  translationStatus,
+  workspaceLanguages,
+  type Translations,
+} from "@/lib/i18n";
+import { UI_STRING_KEYS, UI_STRINGS_EN } from "@/lib/ui-strings";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -42,11 +54,18 @@ export async function createGuide(ws: string, form: FormData) {
   redirect(`/app/${ws}/guides/${guide.id}`);
 }
 
+const translationsSchema = z.record(
+  z.string().max(35),
+  z.record(z.string().max(500), z.object({ text: z.string().max(5000), source: z.string().max(5000) })),
+);
+
 const saveSchema = z.object({
   name: z.string().trim().min(1).max(191),
   priority: z.number().int().min(-100).max(100),
   content: z.unknown(),
   targeting: targetingSchema,
+  // Left out: translations stay as they are.
+  translations: translationsSchema.optional(),
 });
 
 export async function saveGuide(ws: string, id: string, input: unknown): Promise<ActionResult> {
@@ -63,6 +82,8 @@ export async function saveGuide(ws: string, id: string, input: unknown): Promise
       priority: parsed.data.priority,
       content: content.data as Prisma.InputJsonObject,
       targeting: parsed.data.targeting as Prisma.InputJsonObject,
+      // Languages switched off in Settings keep their translations, in case they come back.
+      translations: pruneTranslations(content.data, parsed.data.translations ?? (guide.translations as Translations | null)) as Prisma.InputJsonObject,
     },
   });
   revalidatePath(`/app/${ws}/guides`);
@@ -70,18 +91,37 @@ export async function saveGuide(ws: string, id: string, input: unknown): Promise
 }
 
 export async function publishGuide(ws: string, id: string): Promise<ActionResult> {
-  const { guide } = await requireGuide(ws, id);
+  const { guide, workspace } = await requireGuide(ws, id);
   const content = contentSchemas[guide.type as GuideTypeName].safeParse(guide.content);
   if (!content.success) return { ok: false, error: describe(content.error) };
   const problem = publishProblem(guide.type as GuideTypeName, content.data);
   if (problem) return { ok: false, error: problem };
 
+  const languages = workspaceLanguages(workspace.languages);
+  const translations = pruneTranslations(content.data, guide.translations as Translations | null, languages);
   await prisma.guide.update({
     where: { id },
-    data: { status: "PUBLISHED", publishedContent: content.data as Prisma.InputJsonObject, publishedAt: new Date() },
+    data: {
+      status: "PUBLISHED",
+      publishedContent: content.data as Prisma.InputJsonObject,
+      publishedTranslations: translations as Prisma.InputJsonObject,
+      publishedAt: new Date(),
+    },
   });
   revalidatePath(`/app/${ws}/guides`);
-  return { ok: true, message: "Published. Live on your site within a page load." };
+  // Say which languages will partly show English.
+  const fields = textFields(content.data);
+  const gaps = languages.slice(1).flatMap((l) => {
+    const st = translationStatus(fields, translations[l]);
+    if (st.missing) return [`${languageName(l)} (${st.missing} missing)`];
+    return st.outdated ? [`${languageName(l)} (${st.outdated} outdated)`] : [];
+  });
+  return {
+    ok: true,
+    message:
+      "Published. Live on your site within a page load." +
+      (gaps.length ? ` Not fully translated (untranslated texts show in English): ${gaps.join(", ")}.` : ""),
+  };
 }
 
 function publishProblem(type: GuideTypeName, content: unknown): string | null {
@@ -133,6 +173,7 @@ export async function duplicateGuide(ws: string, id: string) {
       type: guide.type,
       content: guide.content as Prisma.InputJsonObject,
       targeting: guide.targeting as Prisma.InputJsonObject,
+      translations: (guide.translations ?? {}) as Prisma.InputJsonObject,
       priority: guide.priority,
     },
   });
@@ -164,6 +205,88 @@ export async function builderLink(
   const goal = aiGoal === null ? null : aiGoal.trim().slice(0, 1000);
   url.searchParams.set("lg_builder", await signBuilderToken({ userId: user.id, workspaceId: ws, guideId: id, aiGoal: goal }));
   return { ok: true, url: url.toString() };
+}
+
+// ---------- Translation ----------
+
+const translateItemsSchema = z
+  .array(z.object({ key: z.string().max(500), text: z.string().max(5000), rich: z.boolean() }))
+  .max(1000);
+
+// Translates texts from English with AI. Nothing is saved: the editor puts the
+// result into its draft for review.
+export async function aiTranslate(ws: string, locale: string, items: unknown) {
+  return translateFor(ws, locale, items, true);
+}
+
+async function translateFor(
+  ws: string,
+  locale: string,
+  items: unknown,
+  mustBeEnabled: boolean,
+): Promise<ActionResult & { translations?: Record<string, string> }> {
+  const { workspace } = await requireWorkspace(ws);
+  if (!aiEnabled()) return { ok: false, error: "AI isn't set up on this server (GEMINI_API_KEY is missing)." };
+  const target = normalizeLocale(locale);
+  if (!target || target === "en") return { ok: false, error: "Pick a language other than English." };
+  if (mustBeEnabled && !workspaceLanguages(workspace.languages).includes(target))
+    return { ok: false, error: "Add that language in Settings first." };
+  const parsed = translateItemsSchema.safeParse(items);
+  if (!parsed.success) return { ok: false, error: describe(parsed.error) };
+  try {
+    const translations = await translateTexts(parsed.data, target, workspace.aiContext ?? "");
+    const skipped = parsed.data.filter((i) => i.text.trim() && !translations[i.key]).length;
+    return {
+      ok: true,
+      translations,
+      message: `Translated ${Object.keys(translations).length} texts${skipped ? `; ${skipped} need a manual translation` : ""}. Review, then save.`,
+    };
+  } catch (e) {
+    if (e instanceof AiError) return { ok: false, error: e.message };
+    throw e;
+  }
+}
+
+const languagesSchema = z.object({
+  languages: z.array(z.string().max(35)).max(40),
+  // { [locale]: { [key]: text } }; empty texts are dropped.
+  uiStrings: z.record(z.string().max(35), z.record(z.string().max(40), z.string().max(200))).default({}),
+});
+
+export async function updateLanguages(ws: string, input: unknown): Promise<ActionResult> {
+  await requireWorkspace(ws);
+  const parsed = languagesSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: describe(parsed.error) };
+  const bad = parsed.data.languages.find((l) => !normalizeLocale(l));
+  if (bad) return { ok: false, error: `"${bad}" isn't a language code like de, pt-BR or zh-CN.` };
+  const languages = workspaceLanguages(parsed.data.languages).slice(1);
+  const uiStrings: Record<string, Record<string, string>> = {};
+  for (const l of languages) {
+    const mine: Record<string, string> = {};
+    for (const k of UI_STRING_KEYS) {
+      const v = parsed.data.uiStrings[l]?.[k]?.trim();
+      if (v) mine[k] = v;
+    }
+    if (Object.keys(mine).length) uiStrings[l] = mine;
+  }
+  await prisma.workspace.update({
+    where: { id: ws },
+    data: { languages: languages as Prisma.InputJsonArray, uiStrings: uiStrings as Prisma.InputJsonObject },
+  });
+  revalidatePath(`/app/${ws}`, "layout");
+  return { ok: true, message: "Saved." };
+}
+
+// Interface text (Close, Back, Search…) for a language without built-in text.
+export async function aiTranslateUi(ws: string, locale: string): Promise<ActionResult & { strings?: Record<string, string> }> {
+  // Works before the new language is saved.
+  const r = await translateFor(
+    ws,
+    locale,
+    UI_STRING_KEYS.map((k) => ({ key: k, text: UI_STRINGS_EN[k], rich: false })),
+    false,
+  );
+  return r.ok ? { ok: true, strings: r.translations, message: "Translated. Review, then save." } : r;
 }
 
 // ---------- Workspace settings ----------
