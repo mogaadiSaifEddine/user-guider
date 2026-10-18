@@ -145,6 +145,41 @@ export function GuideEditor({
         {needsPublish && <Badge color="yellow">unpublished changes</Badge>}
       </div>
 
+      <Card className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm">
+          <span className="font-semibold">{guide.type === "RESOURCE_CENTER" ? "Open from your app" : "Manual start"}</span>
+          <span className="text-gray-500">
+            {guide.type === "RESOURCE_CENTER" ? "from your own help button or menu:" : "from your own code, e.g. a help button:"}
+          </span>
+          <CopyCode code={guide.type === "RESOURCE_CENTER" ? "LocatifyGuides.openResourceCenter()" : `LocatifyGuides.start("${guide.id}")`} />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" disabled={pending} onClick={() => startTransition(() => duplicateGuide(ws, guide.id))}>
+            Duplicate
+          </Button>
+          {guide.status !== "ARCHIVED" ? (
+            <Button variant="secondary" disabled={pending} onClick={() => save(() => setGuideStatus(ws, guide.id, "ARCHIVED"))}>
+              Archive
+            </Button>
+          ) : (
+            <Button variant="secondary" disabled={pending} onClick={() => save(() => setGuideStatus(ws, guide.id, "DRAFT"))}>
+              Restore
+            </Button>
+          )}
+          <Button
+            variant="danger"
+            disabled={pending}
+            onClick={() => {
+              if (confirm(`Delete "${guide.name}" and its analytics? This can't be undone.`)) {
+                startTransition(() => deleteGuide(ws, guide.id));
+              }
+            }}
+          >
+            Delete
+          </Button>
+        </div>
+      </Card>
+
       <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f7f7f9]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
         <div className="flex gap-1">
           {(usesBuilder ? (["content", "targeting", "builder"] as const) : (["content", "targeting"] as const)).map((t) => (
@@ -196,83 +231,60 @@ export function GuideEditor({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="min-w-0">
-          {tab === "content" ? (
-            <>
-              {guide.type === "TOUR" && <TourEditor ws={ws} value={content as TourContent} onChange={edit(setContent)} others={others} theme={theme} />}
-              {guide.type === "HOTSPOT" && <HotspotEditor value={content as HotspotContent} onChange={edit(setContent)} />}
-              {guide.type === "ANNOUNCEMENT" && (
-                <AnnouncementEditor ws={ws} value={content as AnnouncementContent} onChange={edit(setContent)} others={others} theme={theme} />
-              )}
-              {guide.type === "CHECKLIST" && (
-                <ChecklistEditor value={content as ChecklistContent} onChange={edit(setContent)} others={others} />
-              )}
-              {guide.type === "SURVEY" && <SurveyEditor value={content as SurveyContent} onChange={edit(setContent)} theme={theme} />}
-              {guide.type === "RESOURCE_CENTER" && (
-                <ResourceCenterEditor ws={ws} value={content as ResourceCenterContent} onChange={edit(setContent)} others={others} theme={theme} />
-              )}
-            </>
-          ) : tab === "builder" ? (
-            <div className="max-w-xl">
-              <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />
-            </div>
-          ) : (
-            <TargetingEditor
-              type={guide.type}
-              value={targeting}
-              onChange={edit(setTargeting)}
-              priority={priority}
-              onPriority={edit(setPriority)}
-            />
-          )}
-        </div>
-
-        <aside className="space-y-4">
-          {guide.type === "RESOURCE_CENTER" ? (
-            <Card className="space-y-2 p-4 text-sm">
-              <div className="font-semibold">Open from your app</div>
-              <p className="text-gray-500">Open or close the panel from your own help button or menu:</p>
-              <code className="block rounded bg-gray-50 p-2 text-xs break-all">LocatifyGuides.openResourceCenter()</code>
-              <p className="text-xs text-gray-500">
-                Only one resource center shows on a page: the highest priority one whose targeting matches.
-              </p>
-            </Card>
-          ) : (
-            <Card className="space-y-2 p-4 text-sm">
-              <div className="font-semibold">Manual start</div>
-              <p className="text-gray-500">Start this guide from your own code, e.g. a help button:</p>
-              <code className="block rounded bg-gray-50 p-2 text-xs break-all">LocatifyGuides.start(&quot;{guide.id}&quot;)</code>
-            </Card>
-          )}
-          <Card className="flex flex-wrap gap-2 p-4">
-            <Button variant="secondary" disabled={pending} onClick={() => startTransition(() => duplicateGuide(ws, guide.id))}>
-              Duplicate
-            </Button>
-            {guide.status !== "ARCHIVED" ? (
-              <Button variant="secondary" disabled={pending} onClick={() => save(() => setGuideStatus(ws, guide.id, "ARCHIVED"))}>
-                Archive
-              </Button>
-            ) : (
-              <Button variant="secondary" disabled={pending} onClick={() => save(() => setGuideStatus(ws, guide.id, "DRAFT"))}>
-                Restore
-              </Button>
+      <div className="min-w-0">
+        {tab === "content" ? (
+          <>
+            {guide.type === "TOUR" && <TourEditor ws={ws} value={content as TourContent} onChange={edit(setContent)} others={others} theme={theme} />}
+            {guide.type === "HOTSPOT" && <HotspotEditor value={content as HotspotContent} onChange={edit(setContent)} />}
+            {guide.type === "ANNOUNCEMENT" && (
+              <AnnouncementEditor ws={ws} value={content as AnnouncementContent} onChange={edit(setContent)} others={others} theme={theme} />
             )}
-            <Button
-              variant="danger"
-              disabled={pending}
-              onClick={() => {
-                if (confirm(`Delete "${guide.name}" and its analytics? This can't be undone.`)) {
-                  startTransition(() => deleteGuide(ws, guide.id));
-                }
-              }}
-            >
-              Delete
-            </Button>
-          </Card>
-        </aside>
+            {guide.type === "CHECKLIST" && (
+              <ChecklistEditor value={content as ChecklistContent} onChange={edit(setContent)} others={others} />
+            )}
+            {guide.type === "SURVEY" && <SurveyEditor value={content as SurveyContent} onChange={edit(setContent)} theme={theme} />}
+            {guide.type === "RESOURCE_CENTER" && (
+              <ResourceCenterEditor ws={ws} value={content as ResourceCenterContent} onChange={edit(setContent)} others={others} theme={theme} />
+            )}
+          </>
+        ) : tab === "builder" ? (
+          <div className="max-w-xl">
+            <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />
+          </div>
+        ) : (
+          <TargetingEditor
+            type={guide.type}
+            value={targeting}
+            onChange={edit(setTargeting)}
+            priority={priority}
+            onPriority={edit(setPriority)}
+          />
+        )}
       </div>
     </div>
+  );
+}
+
+// ---------- Copyable code ----------
+
+function CopyCode({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <span className="inline-flex max-w-full items-center gap-1 rounded-md bg-gray-50 py-0.5 pr-0.5 pl-2 ring-1 ring-gray-200">
+      <code className="truncate text-xs">{code}</code>
+      <button
+        type="button"
+        className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+        onClick={() =>
+          navigator.clipboard.writeText(code).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          })
+        }
+      >
+        {copied ? "Copied" : "Copy"}
+      </button>
+    </span>
   );
 }
 
