@@ -142,6 +142,10 @@ const CSS = `
 .lg-card h3.lg-b { margin:0 0 6px; }
 .lg-card h3.lg-first { margin-right:26px; }
 .lg-text { word-wrap:break-word; }
+.lg ul.rt-list, .lg ol.rt-list { margin:4px 0; padding-left:20px; }
+.lg ul.rt-list { list-style:disc; }
+.lg ol.rt-list { list-style:decimal; }
+.lg u { text-decoration:underline; }
 .lg-img { position:relative; overflow:hidden; border-radius:calc(var(--lg-radius) * .6); }
 .lg-img img { display:block; width:100%; height:100%; }
 .lg-img.lg-edge { margin-left:calc(var(--lg-pad) * -1); margin-right:calc(var(--lg-pad) * -1); border-radius:0; }

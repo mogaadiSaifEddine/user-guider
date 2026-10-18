@@ -9,6 +9,7 @@ import type {
   TourContent,
 } from "../src/lib/guide-schema";
 import { bannerButtons, bannerText, buttonAt, CARD_WIDTH, label, openUrl, renderBlocks } from "./blocks";
+import { plainText } from "../src/lib/format";
 import { el, escapeHtml, everyFrame, findTarget, inViewport, placeBox, richText, safeUrl, shadow, waitForTarget } from "./ui";
 
 export type EventType =
@@ -351,7 +352,7 @@ export function runChecklist(
 
     const panel = el(
       "div",
-      { class: "lg-panel", style: `${side}:20px`, role: "dialog", "aria-label": content.title },
+      { class: "lg-panel", style: `${side}:20px`, role: "dialog", "aria-label": plainText(content.title) },
       `<header>
          <button class="lg-close" aria-label="Minimize">–</button>
          <h3>${richText(content.title)}</h3>

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { plainText } from "./format";
 
 // Shapes of Guide.content / Guide.targeting / Workspace.theme. The SDK imports
 // the inferred types from here, so keep this file free of server-only imports.
@@ -481,7 +482,7 @@ export function newId() {
 // Short label for a step in lists and analytics: its first heading or text.
 export function blocksLabel(blocks: Block[]) {
   for (const b of blocks) {
-    if ((b.type === "heading" || b.type === "text") && b.text.trim()) return b.text.trim().split("\n")[0].slice(0, 80);
+    if ((b.type === "heading" || b.type === "text") && b.text.trim()) return plainText(b.text.trim().split("\n")[0]).slice(0, 80);
   }
   return "";
 }

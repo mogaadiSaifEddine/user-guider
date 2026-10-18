@@ -1,4 +1,6 @@
 import type { Block, Hotspot, HotspotContent, Theme, TourContent, TourStep } from "../src/lib/guide-schema";
+import { plainText } from "../src/lib/format";
+import { mountRichEditor, type RichEditor } from "../src/lib/rich-editor";
 import { selectorFor } from "./selector";
 import { takeSnapshot, type PageSnapshot } from "./snapshot";
 import { applyTheme, el, escapeHtml, findTarget, isOwnElement, shadow } from "./ui";
@@ -154,7 +156,42 @@ export async function startBuilder(apiBase: string, token: string) {
     if (s) s.textContent = status;
   }
 
+  // Rich text editors for the open item's Title and Text, re-mounted on every render.
+  const editors: RichEditor[] = [];
+
+  function mountEditors() {
+    for (const host of panel.querySelectorAll<HTMLElement>("[data-rte]")) {
+      const i = Number(host.dataset.i);
+      const field = host.dataset.rte as "title" | "body";
+      const it = items[i];
+      if (!it) continue;
+      editors.push(
+        mountRichEditor(host, {
+          value: field === "title" ? titleOf(it) : bodyOf(it),
+          multiline: field === "body",
+          rows: 3,
+          label: field === "title" ? "Title" : "Text",
+          maxLength: field === "title" ? 200 : isTour ? 4000 : 2000,
+          onChange(value) {
+            setText(it, field, value);
+            markDirty();
+            if (field === "title") {
+              const row = panel.querySelector(".lgb-open .lgb-row-title");
+              if (row) row.textContent = plainText(value) || "Untitled";
+            }
+          },
+        }),
+      );
+    }
+  }
+
   function render() {
+    for (const e of editors.splice(0)) e.destroy();
+    renderPanel();
+    mountEditors();
+  }
+
+  function renderPanel() {
     const noun = isTour ? "Step" : "Hotspot";
     panel.innerHTML = `
       <div class="lgb-head">
@@ -178,14 +215,14 @@ export async function startBuilder(apiBase: string, token: string) {
             return `<div class="lgb-item${i === open ? " lgb-open" : ""}">
               <button class="lgb-row" data-act="toggle" data-i="${i}">
                 <span class="lgb-num">${i + 1}</span>
-                <span class="lgb-row-title">${escapeHtml(titleOf(it) || `Untitled ${noun.toLowerCase()}`)}</span>
+                <span class="lgb-row-title">${escapeHtml(plainText(titleOf(it)) || `Untitled ${noun.toLowerCase()}`)}</span>
                 <span class="lgb-dot ${found === null ? "" : found ? "lgb-ok" : "lgb-miss"}" title="${where}"></span>
               </button>
               ${
                 i === open
                   ? `<div class="lgb-fields">
-                <label>Title<input data-f="title" data-i="${i}" value="${escapeHtml(titleOf(it))}"></label>
-                <label>Text<textarea data-f="body" data-i="${i}" rows="3">${escapeHtml(bodyOf(it))}</textarea></label>
+                <div class="lgb-label">Title<div data-rte="title" data-i="${i}"></div></div>
+                <div class="lgb-label">Text<div data-rte="body" data-i="${i}"></div></div>
                 ${hasExtraBlocks(it) ? `<p class="lgb-note">This step also has images, video or buttons. Edit those in the dashboard.</p>` : ""}
                 <div class="lgb-sel">
                   <code title="${escapeHtml(it.selector)}">${escapeHtml(it.selector || (isTour ? "No element: shown as a centered modal" : "No element picked"))}</code>
@@ -312,13 +349,8 @@ export async function startBuilder(apiBase: string, token: string) {
     const i = Number(t.dataset.i);
     const f = t.dataset.f;
     if (!f || !items[i]) return;
-    if (f === "title" || f === "body") setText(items[i], f, t.value);
-    else (items[i] as Record<string, unknown>)[f] = t.type === "checkbox" ? t.checked : t.value;
+    (items[i] as Record<string, unknown>)[f] = t.type === "checkbox" ? t.checked : t.value;
     markDirty();
-    if (f === "title") {
-      const row = panel.querySelector(`.lgb-open .lgb-row-title`);
-      if (row) row.textContent = t.value || "Untitled";
-    }
   });
 
   panel.addEventListener("click", async (e) => {
@@ -555,7 +587,8 @@ const BUILDER_CSS = `
 .lgb-dot { width:8px; height:8px; border-radius:50%; background:#d1d5db; }
 .lgb-dot.lgb-ok { background:#10b981; } .lgb-dot.lgb-miss { background:#f59e0b; }
 .lgb-fields { padding:4px 10px 10px; display:flex; flex-direction:column; gap:8px; }
-.lgb label { display:flex; flex-direction:column; gap:3px; font-weight:600; font-size:12px; color:#374151; }
+.lgb label, .lgb .lgb-label { display:flex; flex-direction:column; gap:3px; font-weight:600; font-size:12px; color:#374151; }
+.lgb .lgb-label .rte { font-size:13px; font-weight:400; }
 .lgb input:not([type=checkbox]), .lgb textarea, .lgb select { font:inherit; font-weight:400; border:1px solid #d1d5db; border-radius:6px; padding:6px 8px;
   color:#111827; background:#fff; width:100%; }
 .lgb textarea { resize:vertical; }

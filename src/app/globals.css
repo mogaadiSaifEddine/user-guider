@@ -10,3 +10,8 @@ body {
   background: #f7f7f9;
   color: #111827;
 }
+
+/* Lists inside rendered guide text (richText in src/lib/format.ts). */
+ul.rt-list, ol.rt-list { margin: 4px 0; padding-left: 20px; }
+ul.rt-list { list-style: disc; }
+ol.rt-list { list-style: decimal; }

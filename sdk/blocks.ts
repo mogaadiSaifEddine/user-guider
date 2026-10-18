@@ -1,5 +1,5 @@
 import type { Block, ButtonAction } from "../src/lib/guide-schema";
-import { CARD_WIDTH, escapeHtml, richText, safeUrl, videoEmbed } from "../src/lib/format";
+import { CARD_WIDTH, escapeHtml, plainText, richText, safeUrl, videoEmbed } from "../src/lib/format";
 
 export { CARD_WIDTH };
 
@@ -80,6 +80,6 @@ export function openUrl(url: string, newTab: boolean) {
 }
 
 export function label(blocks: Block[]) {
-  for (const b of blocks) if ((b.type === "heading" || b.type === "text") && b.text) return b.text.slice(0, 80);
+  for (const b of blocks) if ((b.type === "heading" || b.type === "text") && b.text) return plainText(b.text).slice(0, 80);
   return "Guide";
 }

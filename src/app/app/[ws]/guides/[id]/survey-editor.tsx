@@ -10,8 +10,10 @@ import {
   type SurveyQuestion,
   type Theme,
 } from "@/lib/guide-schema";
-import { Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
-import { ListItem, move, TEXT_HINT } from "./content-editors";
+import { Button, Card, Field, Input, Select, cx } from "@/components/ui";
+import { plainText, richText } from "@/lib/format";
+import { RichField } from "@/components/rich-text-input";
+import { ListItem, move } from "./content-editors";
 
 export const questionLabels: Record<QuestionType, string> = {
   nps: "NPS (0–10)",
@@ -45,7 +47,7 @@ export function SurveyEditor({
             <ListItem
               index={i}
               total={value.questions.length}
-              title={`${questionLabels[q.type]}${q.title ? ` · ${q.title}` : ""}`}
+              title={`${questionLabels[q.type]}${q.title ? ` · ${plainText(q.title)}` : ""}`}
               onMove={(d) => setQuestions(move(value.questions, i, d))}
               onDelete={() => setQuestions(value.questions.filter((_, j) => j !== i))}
             >
@@ -104,21 +106,20 @@ export function SurveyEditor({
           </label>
           {value.thankYou.show && (
             <>
-              <Field label="Heading">
-                <Input
-                  value={value.thankYou.heading}
-                  maxLength={200}
-                  onChange={(e) => patch({ thankYou: { ...value.thankYou, heading: e.target.value } })}
-                />
-              </Field>
-              <Field label="Text" hint={TEXT_HINT}>
-                <Textarea
-                  rows={2}
-                  value={value.thankYou.text}
-                  maxLength={1000}
-                  onChange={(e) => patch({ thankYou: { ...value.thankYou, text: e.target.value } })}
-                />
-              </Field>
+              <RichField
+                label="Heading"
+                value={value.thankYou.heading}
+                maxLength={200}
+                onChange={(heading) => patch({ thankYou: { ...value.thankYou, heading } })}
+              />
+              <RichField
+                label="Text"
+                multiline
+                rows={2}
+                value={value.thankYou.text}
+                maxLength={1000}
+                onChange={(text) => patch({ thankYou: { ...value.thankYou, text } })}
+              />
             </>
           )}
         </Card>
@@ -163,12 +164,8 @@ function QuestionFields({ q, onPatch }: { q: SurveyQuestion; onPatch: (p: Partia
           ))}
         </Select>
       </Field>
-      <Field label="Question">
-        <Input value={q.title} maxLength={300} onChange={(e) => onPatch({ title: e.target.value })} />
-      </Field>
-      <Field label="Description (optional)" hint={TEXT_HINT}>
-        <Textarea rows={2} value={q.description} maxLength={1000} onChange={(e) => onPatch({ description: e.target.value })} />
-      </Field>
+      <RichField label="Question" value={q.title} maxLength={300} onChange={(title) => onPatch({ title })} />
+      <RichField label="Description (optional)" multiline rows={2} value={q.description} maxLength={1000} onChange={(description) => onPatch({ description })} />
 
       {(q.type === "single" || q.type === "multiple") && (
         <div className="space-y-2">
@@ -263,8 +260,8 @@ function QuestionPreview({ q, index, content, theme }: { q: SurveyQuestion; inde
       }}
     >
       <span className="absolute top-2.5 right-3 opacity-50">×</span>
-      <div className="mr-6 mb-1.5 text-base leading-snug font-semibold">{q.title || "Your question"}</div>
-      {q.description && <div className="mb-3 text-[13px] opacity-75">{q.description}</div>}
+      <div className="mr-6 mb-1.5 text-base leading-snug font-semibold" dangerouslySetInnerHTML={{ __html: richText(q.title || "Your question") }} />
+      {q.description && <div className="mb-3 text-[13px] opacity-75" dangerouslySetInnerHTML={{ __html: richText(q.description) }} />}
       <div className="mt-3">
         {(q.type === "nps" || q.type === "rating") && (
           <>

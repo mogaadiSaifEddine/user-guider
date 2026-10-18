@@ -10,7 +10,7 @@ Add them in the [visual builder](builder): **+ Add hotspot** immediately asks yo
 
 | Setting | What it does |
 | --- | --- |
-| **Title** and **Text** | Content of the hint. The text supports **\*\*bold\*\***, *\*italic\**, `[links](https://…)` and line breaks. |
+| **Title** and **Text** | Content of the hint, with [formatting](tours#formatting-text). |
 | **Element** | Required. The dot sits on the top-right corner of this element. |
 | **Tooltip position** | Where the hint opens relative to the element. |
 

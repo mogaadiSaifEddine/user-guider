@@ -20,12 +20,30 @@ A step's content is a stack of **blocks**. Click a block to edit it, use ↑ ↓
 | Block | What it shows |
 | --- | --- |
 | **Heading** | A bold title. Alignment: left, center or right. |
-| **Text** | Body text. Supports **\*\*bold\*\***, *\*italic\**, links written as `[text](https://…)` (they open in a new tab) and line breaks. |
+| **Text** | Body text with [formatting](#formatting-text): bold, italic, underline, strikethrough, links, line breaks and lists. |
 | **Image** | A picture. **Upload** one (PNG, JPEG, GIF or WebP, up to 2 MB) or paste an `https://` address. Options: height, *Fill* (crop to the box) or *Fit* (show the whole image), *Full width, edge to edge* for a hero look, *Text over the image* for a headline on the picture, and a description for screen readers. |
 | **Video** | A YouTube or Vimeo link (the normal page address is fine), or a direct `.mp4` / `.webm` file. Plays inside the step. |
 | **Buttons** | Up to four buttons, each with a label, a style (*Primary*, *Secondary*, *Link*) and an action (below). |
 | **Divider** | A thin line. |
 | **Spacer** | Empty space, 4–64 px. |
+
+## Formatting text
+
+Every text people see in a guide (headings, text, titles, descriptions, checklist items, survey questions, resource center entries) is edited with a formatting toolbar, in the dashboard and in the [builder](builder):
+
+| Button | Shortcut | Result |
+| --- | --- | --- |
+| **B** | Ctrl+B (⌘B) | **Bold** |
+| *I* | Ctrl+I | *Italic* |
+| U | Ctrl+U | Underline |
+| S | Ctrl+Shift+X | ~~Strikethrough~~ |
+| Link | Ctrl+K | Link the selected words. Addresses start with `https://`, `/` (a page of your app) or `mailto:`. Links open in a new tab. Select a link and press Link again to change or remove it. |
+| Bulleted / numbered list | | Lists, in texts and descriptions |
+| Clear formatting | | Removes all of the above from the selection |
+
+Titles and labels are one line, so their toolbar has no lists and Enter does nothing; it appears above the field while you type in it. Pasting from Google Docs, Word or a web page keeps bold, italic, underline, strikethrough, links and lists, and drops colors, fonts and images.
+
+Text is stored with light markup (`**bold**`, `*italic*`, `++underline++`, `~~strike~~`, `[link](https://…)`, `- ` for list items). Guides written before the toolbar existed keep working as they are.
 
 **Button actions**
 

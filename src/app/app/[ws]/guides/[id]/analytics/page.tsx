@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireGuide } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { plainText } from "@/lib/format";
 import { guideAnalytics, pct } from "@/lib/analytics";
 import {
   blocksLabel,
@@ -46,13 +47,13 @@ export default async function GuideAnalyticsPage({
     breakdown = {
       title: "Items completed",
       note: "Users who completed each item, out of users who saw the checklist.",
-      rows: (content as ChecklistContent).items.map((it) => ({ label: it.title || "Untitled", value: a.items.get(it.id) ?? 0 })),
+      rows: (content as ChecklistContent).items.map((it) => ({ label: plainText(it.title) || "Untitled", value: a.items.get(it.id) ?? 0 })),
     };
   } else if (type === "SURVEY") {
     breakdown = {
       title: "Question funnel",
       note: "Users who reached each question. A big drop shows where people stop answering.",
-      rows: (content as SurveyContent).questions.map((q, i) => ({ label: q.title || `Question ${i + 1}`, value: a.steps.get(i) ?? 0 })),
+      rows: (content as SurveyContent).questions.map((q, i) => ({ label: plainText(q.title) || `Question ${i + 1}`, value: a.steps.get(i) ?? 0 })),
     };
   } else if (type === "RESOURCE_CENTER") {
     const rc = content as ResourceCenterContent;
@@ -62,11 +63,11 @@ export default async function GuideAnalyticsPage({
     const rows = rc.modules.flatMap((m) => {
       switch (m.type) {
         case "guides":
-          return m.items.map((it) => ({ label: `▶ ${it.label || names.get(it.guideId) || "Guide"}`, id: it.id }));
+          return m.items.map((it) => ({ label: `▶ ${plainText(it.label) || names.get(it.guideId) || "Guide"}`, id: it.id }));
         case "articles":
-          return m.articles.map((a) => ({ label: `≡ ${a.title || "Untitled article"}`, id: a.id }));
+          return m.articles.map((a) => ({ label: `≡ ${plainText(a.title) || "Untitled article"}`, id: a.id }));
         case "links":
-          return m.links.map((l) => ({ label: `↗ ${l.label || l.url}`, id: l.id }));
+          return m.links.map((l) => ({ label: `↗ ${plainText(l.label) || l.url}`, id: l.id }));
         case "contact":
           return [{ label: `✉ ${m.buttonLabel}`, id: m.id }];
         case "checklist":
@@ -82,7 +83,7 @@ export default async function GuideAnalyticsPage({
     breakdown = {
       title: "Hotspots opened",
       note: "Users who opened each hotspot.",
-      rows: (content as HotspotContent).hotspots.map((h) => ({ label: h.title || "Untitled", value: a.items.get(h.id) ?? 0 })),
+      rows: (content as HotspotContent).hotspots.map((h) => ({ label: plainText(h.title) || "Untitled", value: a.items.get(h.id) ?? 0 })),
     };
   }
 

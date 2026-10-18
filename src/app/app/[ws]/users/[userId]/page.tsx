@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
 import { fieldLabel } from "@/lib/audience";
+import { plainText } from "@/lib/format";
 import { parseContent, type SurveyContent } from "@/lib/guide-schema";
 import { Badge, Card, PageHeader } from "@/components/ui";
 
@@ -135,7 +136,7 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
                       </Link>{" "}
                       · {a.updatedAt.toLocaleString()}
                     </div>
-                    <div className="text-gray-600">{q?.title || "Removed question"}</div>
+                    <div className="text-gray-600">{(q && plainText(q.title)) || "Removed question"}</div>
                     <div className="font-medium whitespace-pre-wrap">{text}</div>
                   </li>
                 );

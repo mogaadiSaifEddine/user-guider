@@ -12,13 +12,134 @@ export function safeUrl(u: string) {
   return /^(https?:\/\/|\/(?!\/))/i.test(u.trim()) ? encodeURI(u.trim()) : "";
 }
 
-// Guide text is plain text with **bold**, *italic*, [links](https://…) and line breaks.
+// ---------- Rich text ----------
+//
+// Guide text is stored as plain text with light markup, written by the rich
+// text editor (src/lib/rich-editor.ts) and readable by humans and the AI:
+//
+//   **bold**  _italic_ (or *italic*)  ++underline++  ~~strike~~  [link](https://…)
+//   "- item" / "• item" lines → bulleted list, "1. item" lines → numbered list
+//   other line breaks → <br>; a backslash makes the next markup character literal.
+//
+// Markers only count when they hug text (**x**, not ** x **), so "C++ and C++"
+// and "snake_case_name" stay as they are.
+
+const ESCAPABLE = "\\*_~+[]().-#•";
+const INLINE_MARKS: [string, string][] = [
+  ["**", "strong"],
+  ["++", "u"],
+  ["~~", "s"],
+  ["*", "em"],
+  ["_", "em"],
+];
+const wordChar = (c: string | undefined) => Boolean(c && /[\p{L}\p{N}]/u.test(c));
+const space = (c: string | undefined) => !c || /\s/.test(c);
+
+function closeAt(s: string, from: number, m: string) {
+  for (let j = from + 1; j <= s.length - m.length; j++) {
+    if (s[j] === "\\") {
+      j++;
+      continue;
+    }
+    if (!s.startsWith(m, j) || space(s[j - 1])) continue;
+    // A single * never closes on half of a **.
+    if (m === "*" && (s[j + 1] === "*" || s[j - 1] === "*")) continue;
+    if (m === "_" && wordChar(s[j + 1])) continue;
+    return j;
+  }
+  return -1;
+}
+
+function linkAt(s: string, i: number) {
+  let depth = 0;
+  for (let j = i; j < s.length; j++) {
+    if (s[j] === "\\") {
+      j++;
+      continue;
+    }
+    if (s[j] === "[") depth++;
+    else if (s[j] === "]" && --depth === 0) {
+      const m = /^\(((?:https?:\/\/|\/|mailto:)[^)\s]+)\)/i.exec(s.slice(j + 1));
+      return m && j > i + 1 ? { text: s.slice(i + 1, j), href: m[1], end: j + 1 + m[0].length } : null;
+    }
+  }
+  return null;
+}
+
+function inlineHtml(s: string): string {
+  let out = "";
+  let i = 0;
+  outer: while (i < s.length) {
+    const c = s[i];
+    if (c === "\\" && ESCAPABLE.includes(s[i + 1] ?? "")) {
+      out += escapeHtml(s[i + 1]);
+      i += 2;
+      continue;
+    }
+    if (c === "[") {
+      const link = linkAt(s, i);
+      if (link) {
+        out += `<a href="${escapeHtml(link.href)}" target="_blank" rel="noopener">${inlineHtml(link.text)}</a>`;
+        i = link.end;
+        continue;
+      }
+    }
+    for (const [m, tag] of INLINE_MARKS) {
+      if (!s.startsWith(m, i) || space(s[i + m.length])) continue;
+      if (m === "*" && s[i + 1] === "*") continue;
+      if (m === "_" && wordChar(s[i - 1])) continue;
+      const end = closeAt(s, i + m.length, m);
+      if (end < 0) continue;
+      out += `<${tag}>${inlineHtml(s.slice(i + m.length, end))}</${tag}>`;
+      i = end + m.length;
+      continue outer;
+    }
+    out += escapeHtml(c);
+    i++;
+  }
+  return out;
+}
+
+const LIST_LINE = /^(?:([-•])|(\d{1,3})\.) (.*)$/;
+
 export function richText(s: string) {
-  return escapeHtml(s)
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/)[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-    .replace(/\n/g, "<br>");
+  let html = "";
+  let list: "ul" | "ol" | null = null;
+  let afterText = false;
+  const closeList = () => {
+    if (list) html += `</${list}>`;
+    list = null;
+  };
+  for (const line of s.split("\n")) {
+    const m = LIST_LINE.exec(line);
+    if (m) {
+      const type = m[1] ? "ul" : "ol";
+      if (list !== type) {
+        closeList();
+        list = type;
+        html += type === "ol" && m[2] !== "1" ? `<ol class="rt-list" start="${Number(m[2])}">` : `<${type} class="rt-list">`;
+      }
+      html += `<li>${inlineHtml(m[3])}</li>`;
+      afterText = false;
+      continue;
+    }
+    closeList();
+    if (afterText) html += "<br>";
+    html += inlineHtml(line);
+    afterText = true;
+  }
+  closeList();
+  return html;
+}
+
+// The words only, for list labels and titles in places that show no formatting.
+export function plainText(s: string) {
+  return richText(s)
+    .replace(/<\/?(li|ul|ol)\b[^>]*>|<br>/g, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(amp|lt|gt|quot|#39);/g, (_, e) => ({ amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'" })[e as string]!)
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // YouTube / Vimeo page links become embeds; direct video files play natively.

@@ -1,6 +1,6 @@
 import type { Block, ChecklistContent, RcArticle, RcModule, ResourceCenterContent } from "../src/lib/guide-schema";
 import { buttonAt, openUrl, renderBlocks } from "./blocks";
-import { LAUNCHER_ICONS, svgIcon } from "../src/lib/format";
+import { LAUNCHER_ICONS, plainText, svgIcon } from "../src/lib/format";
 import { el, escapeHtml, richText, safeUrl, shadow } from "./ui";
 import type { Handle, Report } from "./widgets";
 
@@ -48,7 +48,7 @@ export function runResourceCenter(
   const launcher = el("button", {
     class: `lg-launcher lg-rc-launcher ${pos}` + (content.launcher.label ? "" : " lg-round"),
     "aria-expanded": "false",
-    "aria-label": content.launcher.label || content.title || "Help",
+    "aria-label": content.launcher.label || plainText(content.title) || "Help",
   });
   launcher.addEventListener("click", () => (panel ? close() : open()));
   if (content.launcher.show) layer.appendChild(launcher);
@@ -101,7 +101,7 @@ export function runResourceCenter(
 
   function open() {
     if (panel) return;
-    panel = el("div", { class: `lg-panel lg-rc ${pos}`, role: "dialog", "aria-label": content.title || "Help" });
+    panel = el("div", { class: `lg-panel lg-rc ${pos}`, role: "dialog", "aria-label": plainText(content.title) || "Help" });
     panel.innerHTML = `<header class="lg-rc-head">
         <button class="lg-close" aria-label="Close">×</button>
         ${content.title ? `<h3>${richText(content.title)}</h3>` : ""}
@@ -163,7 +163,7 @@ export function runResourceCenter(
       const rows = content.modules.flatMap((m) =>
         m.type === "guides" ? guideRows(m) : m.type === "articles" ? articleRows(m) : m.type === "links" ? linkRows(m) : [],
       );
-      const hits = rows.filter((r) => `${r.label} ${r.description} ${r.text ?? ""}`.toLowerCase().includes(query));
+      const hits = rows.filter((r) => plainText(`${r.label} ${r.description} ${r.text ?? ""}`).toLowerCase().includes(query));
       const contact = content.modules.find((m) => m.type === "contact");
       body.innerHTML = hits.length
         ? section("", `<ul class="lg-rc-list">${hits.map(rowHtml).join("")}</ul>`)

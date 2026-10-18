@@ -10,8 +10,9 @@ import {
   type ButtonAction,
   type StepButton,
 } from "@/lib/guide-schema";
-import { videoEmbed } from "@/lib/format";
-import { Button, Field, Input, Select, Textarea, cx } from "@/components/ui";
+import { plainText, videoEmbed } from "@/lib/format";
+import { Button, Field, Input, Select, cx } from "@/components/ui";
+import { RichField } from "@/components/rich-text-input";
 import type { OtherGuide } from "./content-editors";
 
 const blockNames: Record<BlockType, string> = {
@@ -23,8 +24,6 @@ const blockNames: Record<BlockType, string> = {
   divider: "Divider",
   spacer: "Spacer",
 };
-
-const TEXT_HINT = "**bold**, *italic*, [link](https://…), line breaks.";
 
 type Ctx = "tour" | "announcement";
 
@@ -119,9 +118,9 @@ function summary(b: Block) {
   switch (b.type) {
     case "heading":
     case "text":
-      return b.text.split("\n")[0] || "Empty";
+      return plainText(b.text.split("\n")[0]) || "Empty";
     case "image":
-      return b.url ? (b.overlay ? `Hero: ${b.overlay}` : b.url.split("/").pop()) : "No image yet";
+      return b.url ? (b.overlay ? `Hero: ${plainText(b.overlay)}` : b.url.split("/").pop()) : "No image yet";
     case "video":
       return b.url || "No video yet";
     case "buttons":
@@ -162,18 +161,14 @@ function BlockFields({
     case "heading":
       return (
         <>
-          <Field label="Heading">
-            <Input value={b.text} maxLength={200} onChange={(e) => onChange({ ...b, text: e.target.value })} autoFocus />
-          </Field>
+          <RichField label="Heading" value={b.text} maxLength={200} onChange={(text) => onChange({ ...b, text })} autoFocus />
           <AlignSelect value={b.align} onChange={(align) => onChange({ ...b, align })} />
         </>
       );
     case "text":
       return (
         <>
-          <Field label="Text" hint={TEXT_HINT}>
-            <Textarea rows={3} value={b.text} maxLength={4000} onChange={(e) => onChange({ ...b, text: e.target.value })} autoFocus />
-          </Field>
+          <RichField label="Text" multiline rows={3} value={b.text} maxLength={4000} onChange={(text) => onChange({ ...b, text })} autoFocus />
           <AlignSelect value={b.align} onChange={(align) => onChange({ ...b, align })} />
         </>
       );
@@ -290,9 +285,13 @@ function ImageFields({ ws, block: b, onChange }: { ws: string; block: Extract<Bl
         <input type="checkbox" checked={b.edge} onChange={(e) => onChange({ ...b, edge: e.target.checked })} />
         Full width, edge to edge (hero style)
       </label>
-      <Field label="Text over the image" hint="Optional headline drawn on the image.">
-        <Input value={b.overlay} maxLength={120} onChange={(e) => onChange({ ...b, overlay: e.target.value })} />
-      </Field>
+      <RichField
+        label="Text over the image"
+        hint="Optional headline drawn on the image."
+        value={b.overlay}
+        maxLength={120}
+        onChange={(overlay) => onChange({ ...b, overlay })}
+      />
       <Field label="Description for screen readers">
         <Input value={b.alt} maxLength={200} onChange={(e) => onChange({ ...b, alt: e.target.value })} />
       </Field>

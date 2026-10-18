@@ -14,7 +14,7 @@ Create one with **New guide → Survey**. A new survey starts with an NPS questi
 | **Multiple choice** | ticks any number of answers | with the **Next** button |
 | **Open text** | types an answer (up to 2000 characters) | with the **Next** button (or Ctrl+Enter) |
 
-Every question has a text and an optional description (Markdown-style **bold**, *italic* and links work). NPS and rating questions can have words under each end of the scale, e.g. *Not likely* / *Very likely*.
+Every question has a text and an optional description (both with [formatting](tours#formatting-text)). NPS and rating questions can have words under each end of the scale, e.g. *Not likely* / *Very likely*.
 
 Questions are **required** by default. Untick *Required* to add a **Skip** button.
 

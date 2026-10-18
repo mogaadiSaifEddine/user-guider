@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "./db";
+import { plainText } from "./format";
 import type { SurveyContent, SurveyQuestion } from "./guide-schema";
 
 // Aggregates the stored answers of a survey per question. Each user's latest
@@ -131,7 +132,7 @@ export async function surveyResponseRows(guideId: string, content: SurveyContent
     rows.set(a.endUser.id, row);
   }
 
-  const header = ["User", "Anonymous", "Company ID", "Company", "Answered at", ...content.questions.map((q, i) => q.title || `Question ${i + 1}`)];
+  const header = ["User", "Anonymous", "Company ID", "Company", "Answered at", ...content.questions.map((q, i) => plainText(q.title) || `Question ${i + 1}`)];
   const body = [...rows.values()].map((r) => [
     r.user.anonymous ? r.user.externalId.replace(/^anon:/, "") : r.user.externalId,
     r.user.anonymous ? "yes" : "no",

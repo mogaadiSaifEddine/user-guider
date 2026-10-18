@@ -15,9 +15,10 @@ import {
   type ResourceCenterContent,
   type Theme,
 } from "@/lib/guide-schema";
-import { LAUNCHER_ICONS, richText, svgIcon } from "@/lib/format";
+import { LAUNCHER_ICONS, plainText, richText, svgIcon } from "@/lib/format";
 import { StepPreview } from "@/components/step-preview";
-import { Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
+import { Button, Card, Field, Input, Select, cx } from "@/components/ui";
+import { RichField, RichTextInput } from "@/components/rich-text-input";
 import { BlocksEditor } from "./blocks-editor";
 import { ListItem, move, type OtherGuide } from "./content-editors";
 
@@ -80,12 +81,8 @@ export function ResourceCenterEditor({
       <div className="min-w-0 space-y-4">
         <Card className="space-y-4 p-5">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Title">
-              <Input value={value.title} maxLength={120} onChange={(e) => patch({ title: e.target.value })} />
-            </Field>
-            <Field label="Subtitle">
-              <Input value={value.subtitle} maxLength={300} onChange={(e) => patch({ subtitle: e.target.value })} />
-            </Field>
+            <RichField label="Title" value={value.title} maxLength={120} onChange={(title) => patch({ title })} />
+            <RichField label="Subtitle" value={value.subtitle} maxLength={300} onChange={(subtitle) => patch({ subtitle })} />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={value.search} onChange={(e) => patch({ search: e.target.checked })} />
@@ -140,7 +137,7 @@ export function ResourceCenterEditor({
             key={m.id}
             index={i}
             total={value.modules.length}
-            title={`${moduleNames[m.type]}${m.type !== "checklist" && m.title ? ` · ${m.title}` : ""}`}
+            title={`${moduleNames[m.type]}${m.type !== "checklist" && m.title ? ` · ${plainText(m.title)}` : ""}`}
             onMove={(d) => setModules(move(value.modules, i, d))}
             onDelete={() => setModules(value.modules.filter((_, j) => j !== i))}
           >
@@ -207,9 +204,7 @@ function ModuleFields({
 }) {
   const titleField =
     m.type !== "checklist" ? (
-      <Field label="Section title">
-        <Input value={m.title} maxLength={120} onChange={(e) => onChange({ ...m, title: e.target.value })} />
-      </Field>
+      <RichField label="Section title" value={m.title} maxLength={120} onChange={(title) => onChange({ ...m, title })} />
     ) : null;
 
   switch (m.type) {
@@ -233,17 +228,19 @@ function ModuleFields({
                 <RowButtons i={i} list={m.items} onChange={setItems} />
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <Input
+                <RichTextInput
+                  aria-label="Label"
                   placeholder="Label (default: guide name)"
                   value={it.label}
                   maxLength={120}
-                  onChange={(e) => setItems(m.items.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
+                  onChange={(label) => setItems(m.items.map((x, j) => (j === i ? { ...x, label } : x)))}
                 />
-                <Input
+                <RichTextInput
+                  aria-label="Description"
                   placeholder="Description (optional)"
                   value={it.description}
                   maxLength={300}
-                  onChange={(e) => setItems(m.items.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))}
+                  onChange={(description) => setItems(m.items.map((x, j) => (j === i ? { ...x, description } : x)))}
                 />
               </div>
             </div>
@@ -290,12 +287,20 @@ function ModuleFields({
           {titleField}
           {m.links.map((l, i) => (
             <div key={l.id} className="space-y-2 rounded-lg bg-gray-50 p-3 ring-1 ring-gray-200">
-              <div className="flex gap-2">
-                <Input placeholder="Label" value={l.label} maxLength={120} onChange={(e) => patchLink(i, { label: e.target.value })} />
+              <div className="flex items-start gap-2">
+                <div className="min-w-0 flex-1">
+                  <RichTextInput aria-label="Label" placeholder="Label" value={l.label} maxLength={120} onChange={(label) => patchLink(i, { label })} />
+                </div>
                 <RowButtons i={i} list={m.links} onChange={setLinks} />
               </div>
               <Input placeholder="https://help.example.com" value={l.url} maxLength={1000} onChange={(e) => patchLink(i, { url: e.target.value })} />
-              <Input placeholder="Description (optional)" value={l.description} maxLength={300} onChange={(e) => patchLink(i, { description: e.target.value })} />
+              <RichTextInput
+                aria-label="Description"
+                placeholder="Description (optional)"
+                value={l.description}
+                maxLength={300}
+                onChange={(description) => patchLink(i, { description })}
+              />
               <label className="flex items-center gap-2 text-xs text-gray-600">
                 <input type="checkbox" checked={l.newTab} onChange={(e) => patchLink(i, { newTab: e.target.checked })} />
                 Open in a new tab
@@ -317,9 +322,7 @@ function ModuleFields({
       return (
         <>
           {titleField}
-          <Field label="Text">
-            <Textarea rows={2} value={m.text} maxLength={500} onChange={(e) => onChange({ ...m, text: e.target.value })} />
-          </Field>
+          <RichField label="Text" multiline rows={2} value={m.text} maxLength={500} onChange={(text) => onChange({ ...m, text })} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Button label">
               <Input value={m.buttonLabel} maxLength={60} onChange={(e) => onChange({ ...m, buttonLabel: e.target.value })} />
@@ -407,18 +410,20 @@ function ArticlesField({
                   if (!open) onPreview(a);
                 }}
               >
-                {a.title || "Untitled article"}
+                {plainText(a.title) || "Untitled article"}
               </button>
               <RowButtons i={i} list={articles} onChange={onChange} />
             </div>
             {open && (
               <div className="space-y-3 border-t border-gray-100 p-3">
-                <Field label="Title">
-                  <Input value={a.title} maxLength={200} onChange={(e) => patch(i, { title: e.target.value })} />
-                </Field>
-                <Field label="Summary" hint="One line under the title in the list. Also searched.">
-                  <Input value={a.summary} maxLength={300} onChange={(e) => patch(i, { summary: e.target.value })} />
-                </Field>
+                <RichField label="Title" value={a.title} maxLength={200} onChange={(title) => patch(i, { title })} />
+                <RichField
+                  label="Summary"
+                  hint="One line under the title in the list. Also searched."
+                  value={a.summary}
+                  maxLength={300}
+                  onChange={(summary) => patch(i, { summary })}
+                />
                 <BlocksEditor ws={ws} blocks={a.blocks} onChange={(blocks) => patch(i, { blocks })} others={others} context="announcement" />
               </div>
             )}

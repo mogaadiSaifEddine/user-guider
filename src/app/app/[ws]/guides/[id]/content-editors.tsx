@@ -8,11 +8,12 @@ import {
   type Hotspot,
   type HotspotContent,
 } from "@/lib/guide-schema";
-import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
+import { Button, Card, Field, Input, Select } from "@/components/ui";
+import { plainText } from "@/lib/format";
+import { RichField } from "@/components/rich-text-input";
 
 export type OtherGuide = { id: string; name: string; type: string };
 
-export const TEXT_HINT = "Supports **bold**, *italic*, [links](https://…) and line breaks.";
 const placements = ["auto", "top", "bottom", "left", "right"] as const;
 
 export function move<T>(list: T[], i: number, dir: -1 | 1) {
@@ -82,16 +83,12 @@ export function HotspotEditor({ value, onChange }: { value: HotspotContent; onCh
           key={h.id}
           index={i}
           total={value.hotspots.length}
-          title={h.title || "Untitled hotspot"}
+          title={plainText(h.title) || "Untitled hotspot"}
           onMove={(d) => set(move(value.hotspots, i, d))}
           onDelete={() => set(value.hotspots.filter((_, j) => j !== i))}
         >
-          <Field label="Title">
-            <Input value={h.title} maxLength={200} onChange={(e) => patch(i, { title: e.target.value })} />
-          </Field>
-          <Field label="Text" hint={TEXT_HINT}>
-            <Textarea rows={2} value={h.body} maxLength={2000} onChange={(e) => patch(i, { body: e.target.value })} />
-          </Field>
+          <RichField label="Title" value={h.title} maxLength={200} onChange={(title) => patch(i, { title })} />
+          <RichField label="Text" multiline rows={2} value={h.body} maxLength={2000} onChange={(body) => patch(i, { body })} />
           <SelectorField value={h.selector} onChange={(v) => patch(i, { selector: v })} emptyHint="Required: the beacon sits on this element." />
           <Field label="Tooltip position">
             <Select value={h.placement} onChange={(e) => patch(i, { placement: e.target.value as Hotspot["placement"] })}>
@@ -133,12 +130,14 @@ export function ChecklistEditor({
   return (
     <div className="space-y-4">
       <Card className="space-y-4 p-5">
-        <Field label="Checklist title" hint="Also the label on the launcher button.">
-          <Input value={value.title} maxLength={200} onChange={(e) => patch({ title: e.target.value })} />
-        </Field>
-        <Field label="Description">
-          <Textarea rows={2} value={value.description} maxLength={1000} onChange={(e) => patch({ description: e.target.value })} />
-        </Field>
+        <RichField
+          label="Checklist title"
+          hint="Also the label on the launcher button."
+          value={value.title}
+          maxLength={200}
+          onChange={(title) => patch({ title })}
+        />
+        <RichField label="Description" multiline rows={2} value={value.description} maxLength={1000} onChange={(description) => patch({ description })} />
         <Field label="Launcher position">
           <Select value={value.position} onChange={(e) => patch({ position: e.target.value as ChecklistContent["position"] })}>
             <option value="bottom-right">Bottom right</option>
@@ -152,16 +151,12 @@ export function ChecklistEditor({
           key={it.id}
           index={i}
           total={value.items.length}
-          title={it.title || "Untitled item"}
+          title={plainText(it.title) || "Untitled item"}
           onMove={(d) => setItems(move(value.items, i, d))}
           onDelete={() => setItems(value.items.filter((_, j) => j !== i))}
         >
-          <Field label="Title">
-            <Input value={it.title} maxLength={200} onChange={(e) => patchItem(i, { title: e.target.value })} />
-          </Field>
-          <Field label="Description">
-            <Input value={it.description} maxLength={1000} onChange={(e) => patchItem(i, { description: e.target.value })} />
-          </Field>
+          <RichField label="Title" value={it.title} maxLength={200} onChange={(title) => patchItem(i, { title })} />
+          <RichField label="Description" multiline rows={1} value={it.description} maxLength={1000} onChange={(description) => patchItem(i, { description })} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Field label="When clicked">

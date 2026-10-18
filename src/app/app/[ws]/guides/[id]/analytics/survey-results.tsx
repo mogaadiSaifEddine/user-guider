@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { QuestionResult } from "@/lib/survey-results";
 import { FunnelBars } from "@/components/charts";
 import { Card } from "@/components/ui";
+import { plainText } from "@/lib/format";
 
 // NPS groups use the diverging pair (orange ↔ blue) with a gray midpoint.
 const NPS_COLORS = { detractors: "#eb6834", passives: "#a3a3a3", promoters: "#2a78d6" };
@@ -15,7 +16,7 @@ export function SurveyResults({ ws, results }: { ws: string; results: QuestionRe
           <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold text-gray-900">
               <span className="mr-2 text-xs text-gray-400 tabular-nums">Q{i + 1}</span>
-              {r.question.title || "Untitled question"}
+              {plainText(r.question.title) || "Untitled question"}
             </h2>
             <span className="text-xs text-gray-500">
               {r.kind === "choice" ? (r.question.type === "multiple" ? "Multiple choice" : "Single choice") : typeNames[r.kind]} ·{" "}
