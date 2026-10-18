@@ -62,7 +62,7 @@ export function GuideEditor({
   const [content, setContent] = useState(guide.content);
   const [targeting, setTargeting] = useState(guide.targeting);
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState<"content" | "targeting">("content");
+  const [tab, setTab] = useState<"content" | "targeting" | "builder">("content");
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -147,16 +147,16 @@ export function GuideEditor({
 
       <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f7f7f9]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
         <div className="flex gap-1">
-          {(["content", "targeting"] as const).map((t) => (
+          {(usesBuilder ? (["content", "targeting", "builder"] as const) : (["content", "targeting"] as const)).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={cx(
-                "rounded-md px-3 py-1.5 text-sm font-medium capitalize",
+                "rounded-md px-3 py-1.5 text-sm font-medium",
                 tab === t ? "bg-white shadow-sm ring-1 ring-gray-200" : "text-gray-600 hover:text-gray-900",
               )}
             >
-              {t}
+              {tabLabels[t]}
             </button>
           ))}
         </div>
@@ -213,6 +213,10 @@ export function GuideEditor({
                 <ResourceCenterEditor ws={ws} value={content as ResourceCenterContent} onChange={edit(setContent)} others={others} theme={theme} />
               )}
             </>
+          ) : tab === "builder" ? (
+            <div className="max-w-xl">
+              <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />
+            </div>
           ) : (
             <TargetingEditor
               type={guide.type}
@@ -225,7 +229,6 @@ export function GuideEditor({
         </div>
 
         <aside className="space-y-4">
-          {usesBuilder && <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />}
           {guide.type === "RESOURCE_CENTER" ? (
             <Card className="space-y-2 p-4 text-sm">
               <div className="font-semibold">Open from your app</div>
@@ -272,6 +275,8 @@ export function GuideEditor({
     </div>
   );
 }
+
+const tabLabels = { content: "Content", targeting: "Targeting", builder: "Visual builder" } as const;
 
 // ---------- Builder ----------
 

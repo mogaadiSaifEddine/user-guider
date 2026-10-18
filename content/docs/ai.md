@@ -14,7 +14,7 @@ This feature appears only if the server has a Gemini API key; see [Deploy](self-
 ## From the dashboard
 
 1. Open a tour or hotspot guide.
-2. In the **Visual builder** box, enter the page address and tick **✨ Let AI draft the steps on that page**.
+2. On the **Visual builder** tab, enter the page address and tick **✨ Let AI draft the steps on that page**.
 3. Optionally describe a **goal**, e.g. *Show new users how to create and publish a tour*. Without a goal, the AI covers what a new user of that page needs most.
 4. Choose **Open builder and draft with AI**. Your app opens with the builder, and after a moment the drafted steps appear in the panel.
 
