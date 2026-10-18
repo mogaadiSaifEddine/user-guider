@@ -36,7 +36,7 @@ export default async function GuidesPage({
     <>
       <PageHeader
         title="Guides"
-        description="Tours, checklists, announcements and hotspots shown on your site."
+        description="Tours, checklists, announcements, hotspots, surveys and resource centers shown on your site."
         actions={
           <>
             <ButtonLink variant="secondary" href={`/app/${ws}/import`}>

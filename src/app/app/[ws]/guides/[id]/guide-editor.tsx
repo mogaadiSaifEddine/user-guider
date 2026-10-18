@@ -8,6 +8,7 @@ import type {
   ChecklistContent,
   GuideTypeName,
   HotspotContent,
+  ResourceCenterContent,
   SurveyContent,
   Targeting,
   Theme,
@@ -28,6 +29,7 @@ import {
 import { ChecklistEditor, HotspotEditor, type OtherGuide } from "./content-editors";
 import { AnnouncementEditor, TourEditor } from "./block-content-editors";
 import { SurveyEditor } from "./survey-editor";
+import { ResourceCenterEditor } from "./resource-center-editor";
 
 type EditorGuide = {
   id: string;
@@ -207,6 +209,9 @@ export function GuideEditor({
                 <ChecklistEditor value={content as ChecklistContent} onChange={edit(setContent)} others={others} />
               )}
               {guide.type === "SURVEY" && <SurveyEditor value={content as SurveyContent} onChange={edit(setContent)} theme={theme} />}
+              {guide.type === "RESOURCE_CENTER" && (
+                <ResourceCenterEditor ws={ws} value={content as ResourceCenterContent} onChange={edit(setContent)} others={others} theme={theme} />
+              )}
             </>
           ) : (
             <TargetingEditor
@@ -221,11 +226,22 @@ export function GuideEditor({
 
         <aside className="space-y-4">
           {usesBuilder && <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />}
-          <Card className="space-y-2 p-4 text-sm">
-            <div className="font-semibold">Manual start</div>
-            <p className="text-gray-500">Start this guide from your own code, e.g. a help button:</p>
-            <code className="block rounded bg-gray-50 p-2 text-xs break-all">LocatifyGuides.start(&quot;{guide.id}&quot;)</code>
-          </Card>
+          {guide.type === "RESOURCE_CENTER" ? (
+            <Card className="space-y-2 p-4 text-sm">
+              <div className="font-semibold">Open from your app</div>
+              <p className="text-gray-500">Open or close the panel from your own help button or menu:</p>
+              <code className="block rounded bg-gray-50 p-2 text-xs break-all">LocatifyGuides.openResourceCenter()</code>
+              <p className="text-xs text-gray-500">
+                Only one resource center shows on a page: the highest priority one whose targeting matches.
+              </p>
+            </Card>
+          ) : (
+            <Card className="space-y-2 p-4 text-sm">
+              <div className="font-semibold">Manual start</div>
+              <p className="text-gray-500">Start this guide from your own code, e.g. a help button:</p>
+              <code className="block rounded bg-gray-50 p-2 text-xs break-all">LocatifyGuides.start(&quot;{guide.id}&quot;)</code>
+            </Card>
+          )}
           <Card className="flex flex-wrap gap-2 p-4">
             <Button variant="secondary" disabled={pending} onClick={() => startTransition(() => duplicateGuide(ws, guide.id))}>
               Duplicate
@@ -387,6 +403,7 @@ function TargetingEditor({
 }) {
   const patch = (p: Partial<Targeting>) => onChange({ ...value, ...p });
   const manualAllowed = type === "TOUR" || type === "ANNOUNCEMENT" || type === "SURVEY";
+  const rc = type === "RESOURCE_CENTER";
 
   return (
     <div className="space-y-4">
@@ -488,35 +505,43 @@ function TargetingEditor({
       </Card>
 
       <Card className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-        {manualAllowed ? (
-          <Field label="Trigger">
-            <Select value={value.trigger} onChange={(e) => patch({ trigger: e.target.value as Targeting["trigger"] })}>
-              <option value="auto">Automatically when targeting matches</option>
-              <option value="manual">Only manually (start() or a checklist)</option>
-            </Select>
-          </Field>
+        {rc ? (
+          <p className="text-sm text-gray-500 sm:col-span-2">
+            The resource center&apos;s launcher appears on every page and for every user its targeting matches. It doesn&apos;t open by itself.
+          </p>
         ) : (
-          <Field label="Trigger" hint={`A ${type === "CHECKLIST" ? "checklist" : "hotspot"} appears as soon as its targeting matches.`}>
-            <Input value="Automatically when targeting matches" disabled />
-          </Field>
+          <>
+            {manualAllowed ? (
+              <Field label="Trigger">
+                <Select value={value.trigger} onChange={(e) => patch({ trigger: e.target.value as Targeting["trigger"] })}>
+                  <option value="auto">Automatically when targeting matches</option>
+                  <option value="manual">Only manually (start() or a checklist)</option>
+                </Select>
+              </Field>
+            ) : (
+              <Field label="Trigger" hint={`A ${type === "CHECKLIST" ? "checklist" : "hotspot"} appears as soon as its targeting matches.`}>
+                <Input value="Automatically when targeting matches" disabled />
+              </Field>
+            )}
+            <Field label="Show again">
+              <Select value={value.frequency} onChange={(e) => patch({ frequency: e.target.value as Targeting["frequency"] })}>
+                <option value="once">Never, once seen through or dismissed</option>
+                <option value="until_completed">On later visits until completed</option>
+                <option value="always">On every page load</option>
+              </Select>
+            </Field>
+            <Field label="Delay (seconds)" hint={manualAllowed ? undefined : "Only used by tours, announcements and surveys."}>
+              <Input
+                type="number"
+                min={0}
+                max={600}
+                value={value.delaySeconds}
+                onChange={(e) => patch({ delaySeconds: Math.max(0, Math.min(600, Number(e.target.value) || 0)) })}
+              />
+            </Field>
+          </>
         )}
-        <Field label="Show again">
-          <Select value={value.frequency} onChange={(e) => patch({ frequency: e.target.value as Targeting["frequency"] })}>
-            <option value="once">Never, once seen through or dismissed</option>
-            <option value="until_completed">On later visits until completed</option>
-            <option value="always">On every page load</option>
-          </Select>
-        </Field>
-        <Field label="Delay (seconds)" hint={manualAllowed ? undefined : "Only used by tours, announcements and surveys."}>
-          <Input
-            type="number"
-            min={0}
-            max={600}
-            value={value.delaySeconds}
-            onChange={(e) => patch({ delaySeconds: Math.max(0, Math.min(600, Number(e.target.value) || 0)) })}
-          />
-        </Field>
-        <Field label="Priority" hint="Higher runs first when several guides match one page.">
+        <Field label="Priority" hint={rc ? "Higher wins when several resource centers match one page." : "Higher runs first when several guides match one page."}>
           <Input
             type="number"
             min={-100}

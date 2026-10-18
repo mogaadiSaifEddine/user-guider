@@ -15,6 +15,7 @@ import {
   targetingSchema,
   themeSchema,
   type GuideTypeName,
+  type ResourceCenterContent,
   type SurveyContent,
 } from "@/lib/guide-schema";
 import { companyFrom } from "@/lib/companies";
@@ -23,7 +24,7 @@ export type ActionResult = { ok: true; message?: string } | { ok: false; error: 
 
 // ---------- Guides ----------
 
-const guideTypes = ["TOUR", "CHECKLIST", "ANNOUNCEMENT", "HOTSPOT", "SURVEY"] as const;
+const guideTypes = ["TOUR", "CHECKLIST", "ANNOUNCEMENT", "HOTSPOT", "SURVEY", "RESOURCE_CENTER"] as const;
 
 export async function createGuide(ws: string, form: FormData) {
   await requireWorkspace(ws);
@@ -96,6 +97,17 @@ function publishProblem(type: GuideTypeName, content: unknown): string | null {
       (q) => (q.type === "single" || q.type === "multiple") && q.options.filter((o) => o.label.trim()).length < 2,
     );
     if (fewOptions >= 0) return `Question ${fewOptions + 1} needs at least two answer options.`;
+  }
+  if (type === "RESOURCE_CENTER") {
+    const rc = content as ResourceCenterContent;
+    if (!rc.modules.length) return "Add at least one section before publishing.";
+    for (const m of rc.modules) {
+      if (m.type === "checklist" && !m.guideId) return "Pick a checklist for the checklist section.";
+      if (m.type === "links" && m.links.some((l) => !l.label.trim() || !l.url.trim())) return `Every link in "${m.title}" needs a label and an address.`;
+      if (m.type === "articles" && m.articles.some((a) => !a.title.trim())) return `Every article in "${m.title}" needs a title.`;
+      if (m.type === "contact" && !m.value.trim() && m.action !== "event")
+        return `The contact section needs ${m.action === "email" ? "an email address" : "an address"}.`;
+    }
   }
   if (type === "HOTSPOT") {
     const hs = c.hotspots as { selector: string }[];

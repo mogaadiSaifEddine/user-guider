@@ -18,7 +18,8 @@ export type EventType =
   | "guide_dismissed"
   | "checklist_item_completed"
   | "hotspot_opened"
-  | "survey_answered";
+  | "survey_answered"
+  | "resource_clicked";
 
 export type Report = (type: EventType, extra?: { name?: string; stepIndex?: number; value?: SurveyAnswerValue }) => void;
 export type EndReason = "completed" | "dismissed" | "lost";

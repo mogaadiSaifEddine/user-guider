@@ -10,6 +10,7 @@ const descriptions = {
   ANNOUNCEMENT: "A modal or top banner for news and updates.",
   HOTSPOT: "Pulsing beacons that reveal a hint when clicked.",
   SURVEY: "NPS, ratings, multiple choice and open questions.",
+  RESOURCE_CENTER: "A help button with guides, articles, links and contact.",
 } as const;
 
 export function NewGuideButton({ ws }: { ws: string }) {

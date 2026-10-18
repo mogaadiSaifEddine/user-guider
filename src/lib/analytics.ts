@@ -94,12 +94,12 @@ export async function guideAnalytics(guideId: string, days = 30) {
       FROM Event
       WHERE guideId = ${guideId} AND createdAt >= ${from} AND type = 'step_viewed'
       GROUP BY stepIndex`,
-    // Checklist items and hotspots both carry their id in `name`.
+    // Checklist items, hotspots and resource center items all carry their id in `name`.
     prisma.$queryRaw<{ name: string; c: bigint }[]>`
       SELECT name, COUNT(DISTINCT endUserId) AS c
       FROM Event
       WHERE guideId = ${guideId} AND createdAt >= ${from}
-        AND type IN ('checklist_item_completed', 'hotspot_opened') AND name IS NOT NULL
+        AND type IN ('checklist_item_completed', 'hotspot_opened', 'resource_clicked') AND name IS NOT NULL
       GROUP BY name`,
     prisma.$queryRaw<DailyRow[]>`
       SELECT DATE(createdAt) AS d, type, COUNT(DISTINCT endUserId) AS c
@@ -114,6 +114,7 @@ export async function guideAnalytics(guideId: string, days = 30) {
     seen: t.guide_shown ?? 0,
     completed: t.guide_completed ?? 0,
     dismissed: t.guide_dismissed ?? 0,
+    clicked: t.resource_clicked ?? 0,
     steps: new Map(steps.map((r) => [Number(r.stepIndex), Number(r.c)])),
     items: new Map(items.map((r) => [r.name, Number(r.c)])),
     daily: toSeries(daily, days),

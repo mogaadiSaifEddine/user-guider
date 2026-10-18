@@ -121,6 +121,7 @@ export const typeLabels = {
   ANNOUNCEMENT: "Announcement",
   HOTSPOT: "Hotspots",
   SURVEY: "Survey",
+  RESOURCE_CENTER: "Resource center",
 } as const;
 
 export const statusColors = { DRAFT: "gray", PUBLISHED: "green", ARCHIVED: "yellow" } as const;

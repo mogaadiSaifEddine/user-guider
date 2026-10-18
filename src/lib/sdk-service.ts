@@ -55,6 +55,8 @@ export const eventTypes = [
   "checklist_item_completed",
   "hotspot_opened",
   "survey_answered",
+  // Resource center: an article, link, guide or contact button was clicked (name = item id).
+  "resource_clicked",
   "custom",
 ] as const;
 
@@ -216,10 +218,11 @@ export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInf
           delaySeconds: targeting.delaySeconds,
         },
         // Checklists and hotspots can't be started by hand, so they always run automatically.
-        // Surveys can, like tours and announcements.
+        // Surveys can, like tours and announcements. A resource center is always there when it matches.
         autoShow:
-          (targeting.trigger === "auto" || g.type === "CHECKLIST" || g.type === "HOTSPOT") &&
-          autoShowAllowed(targeting.frequency, p),
+          g.type === "RESOURCE_CENTER" ||
+          ((targeting.trigger === "auto" || g.type === "CHECKLIST" || g.type === "HOTSPOT") &&
+            autoShowAllowed(targeting.frequency, p)),
         progress: progressView(p),
       },
     ];

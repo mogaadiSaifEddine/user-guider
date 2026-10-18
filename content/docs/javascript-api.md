@@ -35,7 +35,21 @@ document.querySelector("#help-tour").addEventListener("click", () => {
 - The guide must be published and the user must match its user rules (and, if anonymous, the guide must allow anonymous visitors). Otherwise a warning is logged to the console and nothing happens.
 - Page rules, frequency and delay are ignored.
 - Anything already on screen (another tour, announcement or survey) is closed first.
-- Checklists and hotspots can't be started this way; they appear on their own.
+- Checklists and hotspots can't be started this way; they appear on their own. Passing a resource center's id opens its panel, like `openResourceCenter()`.
+
+## openResourceCenter()
+
+Opens the [resource center](resource-center) panel, e.g. from a *Help* item in your own menu. Works whether or not the resource center shows its launcher button. Called before the snippet has loaded, the panel opens as soon as it's ready; if no resource center matches this page and user, a warning is logged to the console.
+
+```js
+document.querySelector("#help-menu").addEventListener("click", () => {
+  LocatifyGuides.openResourceCenter();
+});
+```
+
+## closeResourceCenter()
+
+Closes the resource center panel if it's open.
 
 ## page()
 

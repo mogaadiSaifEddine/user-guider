@@ -2,6 +2,7 @@ import type {
   AnnouncementContent,
   ChecklistContent,
   HotspotContent,
+  ResourceCenterContent,
   SurveyAnswerValue,
   SurveyContent,
   Theme,
@@ -9,6 +10,7 @@ import type {
 } from "../src/lib/guide-schema";
 import { matchesUrl, type UrlRule } from "../src/lib/targeting";
 import { builderToken, startBuilder } from "./builder";
+import { runResourceCenter, type RcHandle } from "./resource-center";
 import { applyTheme } from "./ui";
 import {
   runAnnouncement,
@@ -30,7 +32,7 @@ type Progress = {
 type SdkGuide = {
   id: string;
   name: string;
-  type: "TOUR" | "CHECKLIST" | "ANNOUNCEMENT" | "HOTSPOT" | "SURVEY";
+  type: "TOUR" | "CHECKLIST" | "ANNOUNCEMENT" | "HOTSPOT" | "SURVEY" | "RESOURCE_CENTER";
   priority: number;
   content: unknown;
   targeting: { urlRules: UrlRule[]; trigger: "auto" | "manual"; delaySeconds: number };
@@ -75,6 +77,8 @@ const ANON_KEY = "lg_anon_id";
   const shownThisLoad = new Set<string>();
   const hotspots = new Map<string, Handle>();
   const checklists = new Map<string, ChecklistHandle>();
+  let resourceCenter: { guideId: string; handle: RcHandle } | null = null;
+  let openRcWhenReady = false;
   const buffer: QueuedEvent[] = [];
   let flushTimer = 0;
 
@@ -99,6 +103,15 @@ const ANON_KEY = "lg_anon_id";
     page() {
       evaluate();
     },
+    openResourceCenter() {
+      if (resourceCenter) resourceCenter.handle.open();
+      else if (!loaded) openRcWhenReady = true;
+      else console.warn("[LocatifyGuides] No resource center for this page and user.");
+    },
+    closeResourceCenter() {
+      openRcWhenReady = false;
+      resourceCenter?.handle.close();
+    },
     reset() {
       flush();
       user = {};
@@ -115,7 +128,16 @@ const ANON_KEY = "lg_anon_id";
   const token = builderToken();
   if (token) {
     // Builder session: edit the guide, don't run live guides.
-    w.LocatifyGuides = { ...api, identify() {}, track() {}, start() {}, page() {}, reset() {} } as never;
+    w.LocatifyGuides = {
+      ...api,
+      identify() {},
+      track() {},
+      start() {},
+      page() {},
+      reset() {},
+      openResourceCenter() {},
+      closeResourceCenter() {},
+    } as never;
     void startBuilder(apiBase, token);
     return;
   }
@@ -164,6 +186,10 @@ const ANON_KEY = "lg_anon_id";
       loaded = true;
       evaluate();
       for (const id of pendingStarts.splice(0)) startGuide(id);
+      if (openRcWhenReady) {
+        openRcWhenReady = false;
+        resourceCenter?.handle.open();
+      }
     } catch (e) {
       console.warn("[LocatifyGuides] init failed", e);
     }
@@ -205,6 +231,7 @@ const ANON_KEY = "lg_anon_id";
       g.progress = p;
       checklists.get(guideId)?.update(new Set(p?.completedItems ?? []));
     }
+    resourceCenter?.handle.update();
   }
 
   // ---------- rendering ----------
@@ -217,11 +244,23 @@ const ANON_KEY = "lg_anon_id";
     for (const h of checklists.values()) h.stop();
     hotspots.clear();
     checklists.clear();
+    resourceCenter?.handle.stop();
+    resourceCenter = null;
   }
 
   function evaluate() {
     if (!loaded) return;
     const href = location.href;
+    // One resource center per page; checklists it embeds don't get their own launcher.
+    const rc = guides.find((g) => g.type === "RESOURCE_CENTER" && matchesUrl(g.targeting.urlRules, href));
+    if (resourceCenter && resourceCenter.guideId !== rc?.id) {
+      resourceCenter.handle.stop();
+      resourceCenter = null;
+    }
+    if (rc && !resourceCenter) resourceCenter = { guideId: rc.id, handle: startResourceCenter(rc) };
+    const embedded = new Set(
+      rc ? (rc.content as ResourceCenterContent).modules.flatMap((m) => (m.type === "checklist" ? [m.guideId] : [])) : [],
+    );
     for (const g of guides) {
       const here = matchesUrl(g.targeting.urlRules, href);
       if (g.type === "HOTSPOT") {
@@ -240,7 +279,7 @@ const ANON_KEY = "lg_anon_id";
         }
       } else if (g.type === "CHECKLIST") {
         const h = checklists.get(g.id);
-        if (here && g.autoShow && !h) {
+        if (here && g.autoShow && !h && !embedded.has(g.id)) {
           checklists.set(
             g.id,
             runChecklist(g.content as ChecklistContent, {
@@ -254,7 +293,7 @@ const ANON_KEY = "lg_anon_id";
               },
             }),
           );
-        } else if (!here && h) {
+        } else if ((!here || embedded.has(g.id)) && h) {
           h.stop();
           checklists.delete(g.id);
         }
@@ -285,10 +324,36 @@ const ANON_KEY = "lg_anon_id";
     }, next.targeting.delaySeconds * 1000);
   }
 
+  function startResourceCenter(rc: SdkGuide) {
+    const startable = (g: SdkGuide | undefined) => g && isModal(g);
+    return runResourceCenter(rc.content as ResourceCenterContent, {
+      report: reporter(rc.id),
+      guide(id) {
+        const g = guides.find((x) => x.id === id);
+        return startable(g) ? { id: g!.id, name: g!.name, completed: g!.progress?.status === "COMPLETED" } : null;
+      },
+      checklist(id) {
+        const g = guides.find((x) => x.id === id && x.type === "CHECKLIST");
+        return g ? { content: g.content as ChecklistContent, completed: new Set(g.progress?.completedItems ?? []) } : null;
+      },
+      reportChecklist(checklistId, itemId) {
+        const g = guides.find((x) => x.id === checklistId);
+        if (!g) return;
+        // Tick it locally right away; the server's answer to the event confirms it.
+        g.progress ??= { status: "STARTED", currentStep: 0, completedItems: [] };
+        if (!g.progress.completedItems.includes(itemId)) g.progress.completedItems = [...g.progress.completedItems, itemId];
+        reporter(checklistId)("checklist_item_completed", { name: itemId });
+      },
+      startGuide,
+    });
+  }
+
   function startGuide(guideId: string) {
     const g = guides.find((x) => x.id === guideId);
     if (!g) return console.warn("[LocatifyGuides] Guide not available for this user:", guideId);
+    if (g.type === "RESOURCE_CENTER") return api.openResourceCenter();
     if (!isModal(g)) return;
+    resourceCenter?.handle.close();
     modal?.handle.stop();
     modal = null;
     shownThisLoad.add(g.id);

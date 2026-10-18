@@ -69,6 +69,7 @@ enum GuideType {
   ANNOUNCEMENT
   HOTSPOT
   SURVEY
+  RESOURCE_CENTER
 }
 
 enum GuideStatus {
@@ -213,7 +214,7 @@ model Event {
   workspaceId String
   endUserId   String
   guideId     String?
-  // guide_shown | step_viewed | guide_completed | guide_dismissed | checklist_item_completed | hotspot_opened | survey_answered | custom
+  // guide_shown | step_viewed | guide_completed | guide_dismissed | checklist_item_completed | hotspot_opened | survey_answered | resource_clicked | custom
   type        String   @db.VarChar(64)
   // Custom event name (track()) or checklist item id.
   name        String?  @db.VarChar(191)

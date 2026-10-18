@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireGuide } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { guideAnalytics, pct } from "@/lib/analytics";
 import {
   blocksLabel,
@@ -7,6 +8,7 @@ import {
   type ChecklistContent,
   type GuideTypeName,
   type HotspotContent,
+  type ResourceCenterContent,
   type SurveyContent,
   type TourContent,
 } from "@/lib/guide-schema";
@@ -52,6 +54,30 @@ export default async function GuideAnalyticsPage({
       note: "Users who reached each question. A big drop shows where people stop answering.",
       rows: (content as SurveyContent).questions.map((q, i) => ({ label: q.title || `Question ${i + 1}`, value: a.steps.get(i) ?? 0 })),
     };
+  } else if (type === "RESOURCE_CENTER") {
+    const rc = content as ResourceCenterContent;
+    const names = new Map(
+      (await prisma.guide.findMany({ where: { workspaceId: ws }, select: { id: true, name: true } })).map((g) => [g.id, g.name]),
+    );
+    const rows = rc.modules.flatMap((m) => {
+      switch (m.type) {
+        case "guides":
+          return m.items.map((it) => ({ label: `▶ ${it.label || names.get(it.guideId) || "Guide"}`, id: it.id }));
+        case "articles":
+          return m.articles.map((a) => ({ label: `≡ ${a.title || "Untitled article"}`, id: a.id }));
+        case "links":
+          return m.links.map((l) => ({ label: `↗ ${l.label || l.url}`, id: l.id }));
+        case "contact":
+          return [{ label: `✉ ${m.buttonLabel}`, id: m.id }];
+        case "checklist":
+          return [];
+      }
+    });
+    breakdown = {
+      title: "Most used",
+      note: "Users who clicked each guide, article, link or contact button, out of users who opened the panel.",
+      rows: rows.map((r) => ({ label: r.label, value: a.items.get(r.id) ?? 0 })).sort((x, y) => y.value - x.value),
+    };
   } else if (type === "HOTSPOT") {
     breakdown = {
       title: "Hotspots opened",
@@ -89,12 +115,19 @@ export default async function GuideAnalyticsPage({
         }
       />
 
+      {type === "RESOURCE_CENTER" ? (
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat label="Opened it" value={a.seen} sub="unique users" />
+          <Stat label="Clicked something" value={a.clicked} sub={`${pct(a.clicked, a.seen)}% of openers`} />
+        </div>
+      ) : (
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Saw it" value={a.seen} sub="unique users" />
         <Stat label="Completed" value={a.completed} sub={`${pct(a.completed, a.seen)}% of viewers`} />
         <Stat label="Dismissed" value={a.dismissed} sub={`${pct(a.dismissed, a.seen)}% of viewers`} />
         <Stat label="Completion rate" value={`${pct(a.completed, a.seen)}%`} />
       </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Card className="p-5">
@@ -136,7 +169,7 @@ export default async function GuideAnalyticsPage({
 
       {a.seen === 0 && (
         <Card className="mt-6 p-5 text-sm text-gray-600">
-          No one has seen this guide in this period.{" "}
+          {type === "RESOURCE_CENTER" ? "No one has opened this resource center in this period." : "No one has seen this guide in this period."}{" "}
           {guide.status !== "PUBLISHED" ? "It isn't published yet." : "Check its page and user targeting."}{" "}
           <ButtonLink variant="ghost" href={`/app/${ws}/guides/${id}`}>
             Open editor

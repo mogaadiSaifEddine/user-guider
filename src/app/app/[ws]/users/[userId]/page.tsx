@@ -14,6 +14,7 @@ const eventLabels: Record<string, string> = {
   checklist_item_completed: "Checked item",
   hotspot_opened: "Opened hotspot",
   survey_answered: "Answered",
+  resource_clicked: "Opened resource",
   custom: "Event",
 };
 

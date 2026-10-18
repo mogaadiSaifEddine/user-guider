@@ -35,6 +35,7 @@ Below the chart, each guide type gets its own breakdown:
 | Checklist | **Items completed**: how many people did each item, as a share of those who saw the checklist. |
 | Hotspots | **Hotspots opened**: how many people opened each hotspot. |
 | Survey | **Question funnel**, then the answers to every question. See [Surveys](surveys#results). |
+| Resource center | **Most used**: how many people clicked each guide, article, link or contact button. See [Resource center](resource-center#analytics). |
 
 Steps and items are labelled using the live version of the guide.
 

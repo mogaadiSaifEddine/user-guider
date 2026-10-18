@@ -27,6 +27,7 @@ export const docSections: DocSection[] = [
       { slug: "announcements", title: "Announcements", description: "Modals and banners for news." },
       { slug: "hotspots", title: "Hotspots", description: "Pulsing beacons with a hint." },
       { slug: "surveys", title: "Surveys", description: "NPS, ratings, choices and open questions." },
+      { slug: "resource-center", title: "Resource center", description: "A help button with guides, articles, links and contact." },
       { slug: "targeting", title: "Targeting and timing", description: "Who sees a guide, where, when and how often." },
       { slug: "publishing", title: "Publishing and editing", description: "Drafts, live versions, archiving." },
       { slug: "analytics", title: "Analytics", description: "Reach, completion, active users, companies and devices." },
@@ -39,7 +40,7 @@ export const docSections: DocSection[] = [
     pages: [
       { slug: "install", title: "Install the snippet", description: "Add Locatify Guides to any website or web app." },
       { slug: "identify", title: "Identify users", description: "Tell Locatify Guides who is signed in." },
-      { slug: "javascript-api", title: "JavaScript API", description: "identify, track, start, page and reset." },
+      { slug: "javascript-api", title: "JavaScript API", description: "identify, track, start, the resource center, page and reset." },
       { slug: "identity-verification", title: "Identity verification", description: "Stop people from impersonating other users." },
       { slug: "http-api", title: "HTTP API", description: "Send events from your server." },
       { slug: "troubleshooting", title: "Troubleshooting", description: "When a guide doesn't show up." },

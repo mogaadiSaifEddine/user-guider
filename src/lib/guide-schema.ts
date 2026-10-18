@@ -208,12 +208,87 @@ export const surveyContentSchema = z.object({
     .prefault({}),
 });
 
+// ---------- Resource center ----------
+
+// A help launcher that opens a panel of modules. One per page: the highest
+// priority resource center whose targeting matches.
+
+export const launcherIcons = ["help", "book", "chat", "sparkle", "rocket"] as const;
+export const rcPositions = ["bottom-right", "bottom-left", "center-right", "center-left", "top-right", "top-left"] as const;
+
+const rcGuideItemSchema = z.object({
+  id: blockId,
+  guideId: z.string().max(64).default(""),
+  // Empty: the guide's name.
+  label: z.string().max(120).default(""),
+  description: z.string().max(300).default(""),
+});
+
+const rcLinkSchema = z.object({
+  id: blockId,
+  label: z.string().max(120).default(""),
+  description: z.string().max(300).default(""),
+  url: z.string().max(1000).default(""),
+  newTab: z.boolean().default(true),
+});
+
+const rcArticleSchema = z.object({
+  id: blockId,
+  title: z.string().max(200).default(""),
+  // One line under the title in the list; also searched.
+  summary: z.string().max(300).default(""),
+  blocks: z.array(blockSchema).max(30).default([]),
+});
+
+const moduleTitle = (fallback: string) => z.string().max(120).default(fallback);
+
+export const rcModuleSchema = z.discriminatedUnion("type", [
+  // Tours, announcements and surveys people can start (or restart) themselves.
+  z.object({ type: z.literal("guides"), id: blockId, title: moduleTitle("Guides"), items: z.array(rcGuideItemSchema).max(30).default([]) }),
+  // A checklist shown inline; its own corner launcher is hidden while the resource center is on the page.
+  z.object({ type: z.literal("checklist"), id: blockId, guideId: z.string().max(64).default("") }),
+  // Help articles written here, opened inside the panel.
+  z.object({ type: z.literal("articles"), id: blockId, title: moduleTitle("Help articles"), articles: z.array(rcArticleSchema).max(50).default([]) }),
+  z.object({ type: z.literal("links"), id: blockId, title: moduleTitle("Resources"), links: z.array(rcLinkSchema).max(30).default([]) }),
+  z.object({
+    type: z.literal("contact"),
+    id: blockId,
+    title: moduleTitle("Still need help?"),
+    text: z.string().max(500).default("Our team usually answers within a day."),
+    buttonLabel: z.string().max(60).default("Contact us"),
+    // email: mailto link. url: opens a page. event: dispatches `locatify-guides:contact` on window so the
+    // host app can open its own chat widget.
+    action: z.enum(["email", "url", "event"]).default("email"),
+    value: z.string().max(1000).default(""),
+  }),
+]);
+
+export const rcModuleTypes = ["guides", "checklist", "articles", "links", "contact"] as const;
+
+export const resourceCenterContentSchema = z.object({
+  title: z.string().max(120).default("Help center"),
+  subtitle: z.string().max(300).default("Find answers, take a tour, or get in touch."),
+  launcher: z
+    .object({
+      // Hidden: open it from your own help button with LocatifyGuides.openResourceCenter().
+      show: z.boolean().default(true),
+      label: z.string().max(40).default("Help"),
+      icon: z.enum(launcherIcons).default("help"),
+      // center-*: a vertical tab on the edge of the screen.
+      position: z.enum(rcPositions).default("bottom-right"),
+    })
+    .prefault({}),
+  search: z.boolean().default(true),
+  modules: z.array(rcModuleSchema).max(20).default([]),
+});
+
 export const contentSchemas = {
   TOUR: tourContentSchema,
   CHECKLIST: checklistContentSchema,
   ANNOUNCEMENT: announcementContentSchema,
   HOTSPOT: hotspotContentSchema,
   SURVEY: surveyContentSchema,
+  RESOURCE_CENTER: resourceCenterContentSchema,
 } as const;
 
 export type GuideTypeName = keyof typeof contentSchemas;
@@ -234,6 +309,39 @@ export type QuestionType = (typeof questionTypes)[number];
 export type SurveyQuestion = z.infer<typeof surveyQuestionSchema>;
 export type SurveyContent = z.infer<typeof surveyContentSchema>;
 export type SurveyAnswerValue = number | string | string[];
+export type ResourceCenterContent = z.infer<typeof resourceCenterContentSchema>;
+export type RcModule = z.infer<typeof rcModuleSchema>;
+export type RcModuleType = RcModule["type"];
+export type RcArticle = z.infer<typeof rcArticleSchema>;
+export type LauncherIcon = (typeof launcherIcons)[number];
+export type RcPosition = (typeof rcPositions)[number];
+
+export function newRcModule(type: RcModuleType, guideId = ""): RcModule {
+  const id = newId();
+  switch (type) {
+    case "guides":
+      return rcModuleSchema.parse({ type, id, items: guideId ? [{ id: newId(), guideId }] : [] });
+    case "checklist":
+      return rcModuleSchema.parse({ type, id, guideId });
+    case "articles":
+      return rcModuleSchema.parse({
+        type,
+        id,
+        articles: [
+          {
+            id: newId(),
+            title: "Getting started",
+            summary: "The basics in two minutes.",
+            blocks: [{ type: "text", id: newId(), text: "Write your article here." }],
+          },
+        ],
+      });
+    case "links":
+      return rcModuleSchema.parse({ type, id, links: [{ id: newId(), label: "Documentation", url: "" }] });
+    case "contact":
+      return rcModuleSchema.parse({ type, id });
+  }
+}
 
 // Checks one answer against its question; returns the value to store, or null if invalid.
 export function normalizeAnswer(q: SurveyQuestion, value: unknown): SurveyAnswerValue | null {
@@ -359,6 +467,10 @@ export function defaultContent(type: GuideTypeName) {
       return hotspotContentSchema.parse({ hotspots: [] });
     case "SURVEY":
       return surveyContentSchema.parse({ questions: [newQuestion("nps"), newQuestion("text")] });
+    case "RESOURCE_CENTER":
+      return resourceCenterContentSchema.parse({
+        modules: [newRcModule("guides"), newRcModule("articles"), newRcModule("contact")],
+      });
   }
 }
 
