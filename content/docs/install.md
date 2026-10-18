@@ -91,7 +91,8 @@ If your site sends a `Content-Security-Policy` header, allow the Locatify Guides
 | `script-src` | your Locatify Guides address, plus a nonce or hash for the inline stub | loading `sdk.js` and the queue |
 | `connect-src` | your Locatify Guides address | loading guides and sending events |
 | `style-src` | `'unsafe-inline'` | the script styles its own elements |
-| `img-src` | wherever announcement images are hosted | announcement header images |
+| `img-src` | your Locatify Guides address, plus any other image hosts you link to | images in steps and announcements (uploads are served from Locatify Guides) |
+| `frame-src` | `https://www.youtube-nocookie.com https://player.vimeo.com` | video blocks |
 
 ## What the script adds to your page
 

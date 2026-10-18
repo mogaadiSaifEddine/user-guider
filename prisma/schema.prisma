@@ -35,6 +35,7 @@ model Workspace {
   guides      Guide[]
   endUsers    EndUser[]
   events      Event[]
+  assets      Asset[]
 }
 
 enum Role {
@@ -89,6 +90,20 @@ model Guide {
   events    Event[]
 
   @@index([workspaceId, status])
+}
+
+// Images uploaded for guide content, served publicly at /api/assets/<id>.
+model Asset {
+  id          String   @id @default(cuid())
+  workspaceId String
+  mimeType    String   @db.VarChar(100)
+  size        Int
+  data        Bytes    @db.MediumBlob
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
 }
 
 // ---------- End-user side (people using the customer's site) ----------

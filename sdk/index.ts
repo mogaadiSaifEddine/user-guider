@@ -295,8 +295,8 @@ const ANON_KEY = "lg_anon_id";
     };
     const handle =
       g.type === "TOUR"
-        ? runTour(g.content as TourContent, { startAt, report: reporter(g.id), onEnd })
-        : runAnnouncement(g.content as AnnouncementContent, { report: reporter(g.id), onEnd });
+        ? runTour(g.content as TourContent, { startAt, report: reporter(g.id), onEnd, startGuide })
+        : runAnnouncement(g.content as AnnouncementContent, { report: reporter(g.id), onEnd, startGuide });
     // An empty tour ends synchronously; don't hold the modal slot for it.
     if (!ended) modal = { guideId: g.id, handle };
   }

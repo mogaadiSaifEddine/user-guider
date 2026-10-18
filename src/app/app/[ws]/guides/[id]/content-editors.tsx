@@ -3,13 +3,10 @@
 import type { ReactNode } from "react";
 import {
   newId,
-  type AnnouncementContent,
   type ChecklistContent,
   type ChecklistItem,
   type Hotspot,
   type HotspotContent,
-  type TourContent,
-  type TourStep,
 } from "@/lib/guide-schema";
 import { Button, Card, Field, Input, Select, Textarea } from "@/components/ui";
 
@@ -69,66 +66,6 @@ function SelectorField({ value, onChange, emptyHint }: { value: string; onChange
   );
 }
 
-// ---------- Tour ----------
-
-export function TourEditor({ value, onChange }: { value: TourContent; onChange: (v: TourContent) => void }) {
-  const set = (steps: TourStep[]) => onChange({ ...value, steps });
-  const patch = (i: number, p: Partial<TourStep>) => set(value.steps.map((s, j) => (j === i ? { ...s, ...p } : s)));
-
-  return (
-    <div className="space-y-3">
-      {value.steps.map((s, i) => (
-        <ListItem
-          key={s.id}
-          index={i}
-          total={value.steps.length}
-          title={s.title || "Untitled step"}
-          onMove={(d) => set(move(value.steps, i, d))}
-          onDelete={() => set(value.steps.filter((_, j) => j !== i))}
-        >
-          <Field label="Title">
-            <Input value={s.title} maxLength={200} onChange={(e) => patch(i, { title: e.target.value })} />
-          </Field>
-          <Field label="Text" hint={TEXT_HINT}>
-            <Textarea rows={3} value={s.body} maxLength={4000} onChange={(e) => patch(i, { body: e.target.value })} />
-          </Field>
-          <SelectorField value={s.selector} onChange={(v) => patch(i, { selector: v })} emptyHint="Empty: shown as a centered modal." />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <Field label="Position">
-              <Select value={s.placement} onChange={(e) => patch(i, { placement: e.target.value as TourStep["placement"] })}>
-                {placements.map((p) => (
-                  <option key={p}>{p}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Advance on">
-              <Select value={s.advanceOn} onChange={(e) => patch(i, { advanceOn: e.target.value as TourStep["advanceOn"] })}>
-                <option value="next">Next button</option>
-                <option value="click">Click on element</option>
-              </Select>
-            </Field>
-            <label className="flex items-center gap-2 self-end pb-2 text-sm">
-              <input type="checkbox" checked={s.backdrop} onChange={(e) => patch(i, { backdrop: e.target.checked })} />
-              Dim the page
-            </label>
-          </div>
-        </ListItem>
-      ))}
-      <Button
-        type="button"
-        variant="secondary"
-        className="w-full border-dashed"
-        disabled={value.steps.length >= 50}
-        onClick={() =>
-          set([...value.steps, { id: newId(), title: "", body: "", selector: "", placement: "auto", advanceOn: "next", backdrop: true }])
-        }
-      >
-        + Add step
-      </Button>
-    </div>
-  );
-}
-
 // ---------- Hotspots ----------
 
 export function HotspotEditor({ value, onChange }: { value: HotspotContent; onChange: (v: HotspotContent) => void }) {
@@ -174,47 +111,6 @@ export function HotspotEditor({ value, onChange }: { value: HotspotContent; onCh
         + Add hotspot
       </Button>
     </div>
-  );
-}
-
-// ---------- Announcement ----------
-
-export function AnnouncementEditor({
-  value,
-  onChange,
-}: {
-  value: AnnouncementContent;
-  onChange: (v: AnnouncementContent) => void;
-}) {
-  const patch = (p: Partial<AnnouncementContent>) => onChange({ ...value, ...p });
-  return (
-    <Card className="space-y-4 p-5">
-      <Field label="Format">
-        <Select value={value.format} onChange={(e) => patch({ format: e.target.value as AnnouncementContent["format"] })}>
-          <option value="modal">Modal (center of the screen)</option>
-          <option value="banner">Banner (top of the page)</option>
-        </Select>
-      </Field>
-      <Field label="Title">
-        <Input value={value.title} maxLength={200} onChange={(e) => patch({ title: e.target.value })} />
-      </Field>
-      <Field label="Text" hint={TEXT_HINT}>
-        <Textarea rows={4} value={value.body} maxLength={4000} onChange={(e) => patch({ body: e.target.value })} />
-      </Field>
-      {value.format === "modal" && (
-        <Field label="Image URL" hint="Optional header image (https://…).">
-          <Input value={value.imageUrl} maxLength={1000} onChange={(e) => patch({ imageUrl: e.target.value })} />
-        </Field>
-      )}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Button text" hint="Empty: no button, only the close ×.">
-          <Input value={value.buttonText} maxLength={100} onChange={(e) => patch({ buttonText: e.target.value })} />
-        </Field>
-        <Field label="Button link" hint="Optional. Opens in a new tab.">
-          <Input value={value.buttonUrl} maxLength={1000} placeholder="https://" onChange={(e) => patch({ buttonUrl: e.target.value })} />
-        </Field>
-      </div>
-    </Card>
   );
 }
 

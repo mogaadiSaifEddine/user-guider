@@ -26,7 +26,7 @@ Each step (or hotspot) is a row with a number, its title and a colored dot:
 | Amber | It has an element, but that element isn't on this page. Normal for multi-page tours. |
 | Grey | No element: a centered modal (tours) or not picked yet (hotspots). |
 
-Click a row to expand it and edit the title, text, position, *Advance on* and *Dim the page*. These are the same settings as in the dashboard; see [Product tours](tours#step-settings).
+Click a row to expand it and edit the title, text, position, *Advance on* and *Dim the page*. **Title** and **Text** edit the step's first heading and text [blocks](tours#blocks). Images, videos, buttons and templates are edited in the dashboard; the builder says so on steps that have them.
 
 ## Let AI draft it
 

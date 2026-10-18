@@ -1,4 +1,4 @@
-import type { HotspotContent, Theme, TourContent } from "../src/lib/guide-schema";
+import type { Block, Hotspot, HotspotContent, Theme, TourContent, TourStep } from "../src/lib/guide-schema";
 import { selectorFor } from "./selector";
 import { takeSnapshot } from "./snapshot";
 import { applyTheme, el, escapeHtml, findTarget, isOwnElement, shadow } from "./ui";
@@ -20,15 +20,66 @@ type BuilderGuide = {
   ai: { enabled: boolean; autoGoal: string | null };
 };
 
-type Item = {
-  id: string;
-  title: string;
-  body: string;
-  selector: string;
-  placement: "auto" | "top" | "bottom" | "left" | "right";
-  advanceOn?: "next" | "click";
-  backdrop?: boolean;
-};
+type Item = TourStep | Hotspot;
+
+// Tour steps are made of blocks; the builder edits their first heading and text
+// block as "Title" and "Text". Images, video and buttons are edited in the dashboard.
+function isStep(it: Item): it is TourStep {
+  return "blocks" in it;
+}
+
+function firstOf(step: TourStep, type: "heading" | "text") {
+  return step.blocks.find((b) => b.type === type) as Extract<Block, { type: "heading" | "text" }> | undefined;
+}
+
+function titleOf(it: Item) {
+  return isStep(it) ? (firstOf(it, "heading")?.text ?? "") : it.title;
+}
+
+function bodyOf(it: Item) {
+  return isStep(it) ? (firstOf(it, "text")?.text ?? "") : it.body;
+}
+
+function setText(it: Item, field: "title" | "body", value: string) {
+  if (!isStep(it)) {
+    it[field] = value;
+    return;
+  }
+  const type = field === "title" ? "heading" : "text";
+  const existing = firstOf(it, type);
+  if (existing) {
+    existing.text = value;
+    return;
+  }
+  // Insert after leading images; text goes after the heading.
+  let at = it.blocks.findIndex((b) => b.type !== "image");
+  if (at < 0) at = it.blocks.length;
+  if (type === "text") {
+    const h = it.blocks.findIndex((b) => b.type === "heading");
+    if (h >= 0) at = h + 1;
+  }
+  it.blocks.splice(at, 0, { type, id: rid(), text: value, align: "left" });
+}
+
+function newStep(selector: string, title: string, body: string): TourStep {
+  return {
+    id: rid(),
+    blocks: [
+      { type: "heading", id: rid(), text: title, align: "left" },
+      { type: "text", id: rid(), text: body, align: "left" },
+    ],
+    footer: { show: true, showProgress: true, showBack: true, nextLabel: "Next", backLabel: "Back", doneLabel: "Done" },
+    size: "md",
+    selector,
+    placement: "auto",
+    advanceOn: "next",
+    backdrop: true,
+  };
+}
+
+function hasExtraBlocks(it: Item) {
+  return isStep(it) && it.blocks.some((b) => b.type !== "heading" && b.type !== "text");
+}
 
 // Returns the builder token if this page load is a builder session.
 export function builderToken(): string | null {
@@ -127,14 +178,15 @@ export async function startBuilder(apiBase: string, token: string) {
             return `<div class="lgb-item${i === open ? " lgb-open" : ""}">
               <button class="lgb-row" data-act="toggle" data-i="${i}">
                 <span class="lgb-num">${i + 1}</span>
-                <span class="lgb-row-title">${escapeHtml(it.title || `Untitled ${noun.toLowerCase()}`)}</span>
+                <span class="lgb-row-title">${escapeHtml(titleOf(it) || `Untitled ${noun.toLowerCase()}`)}</span>
                 <span class="lgb-dot ${found === null ? "" : found ? "lgb-ok" : "lgb-miss"}" title="${where}"></span>
               </button>
               ${
                 i === open
                   ? `<div class="lgb-fields">
-                <label>Title<input data-f="title" data-i="${i}" value="${escapeHtml(it.title)}"></label>
-                <label>Text<textarea data-f="body" data-i="${i}" rows="3">${escapeHtml(it.body)}</textarea></label>
+                <label>Title<input data-f="title" data-i="${i}" value="${escapeHtml(titleOf(it))}"></label>
+                <label>Text<textarea data-f="body" data-i="${i}" rows="3">${escapeHtml(bodyOf(it))}</textarea></label>
+                ${hasExtraBlocks(it) ? `<p class="lgb-note">This step also has images, video or buttons. Edit those in the dashboard.</p>` : ""}
                 <div class="lgb-sel">
                   <code title="${escapeHtml(it.selector)}">${escapeHtml(it.selector || (isTour ? "No element: shown as a centered modal" : "No element picked"))}</code>
                   <span class="lgb-where">${where}</span>
@@ -150,13 +202,13 @@ export async function startBuilder(apiBase: string, token: string) {
                   ${
                     isTour
                       ? `<label>Advance on<select data-f="advanceOn" data-i="${i}">
-                    <option value="next" ${it.advanceOn !== "click" ? "selected" : ""}>Next button</option>
-                    <option value="click" ${it.advanceOn === "click" ? "selected" : ""}>Click on element</option>
+                    <option value="next" ${(it as TourStep).advanceOn !== "click" ? "selected" : ""}>Next button</option>
+                    <option value="click" ${(it as TourStep).advanceOn === "click" ? "selected" : ""}>Click on element</option>
                   </select></label>`
                       : ""
                   }
                 </div>
-                ${isTour ? `<label class="lgb-check"><input type="checkbox" data-f="backdrop" data-i="${i}" ${it.backdrop !== false ? "checked" : ""}> Dim the rest of the page</label>` : ""}
+                ${isTour ? `<label class="lgb-check"><input type="checkbox" data-f="backdrop" data-i="${i}" ${(it as TourStep).backdrop !== false ? "checked" : ""}> Dim the rest of the page</label>` : ""}
                 <div class="lgb-row-btns">
                   <button class="lgb-btn lgb-ghost" data-act="up" data-i="${i}" ${i === 0 ? "disabled" : ""}>Move up</button>
                   <button class="lgb-btn lgb-ghost" data-act="down" data-i="${i}" ${i === items.length - 1 ? "disabled" : ""}>Move down</button>
@@ -221,7 +273,7 @@ export async function startBuilder(apiBase: string, token: string) {
           kind: isTour ? "TOUR" : "HOTSPOT",
           goal: ai.goal,
           maxItems: ai.count,
-          existing: ai.mode === "append" ? items.map((i) => i.title).filter(Boolean) : [],
+          existing: ai.mode === "append" ? items.map(titleOf).filter(Boolean) : [],
           snapshot,
         }),
       });
@@ -229,7 +281,7 @@ export async function startBuilder(apiBase: string, token: string) {
       if (!res.ok) throw new Error(data.error ?? "AI drafting failed.");
       const drafted: Item[] = (data.items as { selector: string; title: string; body: string }[]).map((d) =>
         isTour
-          ? { id: rid(), title: d.title, body: d.body, selector: d.selector, placement: "auto", advanceOn: "next", backdrop: true }
+          ? newStep(d.selector, d.title, d.body)
           : { id: rid(), title: d.title, body: d.body, selector: d.selector, placement: "auto" },
       );
       const firstNew = ai.mode === "append" ? items.length : 0;
@@ -256,10 +308,10 @@ export async function startBuilder(apiBase: string, token: string) {
       return;
     }
     const i = Number(t.dataset.i);
-    const f = t.dataset.f as keyof Item | undefined;
+    const f = t.dataset.f;
     if (!f || !items[i]) return;
-    const value = t.type === "checkbox" ? t.checked : t.value;
-    (items[i] as Record<string, unknown>)[f] = value;
+    if (f === "title" || f === "body") setText(items[i], f, t.value);
+    else (items[i] as Record<string, unknown>)[f] = t.type === "checkbox" ? t.checked : t.value;
     markDirty();
     if (f === "title") {
       const row = panel.querySelector(`.lgb-open .lgb-row-title`);
@@ -286,9 +338,7 @@ export async function startBuilder(apiBase: string, token: string) {
         break;
       case "add":
         items.push(
-          isTour
-            ? { id: rid(), title: "", body: "", selector: "", placement: "auto", advanceOn: "next", backdrop: true }
-            : { id: rid(), title: "", body: "", selector: "", placement: "auto" },
+          isTour ? newStep("", "", "") : { id: rid(), title: "", body: "", selector: "", placement: "auto" },
         );
         open = items.length - 1;
         markDirty();
@@ -503,6 +553,7 @@ const BUILDER_CSS = `
 .lgb-ai-btn { width:100%; background:linear-gradient(90deg,#4f46e5,#7c3aed); }
 .lgb-ai { margin:8px 8px 0; padding:10px; border-radius:8px; background:#f5f3ff; border:1px solid #ddd6fe; display:flex; flex-direction:column; gap:8px; }
 .lgb-ai-title { font-weight:700; color:#4c1d95; }
+.lgb-note { margin:0; font-size:11px; color:#6b7280; }
 .lgb-ai-hint { margin:0; font-size:11px; color:#6b7280; }
 .lgb-ai-error { margin:0; font-size:12px; color:#b91c1c; }
 .lgb-pickbar kbd { background:rgba(255,255,255,.2); border-radius:4px; padding:0 5px; }

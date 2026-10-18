@@ -4,18 +4,53 @@ A product tour is a sequence of steps. Each step is either a tooltip attached to
 
 ## Create a tour
 
-**Guides → New guide → Product tour.** A new tour starts with one welcome step. Add steps with **+ Add step** in the editor, or in the [visual builder](builder), which is the easier way to attach steps to elements.
+**Guides → New guide → Product tour.** A new tour starts with one welcome step. Choose **+ Add step** to add more: a template picker opens with two tabs:
+
+- **Modal**: a card in the middle of the screen. Templates: *Create from scratch*, *Welcome modal*, *Hero modal* (full-width image with a headline on it), *Video modal*, *New feature*, *All set* (a closing step).
+- **Tooltip**: a card next to an element. Templates: *Simple tooltip*, *Tooltip with image*, *Action tooltip* (the user clicks the element to continue), *Minimal hint*.
+
+Type in the search box to search both tabs. A template is only a starting point; everything in it can be changed.
+
+A step becomes a tooltip as soon as it has an element, which you pick in the [visual builder](builder). Until then it shows as a modal. Each step's header shows which one it is.
+
+## Blocks
+
+A step's content is a stack of **blocks**. Click a block to edit it, use ↑ ↓ to reorder and ✕ to remove. Add blocks with the buttons below the list (up to 20 per step). The **Preview** next to the editor shows the step as users will see it, in your workspace theme.
+
+| Block | What it shows |
+| --- | --- |
+| **Heading** | A bold title. Alignment: left, center or right. |
+| **Text** | Body text. Supports **\*\*bold\*\***, *\*italic\**, links written as `[text](https://…)` (they open in a new tab) and line breaks. |
+| **Image** | A picture. **Upload** one (PNG, JPEG, GIF or WebP, up to 2 MB) or paste an `https://` address. Options: height, *Fill* (crop to the box) or *Fit* (show the whole image), *Full width, edge to edge* for a hero look, *Text over the image* for a headline on the picture, and a description for screen readers. |
+| **Video** | A YouTube or Vimeo link (the normal page address is fine), or a direct `.mp4` / `.webm` file. Plays inside the step. |
+| **Buttons** | Up to four buttons, each with a label, a style (*Primary*, *Secondary*, *Link*) and an action (below). |
+| **Divider** | A thin line. |
+| **Spacer** | Empty space, 4–64 px. |
+
+**Button actions**
+
+| Action | Effect |
+| --- | --- |
+| Go to next step | Same as Next. On the last step, finishes the tour. |
+| Go to previous step | Same as Back. |
+| Finish the guide | Ends the tour and counts it as **completed**. |
+| Close | Ends the tour and counts it as **dismissed**. |
+| Open a link | Opens an address, in a new tab or the same tab. The tour stays on the step. |
+| Start another guide | Completes this tour and starts another tour or announcement. |
 
 ## Step settings
 
+Under **Placement**:
+
 | Setting | What it does |
 | --- | --- |
-| **Title** | Bold heading of the step. Optional. |
-| **Text** | The body. You can use **\*\*bold\*\***, *\*italic\**, links written as `[text](https://…)` (they open in a new tab) and line breaks. |
 | **Element** | A CSS selector for the element the step points at. Leave it empty for a centered modal. The builder fills it in for you. |
+| **Size** | Small, medium or large. Tooltips are 280 / 340 / 420 px wide, modals 380 / 460 / 640 px. |
 | **Position** | Where the tooltip sits relative to the element: *auto*, *top*, *bottom*, *left* or *right*. If there isn't room on the chosen side, it flips to a side that fits. *auto* tries bottom, top, right, then left. |
 | **Advance on** | *Next button* (default), or *Click on element*: the step has no Next button and moves on when the user clicks the highlighted element. Use it to teach a real action, like "Click **New project**". |
-| **Dim the page** | Darkens everything except the highlighted element. Turn it off for a lighter touch; the element still gets an outline. |
+| **Dim the rest of the page** | Darkens everything except the highlighted element. Turn it off for a lighter touch; the element still gets an outline. |
+
+Under **Navigation buttons**: turn the automatic Back / Next / Done row on or off, hide the step counter ("2 of 5") or the Back button, and rename the buttons. If you turn the row off, add a **Buttons** block so people can move on. The *Hero modal* and *All set* templates do this.
 
 Reorder steps with ↑ and ↓, remove one with ✕. A tour can have up to 50 steps.
 

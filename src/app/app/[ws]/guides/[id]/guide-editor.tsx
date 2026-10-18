@@ -9,6 +9,7 @@ import type {
   GuideTypeName,
   HotspotContent,
   Targeting,
+  Theme,
   TourContent,
   UrlRule,
   UserRule,
@@ -23,7 +24,8 @@ import {
   setGuideStatus,
   type ActionResult,
 } from "../../actions";
-import { AnnouncementEditor, ChecklistEditor, HotspotEditor, TourEditor, type OtherGuide } from "./content-editors";
+import { ChecklistEditor, HotspotEditor, type OtherGuide } from "./content-editors";
+import { AnnouncementEditor, TourEditor } from "./block-content-editors";
 
 type EditorGuide = {
   id: string;
@@ -42,11 +44,13 @@ export function GuideEditor({
   guide,
   others,
   aiEnabled,
+  theme,
 }: {
   ws: string;
   guide: EditorGuide;
   others: OtherGuide[];
   aiEnabled: boolean;
+  theme: Theme;
 }) {
   const router = useRouter();
   const [name, setName] = useState(guide.name);
@@ -192,10 +196,10 @@ export function GuideEditor({
         <div className="min-w-0">
           {tab === "content" ? (
             <>
-              {guide.type === "TOUR" && <TourEditor value={content as TourContent} onChange={edit(setContent)} />}
+              {guide.type === "TOUR" && <TourEditor ws={ws} value={content as TourContent} onChange={edit(setContent)} others={others} theme={theme} />}
               {guide.type === "HOTSPOT" && <HotspotEditor value={content as HotspotContent} onChange={edit(setContent)} />}
               {guide.type === "ANNOUNCEMENT" && (
-                <AnnouncementEditor value={content as AnnouncementContent} onChange={edit(setContent)} />
+                <AnnouncementEditor ws={ws} value={content as AnnouncementContent} onChange={edit(setContent)} others={others} theme={theme} />
               )}
               {guide.type === "CHECKLIST" && (
                 <ChecklistEditor value={content as ChecklistContent} onChange={edit(setContent)} others={others} />

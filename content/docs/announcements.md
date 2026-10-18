@@ -11,17 +11,17 @@ Use announcements for news: a new feature, a price change, planned maintenance.
 
 The banner sits on top of your page's own header while it's open.
 
-## Settings
+## Content
 
-| Setting | What it does |
-| --- | --- |
-| **Title** | Bold heading. In a banner it's shown in bold before the text. |
-| **Text** | The message. Supports **\*\*bold\*\***, *\*italic\**, `[links](https://…)` and line breaks. |
-| **Image URL** | Modal only. An `https://` image shown across the top of the card. |
-| **Button text** | Label of the main button. Leave empty for no button (users close it with ×). |
-| **Button link** | Optional. The button opens this address in a new tab. |
+An announcement is built from the same [blocks](tours#blocks) as a tour step: heading, text, image (upload or link), video, buttons, divider and spacer. **Start from a template** offers the modal templates (*Welcome*, *Hero*, *Video*, *New feature*…). The preview on the right shows the result in your theme.
 
-Pressing the button counts as **completed**; closing it any other way counts as **dismissed**.
+- **Size** (modals only): small, medium or large (380 / 460 / 640 px wide).
+- **Buttons**: *Finish the guide* counts as **completed**. *Close* counts as **dismissed**. *Open a link* opens the address and counts as completed. *Start another guide* completes the announcement and starts a tour.
+- **Banners** show their headings and text on one line, followed by the buttons of the first Buttons block. Images and videos aren't shown in a banner.
+
+Closing with ×, Esc or a click outside a modal counts as **dismissed**.
+
+Announcements created before blocks existed are converted automatically the first time you open them.
 
 ## Showing an announcement once vs. until acknowledged
 

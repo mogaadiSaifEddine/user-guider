@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/db";
 import { requireGuide } from "@/lib/auth";
-import { parseContent, parseTargeting, type GuideTypeName } from "@/lib/guide-schema";
+import { parseContent, parseTargeting, parseTheme, type GuideTypeName } from "@/lib/guide-schema";
 import { aiEnabled } from "@/lib/ai";
 import { GuideEditor } from "./guide-editor";
 
 export default async function GuidePage({ params }: { params: Promise<{ ws: string; id: string }> }) {
   const { ws, id } = await params;
-  const { guide } = await requireGuide(ws, id);
+  const { guide, workspace } = await requireGuide(ws, id);
   const others = await prisma.guide.findMany({
     where: { workspaceId: ws, id: { not: id }, status: { not: "ARCHIVED" } },
     select: { id: true, name: true, type: true },
@@ -33,6 +33,7 @@ export default async function GuidePage({ params }: { params: Promise<{ ws: stri
       }}
       others={others.map((g) => ({ id: g.id, name: g.name, type: g.type as GuideTypeName }))}
       aiEnabled={aiEnabled()}
+      theme={parseTheme(workspace.theme)}
     />
   );
 }

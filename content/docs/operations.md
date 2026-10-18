@@ -55,4 +55,5 @@ DELETE FROM EndUser WHERE workspaceId = '<workspace id>' AND externalId = '<thei
 - **Passwords** are stored as bcrypt hashes. Sessions last 30 days.
 - **`AUTH_SECRET`**: rotating it signs every dashboard user out and invalidates open builder links. It doesn't affect embedded guides.
 - **AI drafting** (when `GEMINI_API_KEY` is set) sends a description of the page an author is building on (labels, headings, positions; never field values) to Google's Gemini API. See [What is sent to the AI](ai#what-is-sent-to-the-ai). Each draft is one Gemini request, triggered by an author; there's no background usage.
+- **Uploaded images** are stored in the database (`Asset` table, up to 2 MB each) and served publicly from `/api/assets/<id>` so customer sites can show them. SVG uploads are refused. They're included in database backups.
 - **Workspace secret keys** are stored in the database in plain text because the server needs them to verify hashes. Protect database access and backups accordingly.

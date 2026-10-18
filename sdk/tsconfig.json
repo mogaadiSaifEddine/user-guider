@@ -9,5 +9,5 @@
     "skipLibCheck": true,
     "isolatedModules": true
   },
-  "include": ["./**/*.ts", "../src/lib/targeting.ts"]
+  "include": ["./**/*.ts", "../src/lib/targeting.ts", "../src/lib/format.ts"]
 }

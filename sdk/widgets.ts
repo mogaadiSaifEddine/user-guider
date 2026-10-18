@@ -1,10 +1,12 @@
 import type {
   AnnouncementContent,
+  ButtonAction,
   ChecklistContent,
   HotspotContent,
   TourContent,
 } from "../src/lib/guide-schema";
-import { el, everyFrame, findTarget, inViewport, placeBox, richText, safeUrl, shadow, waitForTarget } from "./ui";
+import { bannerButtons, bannerText, buttonAt, CARD_WIDTH, label, openUrl, renderBlocks } from "./blocks";
+import { el, escapeHtml, everyFrame, findTarget, inViewport, placeBox, richText, safeUrl, shadow, waitForTarget } from "./ui";
 
 export type EventType =
   | "guide_shown"
@@ -24,7 +26,7 @@ const ELEMENT_TIMEOUT_MS = 15000;
 
 export function runTour(
   content: TourContent,
-  opts: { startAt?: number; report: Report; onEnd: (r: EndReason) => void },
+  opts: { startAt?: number; report: Report; onEnd: (r: EndReason) => void; startGuide?: (guideId: string) => void },
 ): Handle {
   const steps = content.steps;
   let index = Math.min(Math.max(opts.startAt ?? 0, 0), Math.max(steps.length - 1, 0));
@@ -59,6 +61,25 @@ export function runTour(
     void show();
   }
 
+  function act(a: ButtonAction) {
+    switch (a.type) {
+      case "next":
+        return go(index + 1);
+      case "back":
+        return go(index - 1);
+      case "close":
+        return end("dismissed");
+      case "complete":
+        return end("completed");
+      case "url":
+        return openUrl(a.url, a.newTab);
+      case "guide":
+        end("completed");
+        if (a.guideId) opts.startGuide?.(a.guideId);
+        return;
+    }
+  }
+
   async function show() {
     teardown?.();
     teardown = null;
@@ -75,27 +96,35 @@ export function runTour(
     opts.report("step_viewed", { stepIndex: index });
 
     const last = index === steps.length - 1;
+    const f = step.footer;
+    const showNext = !(step.advanceOn === "click" && target);
+    const footer =
+      f.show && (showNext || (f.showBack && index > 0) || (f.showProgress && steps.length > 1))
+        ? `<div class="lg-footer">
+           <span class="lg-count">${f.showProgress && steps.length > 1 ? `${index + 1} of ${steps.length}` : ""}</span>
+           ${f.showBack && index > 0 ? `<button class="lg-btn lg-ghost" data-act="back">${escapeHtml(f.backLabel)}</button>` : ""}
+           ${showNext ? `<button class="lg-btn" data-act="next">${escapeHtml(last ? f.doneLabel : f.nextLabel)}</button>` : ""}
+         </div>`
+        : "";
+    const width = CARD_WIDTH[target ? "tooltip" : "modal"][step.size];
     const card = el(
       "div",
-      { class: "lg-card", role: "dialog", "aria-label": step.title || "Guide" },
-      `<button class="lg-close" aria-label="Close">×</button>
-       ${step.title ? `<h3>${richText(step.title)}</h3>` : ""}
-       <div class="lg-body">${richText(step.body)}</div>
-       <div class="lg-footer">
-         ${steps.length > 1 ? `<span class="lg-count">${index + 1} of ${steps.length}</span>` : `<span class="lg-count"></span>`}
-         ${index > 0 ? `<button class="lg-btn lg-ghost" data-act="back">Back</button>` : ""}
-         ${step.advanceOn === "click" && target ? "" : `<button class="lg-btn" data-act="next">${last ? "Done" : "Next"}</button>`}
-       </div>`,
+      { class: "lg-card", role: "dialog", "aria-label": label(step.blocks), style: `width:min(${width}px, calc(100vw - 16px))` },
+      `<button class="lg-close" aria-label="Close">×</button>${renderBlocks(step.blocks)}${footer}`,
     );
     card.querySelector(".lg-close")!.addEventListener("click", () => end("dismissed"));
     card.querySelector('[data-act="back"]')?.addEventListener("click", () => go(index - 1));
     card.querySelector('[data-act="next"]')?.addEventListener("click", () => go(index + 1));
+    card.addEventListener("click", (e) => {
+      const a = buttonAt(step.blocks, (e.target as HTMLElement).closest<HTMLElement>("[data-btn]")?.dataset.btn);
+      if (a) act(a);
+    });
 
     if (!target) {
       const wrap = el("div", { class: "lg-modal-wrap" });
       wrap.appendChild(card);
       layer.appendChild(wrap);
-      (card.querySelector('[data-act="next"]') as HTMLElement | null)?.focus();
+      (card.querySelector('[data-act="next"], [data-btn]') as HTMLElement | null)?.focus();
       return;
     }
 
@@ -136,7 +165,7 @@ export function runTour(
 
 export function runAnnouncement(
   content: AnnouncementContent,
-  opts: { report: Report; onEnd: (r: EndReason) => void },
+  opts: { report: Report; onEnd: (r: EndReason) => void; startGuide?: (guideId: string) => void },
 ): Handle {
   const layer = el("div", { class: "lg" });
   shadow().appendChild(layer);
@@ -155,34 +184,29 @@ export function runAnnouncement(
   };
   document.addEventListener("keydown", onKey);
 
-  const buttonUrl = safeUrl(content.buttonUrl);
-  const imageUrl = safeUrl(content.imageUrl);
-  const button = content.buttonText
-    ? buttonUrl
-      ? `<a class="lg-btn" data-act="ok" href="${buttonUrl}" target="_blank" rel="noopener" style="text-decoration:none">${richText(content.buttonText)}</a>`
-      : `<button class="lg-btn" data-act="ok">${richText(content.buttonText)}</button>`
-    : "";
+  // An announcement has a single "step": next/back/complete all finish it.
+  const act = (a: ButtonAction) => {
+    if (a.type === "close") return finish("dismissed");
+    if (a.type === "url") openUrl(a.url, a.newTab);
+    finish("completed");
+    if (a.type === "guide" && a.guideId) opts.startGuide?.(a.guideId);
+  };
 
   if (content.format === "banner") {
     layer.appendChild(
       el(
         "div",
         { class: "lg-banner", role: "status" },
-        `<span>${content.title ? `<strong>${richText(content.title)}</strong> ` : ""}${richText(content.body)}</span>
-         ${button}
-         <button class="lg-close" aria-label="Close">×</button>`,
+        `<span>${bannerText(content.blocks)}</span>${bannerButtons(content.blocks)}<button class="lg-close" aria-label="Close">×</button>`,
       ),
     );
   } else {
     const wrap = el(
       "div",
       { class: "lg-modal-wrap" },
-      `<div class="lg-card" role="dialog" aria-modal="true" aria-label="${richText(content.title || "Announcement")}">
-         ${imageUrl ? `<img src="${imageUrl}" alt="">` : ""}
-         <button class="lg-close" aria-label="Close">×</button>
-         ${content.title ? `<h3>${richText(content.title)}</h3>` : ""}
-         <div class="lg-body">${richText(content.body)}</div>
-         <div class="lg-footer"><span class="lg-count"></span>${button}</div>
+      `<div class="lg-card" role="dialog" aria-modal="true" aria-label="${escapeHtml(label(content.blocks))}"
+            style="width:min(${CARD_WIDTH.modal[content.size]}px, 100%)">
+         <button class="lg-close" aria-label="Close">×</button>${renderBlocks(content.blocks)}
        </div>`,
     );
     wrap.addEventListener("click", (e) => {
@@ -191,7 +215,10 @@ export function runAnnouncement(
     layer.appendChild(wrap);
   }
   layer.querySelector(".lg-close")!.addEventListener("click", () => finish("dismissed"));
-  layer.querySelector('[data-act="ok"]')?.addEventListener("click", () => finish("completed"));
+  layer.addEventListener("click", (e) => {
+    const a = buttonAt(content.blocks, (e.target as HTMLElement).closest<HTMLElement>("[data-btn]")?.dataset.btn);
+    if (a) act(a);
+  });
   opts.report("guide_shown");
 
   return {

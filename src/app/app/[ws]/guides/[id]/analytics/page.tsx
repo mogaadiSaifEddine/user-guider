@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireGuide } from "@/lib/auth";
 import { guideAnalytics, pct } from "@/lib/analytics";
 import {
+  blocksLabel,
   parseContent,
   type ChecklistContent,
   type GuideTypeName,
@@ -33,7 +34,7 @@ export default async function GuideAnalyticsPage({
     breakdown = {
       title: "Step funnel",
       note: "Users who reached each step. A big drop shows where people leave the tour.",
-      rows: (content as TourContent).steps.map((s, i) => ({ label: s.title || `Step ${i + 1}`, value: a.steps.get(i) ?? 0 })),
+      rows: (content as TourContent).steps.map((s, i) => ({ label: blocksLabel(s.blocks) || `Step ${i + 1}`, value: a.steps.get(i) ?? 0 })),
     };
   } else if (type === "CHECKLIST") {
     breakdown = {

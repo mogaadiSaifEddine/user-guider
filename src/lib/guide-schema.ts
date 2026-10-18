@@ -5,18 +5,93 @@ import { z } from "zod";
 
 export const placements = ["auto", "top", "bottom", "left", "right"] as const;
 
-export const tourStepSchema = z.object({
-  id: z.string().min(1).max(64),
-  title: z.string().max(200).default(""),
-  body: z.string().max(4000).default(""),
-  // Empty selector = centered modal step.
-  selector: z.string().max(1000).default(""),
-  placement: z.enum(placements).default("auto"),
-  // "next": user presses Next. "click": clicking the target element advances.
-  advanceOn: z.enum(["next", "click"]).default("next"),
-  // Darken the rest of the page around the target.
-  backdrop: z.boolean().default(true),
+// ---------- Blocks (content of tour steps and announcements) ----------
+
+const align = z.enum(["left", "center", "right"]).default("left");
+const blockId = z.string().min(1).max(64);
+
+export const buttonActionSchema = z.discriminatedUnion("type", [
+  // Tours: next / previous step. Announcements: "next" finishes like "complete".
+  z.object({ type: z.literal("next") }),
+  z.object({ type: z.literal("back") }),
+  // Ends the guide as dismissed.
+  z.object({ type: z.literal("close") }),
+  // Ends the guide as completed.
+  z.object({ type: z.literal("complete") }),
+  z.object({ type: z.literal("url"), url: z.string().max(1000).default(""), newTab: z.boolean().default(true) }),
+  // Completes this guide and starts another tour or announcement.
+  z.object({ type: z.literal("guide"), guideId: z.string().max(64).default("") }),
+]);
+
+export const stepButtonSchema = z.object({
+  id: blockId,
+  label: z.string().max(60).default("Next"),
+  style: z.enum(["primary", "secondary", "link"]).default("primary"),
+  action: buttonActionSchema.default({ type: "next" }),
 });
+
+export const blockSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("heading"), id: blockId, text: z.string().max(200).default(""), align }),
+  z.object({ type: z.literal("text"), id: blockId, text: z.string().max(4000).default(""), align }),
+  z.object({
+    type: z.literal("image"),
+    id: blockId,
+    url: z.string().max(1000).default(""),
+    alt: z.string().max(200).default(""),
+    height: z.number().int().min(60).max(480).default(180),
+    fit: z.enum(["cover", "contain"]).default("cover"),
+    // Full card width, flush with the edges (hero style).
+    edge: z.boolean().default(false),
+    // Text drawn over the image (hero style).
+    overlay: z.string().max(120).default(""),
+  }),
+  // YouTube, Vimeo, or a direct .mp4/.webm link.
+  z.object({ type: z.literal("video"), id: blockId, url: z.string().max(1000).default("") }),
+  z.object({ type: z.literal("buttons"), id: blockId, align, buttons: z.array(stepButtonSchema).max(4).default([]) }),
+  z.object({ type: z.literal("divider"), id: blockId }),
+  z.object({ type: z.literal("spacer"), id: blockId, size: z.number().int().min(4).max(64).default(16) }),
+]);
+
+export const blockTypes = ["heading", "text", "image", "video", "buttons", "divider", "spacer"] as const;
+
+// Automatic Back / Next / Done row at the bottom of tour steps.
+export const footerSchema = z.object({
+  show: z.boolean().default(true),
+  showProgress: z.boolean().default(true),
+  showBack: z.boolean().default(true),
+  nextLabel: z.string().max(40).default("Next"),
+  backLabel: z.string().max(40).default("Back"),
+  doneLabel: z.string().max(40).default("Done"),
+});
+
+export const stepSizes = ["sm", "md", "lg"] as const;
+
+// Steps saved before blocks existed had `title` and `body`; turn them into blocks.
+function legacyStep(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray((raw as { blocks?: unknown }).blocks)) return raw;
+  const r = raw as { title?: string; body?: string };
+  const blocks = [];
+  if (r.title) blocks.push({ type: "heading", id: newId(), text: r.title });
+  if (r.body) blocks.push({ type: "text", id: newId(), text: r.body });
+  return { ...r, blocks };
+}
+
+export const tourStepSchema = z.preprocess(
+  legacyStep,
+  z.object({
+    id: z.string().min(1).max(64),
+    blocks: z.array(blockSchema).max(20).default([]),
+    footer: footerSchema.prefault({}),
+    size: z.enum(stepSizes).default("md"),
+    // Empty selector = centered modal step.
+    selector: z.string().max(1000).default(""),
+    placement: z.enum(placements).default("auto"),
+    // "next": user presses Next. "click": clicking the target element advances.
+    advanceOn: z.enum(["next", "click"]).default("next"),
+    // Darken the rest of the page around the target.
+    backdrop: z.boolean().default(true),
+  }),
+);
 
 export const tourContentSchema = z.object({
   steps: z.array(tourStepSchema).max(50).default([]),
@@ -51,15 +126,34 @@ export const checklistContentSchema = z.object({
   position: z.enum(["bottom-right", "bottom-left"]).default("bottom-right"),
 });
 
-export const announcementContentSchema = z.object({
-  format: z.enum(["modal", "banner"]).default("modal"),
-  title: z.string().max(200).default(""),
-  body: z.string().max(4000).default(""),
-  imageUrl: z.string().max(1000).default(""),
-  buttonText: z.string().max(100).default("Got it"),
-  // Optional link opened by the button.
-  buttonUrl: z.string().max(1000).default(""),
-});
+// Announcements saved before blocks existed had title/body/image/button fields.
+function legacyAnnouncement(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray((raw as { blocks?: unknown }).blocks)) return raw;
+  const r = raw as { title?: string; body?: string; imageUrl?: string; buttonText?: string; buttonUrl?: string };
+  const blocks = [];
+  if (r.imageUrl) blocks.push({ type: "image", id: newId(), url: r.imageUrl, edge: true });
+  if (r.title) blocks.push({ type: "heading", id: newId(), text: r.title });
+  if (r.body) blocks.push({ type: "text", id: newId(), text: r.body });
+  const label = r.buttonText ?? "Got it";
+  if (label) {
+    blocks.push({
+      type: "buttons",
+      id: newId(),
+      align: "right",
+      buttons: [{ id: newId(), label, action: r.buttonUrl ? { type: "url", url: r.buttonUrl } : { type: "complete" } }],
+    });
+  }
+  return { ...r, blocks };
+}
+
+export const announcementContentSchema = z.preprocess(
+  legacyAnnouncement,
+  z.object({
+    format: z.enum(["modal", "banner"]).default("modal"),
+    size: z.enum(stepSizes).default("md"),
+    blocks: z.array(blockSchema).max(20).default([]),
+  }),
+);
 
 export const hotspotSchema = z.object({
   id: z.string().min(1).max(64),
@@ -81,6 +175,12 @@ export const contentSchemas = {
 } as const;
 
 export type GuideTypeName = keyof typeof contentSchemas;
+export type Block = z.infer<typeof blockSchema>;
+export type BlockType = Block["type"];
+export type StepButton = z.infer<typeof stepButtonSchema>;
+export type ButtonAction = z.infer<typeof buttonActionSchema>;
+export type StepFooter = z.infer<typeof footerSchema>;
+export type StepSize = (typeof stepSizes)[number];
 export type TourStep = z.infer<typeof tourStepSchema>;
 export type TourContent = z.infer<typeof tourContentSchema>;
 export type ChecklistItem = z.infer<typeof checklistItemSchema>;
@@ -163,7 +263,7 @@ export function defaultContent(type: GuideTypeName) {
         items: [{ id: newId(), title: "Complete your profile" }],
       });
     case "ANNOUNCEMENT":
-      return announcementContentSchema.parse({ title: "What's new", body: "" });
+      return announcementContentSchema.parse({ title: "What's new", body: "", buttonText: "Got it" });
     case "HOTSPOT":
       return hotspotContentSchema.parse({ hotspots: [] });
   }
@@ -171,4 +271,20 @@ export function defaultContent(type: GuideTypeName) {
 
 export function newId() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+// Short label for a step in lists and analytics: its first heading or text.
+export function blocksLabel(blocks: Block[]) {
+  for (const b of blocks) {
+    if ((b.type === "heading" || b.type === "text") && b.text.trim()) return b.text.trim().split("\n")[0].slice(0, 80);
+  }
+  return "";
+}
+
+export function newBlock(type: BlockType): Block {
+  return blockSchema.parse(
+    type === "buttons"
+      ? { type, id: newId(), align: "right", buttons: [{ id: newId(), label: "Next", action: { type: "next" } }] }
+      : { type, id: newId() },
+  );
 }
