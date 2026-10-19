@@ -1,6 +1,6 @@
 # Deploy
 
-Locatify Guides is one Next.js application and one PostgreSQL database. The app serves the dashboard, the docs, the API and the `sdk.js` embed script.
+User Onboarder is one Next.js application and one PostgreSQL database. The app serves the dashboard, the docs, the API and the `sdk.js` embed script.
 
 ## Requirements
 

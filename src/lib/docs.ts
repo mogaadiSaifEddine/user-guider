@@ -13,7 +13,7 @@ export const docSections: DocSection[] = [
   {
     title: "Start here",
     pages: [
-      { slug: "", title: "Introduction", description: "What Locatify Guides does and the ideas behind it." },
+      { slug: "", title: "Introduction", description: "What User Onboarder does and the ideas behind it." },
       { slug: "quick-start", title: "Quick start", description: "From a new account to your first live tour." },
     ],
   },
@@ -40,8 +40,8 @@ export const docSections: DocSection[] = [
   {
     title: "For developers",
     pages: [
-      { slug: "install", title: "Install the snippet", description: "Add Locatify Guides to any website or web app." },
-      { slug: "identify", title: "Identify users", description: "Tell Locatify Guides who is signed in." },
+      { slug: "install", title: "Install the snippet", description: "Add User Onboarder to any website or web app." },
+      { slug: "identify", title: "Identify users", description: "Tell User Onboarder who is signed in." },
       { slug: "javascript-api", title: "JavaScript API", description: "identify, track, start, setLocale, the resource center, page and reset." },
       { slug: "identity-verification", title: "Identity verification", description: "Stop people from impersonating other users." },
       { slug: "http-api", title: "HTTP API", description: "Send events from your server." },
@@ -51,7 +51,7 @@ export const docSections: DocSection[] = [
   {
     title: "Self-hosting",
     pages: [
-      { slug: "self-hosting", title: "Deploy", description: "Run Locatify Guides on your own servers." },
+      { slug: "self-hosting", title: "Deploy", description: "Run User Onboarder on your own servers." },
       { slug: "operations", title: "Operations", description: "Upgrades, backups, data retention and security." },
     ],
   },

@@ -18,7 +18,7 @@ async function slugOf(params: Params["params"]) {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const found = findDoc(await slugOf(params));
-  return found ? { title: found.doc.slug ? found.doc.title : { absolute: "Locatify Guides docs" }, description: found.doc.description } : {};
+  return found ? { title: found.doc.slug ? found.doc.title : { absolute: "User Onboarder docs" }, description: found.doc.description } : {};
 }
 
 export default async function DocPage({ params }: Params) {

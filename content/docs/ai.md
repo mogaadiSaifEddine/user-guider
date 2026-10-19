@@ -71,4 +71,4 @@ When you choose **Generate**, the builder collects from the current page:
 
 It does **not** send field values, the page's HTML, cookies, or anything about your app's end users. Visible page text and the screenshot can include data shown on the page (for example names in a list), so draft on pages with test or non-sensitive data when you can.
 
-The snapshot goes to the Locatify Guides server, which forwards it with your product description to Google's Gemini API. Only authors with builder access can trigger it, and nothing is stored.
+The snapshot goes to the User Onboarder server, which forwards it with your product description to Google's Gemini API. Only authors with builder access can trigger it, and nothing is stored.

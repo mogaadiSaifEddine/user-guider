@@ -1,4 +1,4 @@
-# Locatify Guides
+# User Onboarder
 
 Self-hosted in-app onboarding, a replacement for UserGuiding: product tours, checklists, announcements, hotspots and analytics.
 Multi-tenant: each workspace is one website or app with its own snippet, guides and data.

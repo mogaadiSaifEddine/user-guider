@@ -18,7 +18,7 @@ export default async function WorkspaceLayout({
     <div className="flex min-h-screen flex-col md:flex-row">
       <aside className="flex shrink-0 flex-col bg-gray-950 text-gray-300 md:sticky md:top-0 md:h-screen md:w-60">
         <div className="flex items-center gap-2.5 px-4 py-5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand-400 to-brand-700 text-sm font-extrabold text-white shadow-brand">L</div>
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-linear-to-br from-brand-400 to-brand-700 text-sm font-extrabold text-white shadow-brand">U</div>
           <div className="min-w-0">
             <div className="truncate text-sm font-bold text-white">{workspace.name}</div>
             <Link href="/app?all=1" className="text-xs text-gray-400 hover:text-white">

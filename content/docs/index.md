@@ -1,11 +1,11 @@
 # Introduction
 
-Locatify Guides shows onboarding content inside your website or web app: product tours, checklists, announcements, hotspots, surveys and a resource center. You build guides in the dashboard, point them at parts of your app with the visual builder, and decide who sees them and where. Everything people do with a guide is recorded, so you can see what works.
+User Onboarder shows onboarding content inside your website or web app: product tours, checklists, announcements, hotspots, surveys and a resource center. You build guides in the dashboard, point them at parts of your app with the visual builder, and decide who sees them and where. Everything people do with a guide is recorded, so you can see what works.
 
 ## Who these docs are for
 
 - **Guide authors** (product, support, customer success) create and publish guides. No coding needed. Start with the [Quick start](quick-start), then [Product tours](tours) and [The visual builder](builder).
-- **Developers** add one snippet to the site and tell Locatify Guides who is signed in. Start with [Install the snippet](install) and [Identify users](identify).
+- **Developers** add one snippet to the site and tell User Onboarder who is signed in. Start with [Install the snippet](install) and [Identify users](identify).
 - **People who run the server** deploy and maintain the app itself. See [Deploy](self-hosting) and [Operations](operations).
 
 ## The building blocks

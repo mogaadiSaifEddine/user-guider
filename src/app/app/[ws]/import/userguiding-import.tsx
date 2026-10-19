@@ -201,7 +201,7 @@ export function UserGuidingImport({ ws }: { ws: string }) {
             ))}
           </ul>
           <div className="space-y-2.5 border-t border-gray-100 bg-gray-50 px-5 py-4 text-sm">
-            <Option checked={opts.copyImages} onChange={(v) => setOpts({ ...opts, copyImages: v })} label="Copy images to Locatify Guides">
+            <Option checked={opts.copyImages} onChange={(v) => setOpts({ ...opts, copyImages: v })} label="Copy images to User Onboarder">
               Recommended: images on UserGuiding&apos;s servers may disappear when you cancel UserGuiding.
             </Option>
             <Option checked={opts.anyDomain} onChange={(v) => setOpts({ ...opts, anyDomain: v })} label="Match any domain in page rules">

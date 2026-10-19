@@ -1,6 +1,6 @@
 # Identity verification
 
-`identify()` runs in the browser, so anyone can call it with someone else's user id and load that person's guide progress and attributes into their own browser. Identity verification closes that gap: your server signs each user id with a secret only it knows, and the Locatify Guides server checks the signature.
+`identify()` runs in the browser, so anyone can call it with someone else's user id and load that person's guide progress and attributes into their own browser. Identity verification closes that gap: your server signs each user id with a secret only it knows, and the User Onboarder server checks the signature.
 
 ## How it works
 

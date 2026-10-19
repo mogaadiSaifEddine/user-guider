@@ -22,7 +22,7 @@ Imported guides are **drafts**. Open each one, preview it, fix what the import f
 
 | Option | What it does |
 | --- | --- |
-| **Copy images to Locatify Guides** | Downloads every image used in the selected guides and stores it here. Recommended: images hosted by UserGuiding may stop loading when you cancel your subscription. Images over 5 MB or in unsupported formats keep their UserGuiding address. |
+| **Copy images to User Onboarder** | Downloads every image used in the selected guides and stores it here. Recommended: images hosted by UserGuiding may stop loading when you cancel your subscription. Images over 5 MB or in unsupported formats keep their UserGuiding address. |
 | **Match any domain in page rules** | Drops the domain from page rules, so a rule recorded on `https://cms.example.com/#/projects` also matches `http://localhost:8080/#/projects` and test servers. |
 | **Import theme** | Replaces this workspace's primary color, text and background colors, corner radius and font with your UserGuiding theme. |
 | **Publish guides that are active in UserGuiding** | Publishes straight away. Leave it off while the UserGuiding snippet is still on your site, or people will see both. |

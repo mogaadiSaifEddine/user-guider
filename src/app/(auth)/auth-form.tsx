@@ -22,10 +22,10 @@ export function AuthForm({
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-brand-400 to-brand-700 text-lg font-extrabold text-white shadow-brand">
-            L
+            U
           </div>
           <h1 className="text-xl font-semibold">
-            {mode === "login" ? "Sign in to Locatify Guides" : "Create your account"}
+            {mode === "login" ? "Sign in to User Onboarder" : "Create your account"}
           </h1>
         </div>
         {notice && !state?.error && (

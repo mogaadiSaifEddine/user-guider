@@ -25,7 +25,7 @@ Put it in the `<head>` of every page, then [identify signed-in users](identify).
 | `data-key` | yes | The workspace's public key. Identifies which workspace's guides to load. It isn't secret. |
 | `data-wait-for-identify` | no | Show nothing until `identify()` is called. Use it on apps where everyone is signed in, so guides never flash for an anonymous visitor first. Remove it on pages where you want to reach anonymous visitors. |
 | `data-locale` | no | The language to show guides in, e.g. `de`. Without it the language comes from the user's attributes, `<html lang>` or the browser. See [Languages and translation](localization). |
-| `data-api` | no | Address of the Locatify Guides server, if it differs from where `sdk.js` is served (for example when you host `sdk.js` on your own CDN). |
+| `data-api` | no | Address of the User Onboarder server, if it differs from where `sdk.js` is served (for example when you host `sdk.js` on your own CDN). |
 
 ## Framework notes
 
@@ -85,14 +85,14 @@ Add the snippet to your base template. Identify the user in an inline script ren
 
 ## Content Security Policy
 
-If your site sends a `Content-Security-Policy` header, allow the Locatify Guides server:
+If your site sends a `Content-Security-Policy` header, allow the User Onboarder server:
 
 | Directive | Add | Why |
 | --- | --- | --- |
-| `script-src` | your Locatify Guides address, plus a nonce or hash for the inline stub | loading `sdk.js` and the queue |
-| `connect-src` | your Locatify Guides address | loading guides and sending events |
+| `script-src` | your User Onboarder address, plus a nonce or hash for the inline stub | loading `sdk.js` and the queue |
+| `connect-src` | your User Onboarder address | loading guides and sending events |
 | `style-src` | `'unsafe-inline'` | the script styles its own elements |
-| `img-src` | your Locatify Guides address, plus any other image hosts you link to | images in steps and announcements (uploads are served from Locatify Guides) |
+| `img-src` | your User Onboarder address, plus any other image hosts you link to | images in steps and announcements (uploads are served from User Onboarder) |
 | `frame-src` | `https://www.youtube-nocookie.com https://player.vimeo.com` | video blocks |
 
 ## What the script adds to your page

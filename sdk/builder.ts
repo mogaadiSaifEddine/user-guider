@@ -113,7 +113,7 @@ export async function startBuilder(apiBase: string, token: string) {
   root.appendChild(style);
 
   if (!res.ok) {
-    const box = el("div", { class: "lg lgb" }, `<div class="lgb-head"><strong>Locatify Guides builder</strong></div>
+    const box = el("div", { class: "lg lgb" }, `<div class="lgb-head"><strong>User Onboarder builder</strong></div>
       <p class="lgb-msg">${escapeHtml(data.error ?? "Could not load the guide.")}</p>
       <div class="lgb-actions"><button class="lgb-btn" data-act="exit">Exit builder</button></div>`);
     box.querySelector('[data-act="exit"]')!.addEventListener("click", exit);

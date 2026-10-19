@@ -1,6 +1,6 @@
 # Identify users
 
-Identifying tells Locatify Guides who is signed in. It's what makes progress follow a person across devices, lets authors target by plan or role, and shows real ids in analytics.
+Identifying tells User Onboarder who is signed in. It's what makes progress follow a person across devices, lets authors target by plan or role, and shows real ids in analytics.
 
 ```js
 LocatifyGuides.identify(userId, attributes, options);
@@ -39,7 +39,7 @@ LocatifyGuides.identify(String(user.id), {
 - Attributes are **merged**: sending `{ plan: "pro" }` later updates `plan` and keeps the rest. Send `null` to clear one.
 - Send dates as ISO 8601 strings so *greater than* / *less than* rules compare them as dates.
 - Tell your guide authors which attribute names exist. They can see each person's attributes on the **Users** page.
-- Don't send sensitive personal data you don't need for targeting. Attributes are stored on the Locatify Guides server.
+- Don't send sensitive personal data you don't need for targeting. Attributes are stored on the User Onboarder server.
 
 ## Companies
 
