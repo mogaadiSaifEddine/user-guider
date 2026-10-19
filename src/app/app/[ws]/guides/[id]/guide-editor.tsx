@@ -202,7 +202,7 @@ export function GuideEditor({
           <CopyCode code={guide.type === "RESOURCE_CENTER" ? "LocatifyGuides.openResourceCenter()" : `LocatifyGuides.start("${guide.id}")`} />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" disabled={pending} onClick={() => startTransition(() => duplicateGuide(ws, guide.id))}>
+          <Button variant="secondary" disabled={pending} onClick={() => startTransition(async () => void (await duplicateGuide(ws, guide.id)))}>
             Duplicate
           </Button>
           {guide.status !== "ARCHIVED" ? (

@@ -30,6 +30,8 @@ Before publishing, the editor checks that the guide isn't empty: a tour needs a 
 
 ## Unpublish, archive, delete
 
+You can do all of these from the guide editor, or from the icons on each row of the **Guides** list (hover an icon to see its name). The list also has icons for **Publish**, **Duplicate**, **Analytics** and, for tours and hotspots, the **visual builder**, which opens on the page you last used it on.
+
 | Action | Effect |
 | --- | --- |
 | **Unpublish** | Stops showing the guide. The draft is kept; publish again any time. User progress is kept too. |

@@ -6,6 +6,8 @@ import { guideStats, pct } from "@/lib/analytics";
 import { Badge, ButtonLink, Card, EmptyState, PageHeader, cx, statusColors, typeLabels } from "@/components/ui";
 import { NewGuideButton } from "./new-guide";
 import { GuideFilters } from "./guide-filters";
+import { GuideRowActions } from "./guide-row-actions";
+import type { GuideTypeName } from "@/lib/guide-schema";
 
 const tabs: { key: GuideStatus | "ALL"; label: string }[] = [
   { key: "ALL", label: "Active" },
@@ -98,19 +100,15 @@ export default async function GuidesPage({
       ) : (
         <Card className="divide-y divide-gray-100">
           {guides.map((g) => (
-            <Link
-              key={g.id}
-              href={`/app/${ws}/guides/${g.id}`}
-              className="flex flex-wrap items-center gap-x-4 gap-y-1 px-5 py-4 hover:bg-gray-50"
-            >
-              <div className="min-w-0 flex-1">
+            <div key={g.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-4 pr-3 pl-5 hover:bg-gray-50">
+              <Link href={`/app/${ws}/guides/${g.id}`} className="min-w-0 flex-1">
                 <div className="truncate font-medium">{g.name}</div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   <Badge color="indigo">{typeLabels[g.type]}</Badge>
                   <Badge color={statusColors[g.status]}>{g.status === "PUBLISHED" ? "live" : g.status.toLowerCase()}</Badge>
                   {g.priority !== 0 && <Badge>priority {g.priority}</Badge>}
                 </div>
-              </div>
+              </Link>
               <GuideNumbers
                 type={g.type}
                 live={g.status === "PUBLISHED"}
@@ -120,7 +118,8 @@ export default async function GuidesPage({
               <div className="w-28 text-right text-xs text-gray-500" title={g.updatedAt.toLocaleString()}>
                 Edited {timeAgo(g.updatedAt)}
               </div>
-            </Link>
+              <GuideRowActions ws={ws} guide={{ id: g.id, name: g.name, type: g.type as GuideTypeName, status: g.status }} />
+            </div>
           ))}
         </Card>
       )}
