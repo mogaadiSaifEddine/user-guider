@@ -17,9 +17,9 @@
     </style>
     <!-- Snippet, as shown on the Install page (demo key from the seed). -->
     <script>
-      window.LocatifyGuides = window.LocatifyGuides || { q: [] };
+      window.UserOnboarder = window.UserOnboarder || { q: [] };
       ["identify", "track", "start", "page", "reset", "setLocale", "openResourceCenter", "closeResourceCenter"].forEach(function (m) {
-        LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
+        UserOnboarder[m] = UserOnboarder[m] || function () { UserOnboarder.q.push([m, arguments]); };
       });
     </script>
     <script async src="/sdk.js" data-key="pk_demo"></script>
@@ -36,7 +36,7 @@
         <h1>Projects</h1>
         <p>This page stands in for a customer's app so you can try guides locally.</p>
         <div class="row">
-          <button id="new-project" onclick="LocatifyGuides.track('project_created'); alert('Project created (tracked project_created)')">
+          <button id="new-project" onclick="UserOnboarder.track('project_created'); alert('Project created (tracked project_created)')">
             + New project
           </button>
           <button onclick="history.pushState({}, '', '/demo.html?page=' + Date.now())">Simulate SPA navigation</button>
@@ -46,8 +46,8 @@
         <h2>Test as a user</h2>
         <div class="row">
           <input id="uid" placeholder="user id, e.g. alice" style="padding:8px;border:1px solid #d1d5db;border-radius:8px" />
-          <button onclick="LocatifyGuides.identify(document.getElementById('uid').value, { plan: 'pro' })">Identify</button>
-          <button onclick="LocatifyGuides.reset()">Reset (new anonymous visitor)</button>
+          <button onclick="UserOnboarder.identify(document.getElementById('uid').value, { plan: 'pro' })">Identify</button>
+          <button onclick="UserOnboarder.reset()">Reset (new anonymous visitor)</button>
         </div>
       </div>
     </main>

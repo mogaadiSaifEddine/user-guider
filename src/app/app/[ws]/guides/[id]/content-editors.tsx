@@ -237,7 +237,7 @@ export function ChecklistEditor({
           </div>
           {it.completeOn.type === "event" && it.completeOn.name && (
             <p className="text-xs text-gray-500">
-              Your app calls <code className="rounded bg-gray-100 px-1">LocatifyGuides.track(&quot;{it.completeOn.name}&quot;)</code>
+              Your app calls <code className="rounded bg-gray-100 px-1">UserOnboarder.track(&quot;{it.completeOn.name}&quot;)</code>
             </p>
           )}
         </ListItem>

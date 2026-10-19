@@ -38,7 +38,7 @@ Examples:
 | Trigger | Behavior |
 | --- | --- |
 | **Automatically when targeting matches** | Starts on its own on a matching page. |
-| **Only manually** | Never starts on its own; only from a checklist item or `LocatifyGuides.start()` in your app. Tours and announcements only. |
+| **Only manually** | Never starts on its own; only from a checklist item or `UserOnboarder.start()` in your app. Tours and announcements only. |
 
 ## Delay
 

@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Start with the browser's developer tools on the page where the guide should appear: the **Console** (messages start with `[LocatifyGuides]`) and the **Network** tab (requests to `/api/sdk/`).
+Start with the browser's developer tools on the page where the guide should appear: the **Console** (messages start with `[UserOnboarder]`) and the **Network** tab (requests to `/api/sdk/`).
 
 ## A guide doesn't show up
 
@@ -24,7 +24,7 @@ Your own progress hides guides you've already seen. Options:
 
 - Use a private window and a test account (or no account, for anonymous guides).
 - Temporarily set **Show again** to *On every page load*.
-- Call `LocatifyGuides.reset()` in the console for a new anonymous visitor.
+- Call `UserOnboarder.reset()` in the console for a new anonymous visitor.
 
 ## Console messages
 

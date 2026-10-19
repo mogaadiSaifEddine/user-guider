@@ -15,28 +15,28 @@ export default async function InstallPage({ params }: { params: Promise<{ ws: st
   });
 
   const snippet = `<script>
-  window.LocatifyGuides = window.LocatifyGuides || { q: [] };
+  window.UserOnboarder = window.UserOnboarder || { q: [] };
   ["identify", "track", "start", "page", "reset", "setLocale", "openResourceCenter", "closeResourceCenter"].forEach(function (m) {
-    LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
+    UserOnboarder[m] = UserOnboarder[m] || function () { UserOnboarder.q.push([m, arguments]); };
   });
 </script>
 <script async src="${base}/sdk.js" data-key="${workspace.publicKey}" data-wait-for-identify></script>`;
 
   const identify = `// After login, once you know who the user is:
-LocatifyGuides.identify(user.id, {
+UserOnboarder.identify(user.id, {
   email: user.email,
   plan: user.plan,                 // anything you want to target on
   signedUpAt: user.createdAt,      // ISO dates compare with "greater/less than"
 }${workspace.requireIdentityVerification ? ", { hash: userHashFromYourServer }" : ""});
 
 // On logout:
-LocatifyGuides.reset();`;
+UserOnboarder.reset();`;
 
   const track = `// Completes checklist items set to "Done when an event is tracked"
-LocatifyGuides.track("project_created");
+UserOnboarder.track("project_created");
 
 // Start a guide from your own button
-LocatifyGuides.start("GUIDE_ID");`;
+UserOnboarder.start("GUIDE_ID");`;
 
   const hashNode = `import { createHmac } from "crypto";
 

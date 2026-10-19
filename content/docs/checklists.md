@@ -27,7 +27,7 @@ Each item has a title, an optional description, and two rules: what happens when
 | Option | Effect |
 | --- | --- |
 | The item is clicked | Ticked as soon as the user clicks it. |
-| An event is tracked | Ticked when your app reports that event, e.g. `project_created`. Your developers send it with `LocatifyGuides.track("project_created")` in the browser or from the server ([HTTP API](http-api)). The editor shows the exact line to give them. |
+| An event is tracked | Ticked when your app reports that event, e.g. `project_created`. Your developers send it with `UserOnboarder.track("project_created")` in the browser or from the server ([HTTP API](http-api)). The editor shows the exact line to give them. |
 | A guide is completed | Ticked when the user completes another guide, e.g. the welcome tour. |
 
 Events and completed guides count even when the checklist isn't on screen, and progress follows the user across devices if your app [identifies](identify) them.

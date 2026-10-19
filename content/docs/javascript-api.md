@@ -1,13 +1,15 @@
 # JavaScript API
 
-All methods live on `window.LocatifyGuides`. They can be called before the script has loaded; calls are queued and run in order once it does. None of them throw, and only `getLocale()` returns a value.
+All methods live on `window.UserOnboarder`. They can be called before the script has loaded; calls are queued and run in order once it does. None of them throw, and only `getLocale()` returns a value.
+
+The old name `window.LocatifyGuides` still works and points at the same object, and the old `locatify-guides:contact` event is still sent next to `user-onboarder:contact`. New code should use the new names.
 
 ## identify(userId, attributes?, options?)
 
 Sets the signed-in user and reloads their guides. See [Identify users](identify).
 
 ```js
-LocatifyGuides.identify("42", { plan: "pro" }, { hash: "…" });
+UserOnboarder.identify("42", { plan: "pro" }, { hash: "…" });
 ```
 
 ## track(name)
@@ -15,7 +17,7 @@ LocatifyGuides.identify("42", { plan: "pro" }, { hash: "…" });
 Records a named event for the current user, e.g. something they did in your app. Checklist items set to *Done when: An event is tracked* with the same name are ticked, and the checklist on screen updates within about a second.
 
 ```js
-LocatifyGuides.track("project_created");
+UserOnboarder.track("project_created");
 ```
 
 - Names are case-sensitive, up to 191 characters. Agree on them with your guide authors; `snake_case` verbs in the past tense work well.
@@ -28,7 +30,7 @@ Starts a tour, announcement or survey immediately, from step 1. The guide id is 
 
 ```js
 document.querySelector("#help-tour").addEventListener("click", () => {
-  LocatifyGuides.start("cm1abc…");
+  UserOnboarder.start("cm1abc…");
 });
 ```
 
@@ -43,7 +45,7 @@ Opens the [resource center](resource-center) panel, e.g. from a *Help* item in y
 
 ```js
 document.querySelector("#help-menu").addEventListener("click", () => {
-  LocatifyGuides.openResourceCenter();
+  UserOnboarder.openResourceCenter();
 });
 ```
 
@@ -56,7 +58,7 @@ Closes the resource center panel if it's open.
 Shows guides in another language, for example right after the user switches language in your app. Pass a language code like `"de"` or `"pt-BR"`; guides on screen are closed and reloaded in that language. An empty string goes back to automatic detection. See [Languages and translation](localization#which-language-a-user-sees) for how the language is picked otherwise.
 
 ```js
-LocatifyGuides.setLocale("is");
+UserOnboarder.setLocale("is");
 ```
 
 ## getLocale()
@@ -68,7 +70,7 @@ Returns the language guides are currently shown in: one of your workspace's lang
 Checks page rules again right now. Address changes made with `history.pushState`, `replaceState`, back/forward and hash changes are detected automatically, so you rarely need this, only if your router changes what's on screen without changing the address.
 
 ```js
-LocatifyGuides.page();
+UserOnboarder.page();
 ```
 
 ## reset()
@@ -76,7 +78,7 @@ LocatifyGuides.page();
 Forgets the current user, creates a new anonymous visitor and reloads guides. Call it on logout.
 
 ```js
-LocatifyGuides.reset();
+UserOnboarder.reset();
 ```
 
 ## Builder mode

@@ -9,7 +9,7 @@
 3. The browser passes it to `identify()`:
 
 ```js
-LocatifyGuides.identify(user.id, { plan: user.plan }, { hash: "{{ user_hash }}" });
+UserOnboarder.identify(user.id, { plan: user.plan }, { hash: "{{ user_hash }}" });
 ```
 
 The id you sign must be exactly the string you pass to `identify()`.

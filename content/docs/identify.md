@@ -3,7 +3,7 @@
 Identifying tells User Onboarder who is signed in. It's what makes progress follow a person across devices, lets authors target by plan or role, and shows real ids in analytics.
 
 ```js
-LocatifyGuides.identify(userId, attributes, options);
+UserOnboarder.identify(userId, attributes, options);
 ```
 
 | Argument | Type | Notes |
@@ -18,14 +18,14 @@ Call it **once per page load**, as soon as you know who the user is, typically r
 
 Each call reloads the user's guides, closing anything on screen. Don't call it on every route change or render.
 
-On **logout**, call `LocatifyGuides.reset()`. It forgets the user and starts a new anonymous visitor, so the next person on that browser doesn't inherit their progress.
+On **logout**, call `UserOnboarder.reset()`. It forgets the user and starts a new anonymous visitor, so the next person on that browser doesn't inherit their progress.
 
 ## Attributes
 
 Attributes are what authors write [user rules](targeting#users) against. Send what's useful for deciding who should see what:
 
 ```js
-LocatifyGuides.identify(String(user.id), {
+UserOnboarder.identify(String(user.id), {
   email: user.email,
   name: user.name,
   plan: user.plan,                       // "free" | "pro" | …
@@ -51,7 +51,7 @@ To group users by company (in [Analytics](analytics#companies)), send the compan
 | Company name | `company_name`, `companyName`, `publisher_alias`, `publisher_name`, `organization_name`, `account_name`, `company` |
 
 ```js
-LocatifyGuides.identify(String(user.id), {
+UserOnboarder.identify(String(user.id), {
   company_id: String(user.companyId),
   company_name: user.companyName,
 });

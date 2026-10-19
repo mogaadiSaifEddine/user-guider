@@ -12,7 +12,7 @@ export function isOwnElement(el: EventTarget | null) {
 
 export function shadow(): ShadowRoot {
   if (root) return root;
-  host = document.createElement("locatify-guides");
+  host = document.createElement("user-onboarder");
   host.style.cssText = "all:initial;position:fixed;top:0;left:0;width:0;height:0;z-index:2147483000;";
   root = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");

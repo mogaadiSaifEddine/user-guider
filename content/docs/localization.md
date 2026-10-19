@@ -22,7 +22,7 @@ Translations are attached to each step, block and button by id, not by position,
 
 The snippet picks the first of these that matches one of your languages, and falls back to English:
 
-1. A language you set: `data-locale="de"` on the script tag, or `LocatifyGuides.setLocale("de")` (for example when the user changes language in your app). See the [JavaScript API](javascript-api#setlocale-locale).
+1. A language you set: `data-locale="de"` on the script tag, or `UserOnboarder.setLocale("de")` (for example when the user changes language in your app). See the [JavaScript API](javascript-api#setlocale-locale).
 2. A `locale` or `language` attribute from `identify()`, e.g. `identify("42", { locale: "is" })`.
 3. The page's `<html lang="…">`.
 4. The browser's language, then the `Accept-Language` header.

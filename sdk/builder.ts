@@ -550,7 +550,7 @@ async function captureScreenshot(apiBase: string, snapshot: PageSnapshot): Promi
     return (await Promise.race([capture(marks), timeout])) ?? undefined;
   } catch (e) {
     // The AI still works from the element list alone.
-    console.warn("[LocatifyGuides] screenshot skipped", e);
+    console.warn("[UserOnboarder] screenshot skipped", e);
     return undefined;
   }
 }

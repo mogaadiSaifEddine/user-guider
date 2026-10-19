@@ -47,7 +47,7 @@ export const initSchema = z.object({
   user: sdkUserSchema,
   url: z.string().max(2000).optional(),
   context: contextSchema.optional(),
-  // Set by the host: data-locale on the script tag or LocatifyGuides.setLocale().
+  // Set by the host: data-locale on the script tag or UserOnboarder.setLocale().
   locale: z.string().max(35).optional(),
 });
 

@@ -1,6 +1,6 @@
 # Install the snippet
 
-The snippet is two script tags. The first defines a small queue so your code can call `LocatifyGuides` before the real script has loaded; the second loads the script asynchronously, so it never blocks your page.
+The snippet is two script tags. The first defines a small queue so your code can call `UserOnboarder` before the real script has loaded; the second loads the script asynchronously, so it never blocks your page.
 
 ## Get your snippet
 
@@ -8,9 +8,9 @@ The dashboard's **Install** page shows the snippet with your workspace's key and
 
 ```html
 <script>
-  window.LocatifyGuides = window.LocatifyGuides || { q: [] };
+  window.UserOnboarder = window.UserOnboarder || { q: [] };
   ["identify", "track", "start", "page", "reset", "setLocale", "openResourceCenter", "closeResourceCenter"].forEach(function (m) {
-    LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
+    UserOnboarder[m] = UserOnboarder[m] || function () { UserOnboarder.q.push([m, arguments]); };
   });
 </script>
 <script async src="https://guides.example.com/sdk.js" data-key="pk_…" data-wait-for-identify></script>
@@ -34,10 +34,10 @@ Put it in the `<head>` of every page, then [identify signed-in users](identify).
 Add the snippet to `src/index.html`. Calls from components and services go through `window`; declare it once so TypeScript knows about it:
 
 ```ts
-// src/locatify-guides.d.ts
+// src/user-onboarder.d.ts
 type LGValue = string | number | boolean | null;
 interface Window {
-  LocatifyGuides: {
+  UserOnboarder: {
     identify(id: string, attributes?: Record<string, LGValue>, options?: { hash?: string }): void;
     track(name: string): void;
     start(guideId: string): void;
@@ -50,7 +50,7 @@ interface Window {
 Then, for example in your auth service after login:
 
 ```ts
-window.LocatifyGuides.identify(String(user.id), { plan: user.plan, role: user.role });
+window.UserOnboarder.identify(String(user.id), { plan: user.plan, role: user.role });
 ```
 
 Angular's router changes the address with `history.pushState`, which the script detects on its own.
@@ -63,15 +63,15 @@ In Next.js (App Router), add the tags to the root layout with `next/script`:
 import Script from "next/script";
 
 <Script id="lg-stub" strategy="beforeInteractive">{`
-  window.LocatifyGuides = window.LocatifyGuides || { q: [] };
+  window.UserOnboarder = window.UserOnboarder || { q: [] };
   ["identify","track","start","page","reset","setLocale","openResourceCenter","closeResourceCenter"].forEach(function (m) {
-    LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
+    UserOnboarder[m] = UserOnboarder[m] || function () { UserOnboarder.q.push([m, arguments]); };
   });
 `}</Script>
 <Script src="https://guides.example.com/sdk.js" data-key="pk_…" data-wait-for-identify strategy="afterInteractive" />
 ```
 
-Call `window.LocatifyGuides.identify(...)` in an effect once the session is known.
+Call `window.UserOnboarder.identify(...)` in an effect once the session is known.
 
 ### Server-rendered sites
 
@@ -81,7 +81,7 @@ Add the snippet to your base template. Identify the user in an inline script ren
 
 1. Open your site. In the browser's developer tools, the network tab should show `sdk.js` and a request to `/api/sdk/init` with status 200.
 2. The **Install** page in the dashboard shows **Receiving data**, and people appear under **Users**.
-3. Problems are logged to the browser console with the prefix `[LocatifyGuides]`. See [Troubleshooting](troubleshooting).
+3. Problems are logged to the browser console with the prefix `[UserOnboarder]`. See [Troubleshooting](troubleshooting).
 
 ## Content Security Policy
 
@@ -97,4 +97,4 @@ If your site sends a `Content-Security-Policy` header, allow the User Onboarder 
 
 ## What the script adds to your page
 
-Everything is drawn inside one `<locatify-guides>` element attached to `<html>`, using a shadow root, so your CSS doesn't affect guides and guide CSS doesn't affect your page. It sits at z-index 2147483000. The script stores one value in `localStorage` (`lg_anon_id`, the anonymous visitor id) and, only in builder mode, one value in `sessionStorage`. It sets no cookies.
+Everything is drawn inside one `<user-onboarder>` element attached to `<html>`, using a shadow root, so your CSS doesn't affect guides and guide CSS doesn't affect your page. It sits at z-index 2147483000. The script stores one value in `localStorage` (`lg_anon_id`, the anonymous visitor id) and, only in builder mode, one value in `sessionStorage`. It sets no cookies.

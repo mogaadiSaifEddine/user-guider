@@ -441,6 +441,8 @@ export function runResourceCenter(
     const value = m.value.trim();
     if (m.action === "event") {
       close();
+      window.dispatchEvent(new CustomEvent("user-onboarder:contact", { detail: { value } }));
+      // Old event name, for pages written before the rename.
       window.dispatchEvent(new CustomEvent("locatify-guides:contact", { detail: { value } }));
     } else if (m.action === "email") {
       if (value) location.href = "mailto:" + encodeURIComponent(value).replace(/%40/g, "@");

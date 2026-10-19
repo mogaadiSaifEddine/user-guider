@@ -131,7 +131,7 @@ export function ResourceCenterEditor({
             </div>
           ) : (
             <p className="text-xs text-gray-500">
-              Open it from your own help button with <code className="rounded bg-gray-100 px-1">LocatifyGuides.openResourceCenter()</code>.
+              Open it from your own help button with <code className="rounded bg-gray-100 px-1">UserOnboarder.openResourceCenter()</code>.
             </p>
           )}
         </Card>
@@ -400,7 +400,7 @@ function ModuleFields({
             <p className="text-xs text-gray-500">
               The panel closes and your app receives an event. For example:{" "}
               <code className="rounded bg-gray-100 px-1">
-                window.addEventListener(&quot;locatify-guides:contact&quot;, () =&gt; Intercom(&quot;show&quot;))
+                window.addEventListener(&quot;user-onboarder:contact&quot;, () =&gt; Intercom(&quot;show&quot;))
               </code>
             </p>
           )}

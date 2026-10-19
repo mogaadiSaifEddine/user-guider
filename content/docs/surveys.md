@@ -31,7 +31,7 @@ The preview shows the question you're editing in your workspace theme.
 
 ## When it shows
 
-Surveys use the same [targeting](targeting) as tours and announcements: pages, user rules, a delay, **Show again**, and priority. A survey can also be started only manually, from your code with `LocatifyGuides.start("<survey id>")`, from a checklist item, or from a button in a tour step or announcement (*Start another guide*).
+Surveys use the same [targeting](targeting) as tours and announcements: pages, user rules, a delay, **Show again**, and priority. A survey can also be started only manually, from your code with `UserOnboarder.start("<survey id>")`, from a checklist item, or from a button in a tour step or announcement (*Start another guide*).
 
 Only one tour, announcement or survey is on screen at a time.
 

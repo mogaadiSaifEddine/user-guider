@@ -56,9 +56,14 @@ type Stub = { q?: [string, ArrayLike<unknown>][]; key?: string; apiBase?: string
 const ANON_KEY = "lg_anon_id";
 
 (function main() {
-  const w = window as unknown as { LocatifyGuides?: Stub & { __loaded?: boolean } };
-  if (w.LocatifyGuides?.__loaded) return;
-  const stub: Stub = w.LocatifyGuides ?? {};
+  // LocatifyGuides is the old global name; snippets that still use it keep working.
+  type Global = Stub & { __loaded?: boolean };
+  const w = window as unknown as { UserOnboarder?: Global; LocatifyGuides?: Global };
+  if (w.UserOnboarder?.__loaded || w.LocatifyGuides?.__loaded) return;
+  const stub: Stub = { ...w.LocatifyGuides, ...w.UserOnboarder, q: [...(w.LocatifyGuides?.q ?? []), ...(w.UserOnboarder?.q ?? [])] };
+  const expose = (value: unknown) => {
+    w.UserOnboarder = w.LocatifyGuides = value as never;
+  };
 
   const script = document.currentScript as HTMLScriptElement | null;
   const key = script?.dataset.key ?? stub.key;
@@ -119,7 +124,7 @@ const ANON_KEY = "lg_anon_id";
     openResourceCenter() {
       if (resourceCenter) resourceCenter.handle.open();
       else if (!loaded) openRcWhenReady = true;
-      else console.warn("[LocatifyGuides] No resource center for this page and user.");
+      else console.warn("[UserOnboarder] No resource center for this page and user.");
     },
     closeResourceCenter() {
       openRcWhenReady = false;
@@ -134,14 +139,14 @@ const ANON_KEY = "lg_anon_id";
   };
 
   if (!key) {
-    console.warn("[LocatifyGuides] Missing data-key on the script tag.");
+    console.warn("[UserOnboarder] Missing data-key on the script tag.");
     return;
   }
 
   const token = builderToken();
   if (token) {
     // Builder session: edit the guide, don't run live guides.
-    w.LocatifyGuides = {
+    expose({
       ...api,
       identify() {},
       track() {},
@@ -151,12 +156,12 @@ const ANON_KEY = "lg_anon_id";
       reset() {},
       openResourceCenter() {},
       closeResourceCenter() {},
-    } as never;
+    });
     void startBuilder(apiBase, token);
     return;
   }
 
-  w.LocatifyGuides = api as never;
+  expose(api);
   let identified = false;
   for (const [method, args] of stub.q ?? []) {
     const fn = (api as Record<string, unknown>)[method];
@@ -197,7 +202,7 @@ const ANON_KEY = "lg_anon_id";
       const data = await res.json();
       if (seq !== initSeq) return;
       if (!res.ok) {
-        console.warn("[LocatifyGuides]", data.error ?? res.status);
+        console.warn("[UserOnboarder]", data.error ?? res.status);
         return;
       }
       teardown();
@@ -212,7 +217,7 @@ const ANON_KEY = "lg_anon_id";
         resourceCenter?.handle.open();
       }
     } catch (e) {
-      console.warn("[LocatifyGuides] init failed", e);
+      console.warn("[UserOnboarder] init failed", e);
     }
   }
 
@@ -372,7 +377,7 @@ const ANON_KEY = "lg_anon_id";
 
   function startGuide(guideId: string) {
     const g = guides.find((x) => x.id === guideId);
-    if (!g) return console.warn("[LocatifyGuides] Guide not available for this user:", guideId);
+    if (!g) return console.warn("[UserOnboarder] Guide not available for this user:", guideId);
     if (g.type === "RESOURCE_CENTER") return api.openResourceCenter();
     if (!isModal(g)) return;
     resourceCenter?.handle.close();

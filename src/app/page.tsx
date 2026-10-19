@@ -53,9 +53,9 @@ const capabilities = [
 ];
 
 const snippet = `<script>
-  window.LocatifyGuides = window.LocatifyGuides || { q: [] };
+  window.UserOnboarder = window.UserOnboarder || { q: [] };
   ["identify", "track", "start", "page", "reset"].forEach(function (m) {
-    LocatifyGuides[m] = LocatifyGuides[m] || function () { LocatifyGuides.q.push([m, arguments]); };
+    UserOnboarder[m] = UserOnboarder[m] || function () { UserOnboarder.q.push([m, arguments]); };
   });
 </script>
 <script async src="https://your-server/sdk.js" data-key="pk_…"></script>`;

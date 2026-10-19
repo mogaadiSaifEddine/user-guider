@@ -264,7 +264,7 @@ export const rcModuleSchema = z.discriminatedUnion("type", [
     title: moduleTitle("Still need help?"),
     text: z.string().max(500).default("Our team usually answers within a day."),
     buttonLabel: z.string().max(60).default("Contact us"),
-    // email: mailto link. url: opens a page. event: dispatches `locatify-guides:contact` on window so the
+    // email: mailto link. url: opens a page. event: dispatches `user-onboarder:contact` on window so the
     // host app can open its own chat widget.
     action: z.enum(["email", "url", "event"]).default("email"),
     value: z.string().max(1000).default(""),
@@ -278,7 +278,7 @@ export const resourceCenterContentSchema = z.object({
   subtitle: z.string().max(300).default("Find answers, take a tour, or get in touch."),
   launcher: z
     .object({
-      // Hidden: open it from your own help button with LocatifyGuides.openResourceCenter().
+      // Hidden: open it from your own help button with UserOnboarder.openResourceCenter().
       show: z.boolean().default(true),
       label: z.string().max(40).default("Help"),
       icon: z.enum(launcherIcons).default("help"),

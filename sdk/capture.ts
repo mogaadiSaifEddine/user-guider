@@ -36,7 +36,7 @@ async function capture(marks: Mark[]): Promise<string | null> {
   );
   ctx.fillStyle = "#e5e7eb";
   for (const f of fields) {
-    if (f.closest("locatify-guides")) continue;
+    if (f.closest("user-onboarder")) continue;
     const r = f.getBoundingClientRect();
     if (r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > vh) continue;
     ctx.fillRect(r.left * scale, r.top * scale, r.width * scale, r.height * scale);

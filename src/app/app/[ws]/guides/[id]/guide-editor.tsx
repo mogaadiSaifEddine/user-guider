@@ -199,7 +199,7 @@ export function GuideEditor({
           <span className="text-gray-500">
             {guide.type === "RESOURCE_CENTER" ? "from your own help button or menu:" : "from your own code, e.g. a help button:"}
           </span>
-          <CopyCode code={guide.type === "RESOURCE_CENTER" ? "LocatifyGuides.openResourceCenter()" : `LocatifyGuides.start("${guide.id}")`} />
+          <CopyCode code={guide.type === "RESOURCE_CENTER" ? "UserOnboarder.openResourceCenter()" : `UserOnboarder.start("${guide.id}")`} />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" disabled={pending} onClick={() => startTransition(async () => void (await duplicateGuide(ws, guide.id)))}>

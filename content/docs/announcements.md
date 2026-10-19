@@ -32,4 +32,4 @@ On the **Targeting** tab, under **Show again**:
 
 See [Targeting and timing](targeting).
 
-Like tours, an announcement waits its turn when a tour is already on screen, and can be started from a checklist or with `LocatifyGuides.start()` if its trigger is *Only manually*.
+Like tours, an announcement waits its turn when a tour is already on screen, and can be started from a checklist or with `UserOnboarder.start()` if its trigger is *Only manually*.

@@ -44,7 +44,7 @@ function isVisible(el: Element, r = el.getBoundingClientRect()) {
 }
 
 function skip(el: Element) {
-  return isOwnElement(el) || Boolean(el.closest("locatify-guides"));
+  return isOwnElement(el) || Boolean(el.closest("user-onboarder"));
 }
 
 // ---------- Headings ----------

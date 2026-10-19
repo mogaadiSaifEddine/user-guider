@@ -39,10 +39,10 @@ Guides and checklists only appear for users they target: an entry pointing at a 
 
 ### Opening your chat widget from Contact
 
-Pick **Your chat widget (event)** as what the button opens. The panel closes and the page receives a `locatify-guides:contact` event, so your developers can open Intercom, Crisp, HubSpot or your own chat:
+Pick **Your chat widget (event)** as what the button opens. The panel closes and the page receives a `user-onboarder:contact` event, so your developers can open Intercom, Crisp, HubSpot or your own chat:
 
 ```js
-window.addEventListener("locatify-guides:contact", () => {
+window.addEventListener("user-onboarder:contact", () => {
   Intercom("show");
 });
 ```
@@ -50,8 +50,8 @@ window.addEventListener("locatify-guides:contact", () => {
 ## Open it from your app
 
 ```js
-LocatifyGuides.openResourceCenter();
-LocatifyGuides.closeResourceCenter();
+UserOnboarder.openResourceCenter();
+UserOnboarder.closeResourceCenter();
 ```
 
 This works with or without the launcher button, e.g. from a *Help* item in your menu. If it's called before the snippet has loaded, the panel opens as soon as it's ready. See [JavaScript API](javascript-api#openresourcecenter).

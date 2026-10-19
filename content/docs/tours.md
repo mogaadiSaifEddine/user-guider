@@ -86,7 +86,7 @@ Reorder steps with ↑ and ↓, remove one with ✕. A tour can have up to 50 st
 Set **Trigger** to *Only manually* on the **Targeting** tab when a tour should only run when asked for:
 
 - from a [checklist](checklists) item (*When clicked → Start a guide*), or
-- from your app's code, e.g. a "Take the tour" button: `LocatifyGuides.start("GUIDE_ID")`. The editor shows the exact line under **Manual start**. See [JavaScript API](javascript-api).
+- from your app's code, e.g. a "Take the tour" button: `UserOnboarder.start("GUIDE_ID")`. The editor shows the exact line under **Manual start**. See [JavaScript API](javascript-api).
 
 Started manually, a tour always begins at step 1 and ignores page rules and frequency. User rules still apply: the user must be allowed to see the guide.
 

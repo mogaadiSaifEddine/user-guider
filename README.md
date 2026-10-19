@@ -45,18 +45,18 @@ User docs are part of the app at `/docs` (public, no login): guide authors, deve
 
 **Identity.** `identify(userId, attributes, { hash })`. With *Require identity verification* on, `hash` must be `HMAC-SHA256(secretKey, userId)` computed on the customer's server. Visitors who are never identified get an anonymous id and only see guides with *Also show to anonymous visitors*.
 
-**Checklists** complete items on click, on a tracked event (`LocatifyGuides.track(name)`), or when another guide is completed. Event- and guide-based completion is computed on the server, so it works across pages and devices.
+**Checklists** complete items on click, on a tracked event (`UserOnboarder.track(name)`), or when another guide is completed. Event- and guide-based completion is computed on the server, so it works across pages and devices.
 
 **Analytics** count distinct users per event type from the `Event` table.
 
 ## Embed API
 
 ```js
-LocatifyGuides.identify(id, attributes?, { hash }?)
-LocatifyGuides.track(name)
-LocatifyGuides.start(guideId)   // run a tour/announcement now
-LocatifyGuides.page()           // re-evaluate targeting (SPA routes are detected automatically)
-LocatifyGuides.reset()          // on logout
+UserOnboarder.identify(id, attributes?, { hash }?)
+UserOnboarder.track(name)
+UserOnboarder.start(guideId)   // run a tour/announcement now
+UserOnboarder.page()           // re-evaluate targeting (SPA routes are detected automatically)
+UserOnboarder.reset()          // on logout
 ```
 
 Script tag attributes: `data-key` (required), `data-api` (API origin if not the script's origin), `data-wait-for-identify`.
