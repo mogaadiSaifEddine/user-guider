@@ -180,7 +180,7 @@ export function ResourceCenterEditor({
         <div className="mb-2 flex items-center justify-between">
           <span className="text-xs font-semibold tracking-wide text-gray-500 uppercase">Preview</span>
           {article && (
-            <button type="button" className="text-xs font-medium text-indigo-600 hover:underline" onClick={() => setArticle(null)}>
+            <button type="button" className="text-xs font-medium text-brand-600 hover:underline" onClick={() => setArticle(null)}>
               ← Back to the panel
             </button>
           )}
@@ -314,7 +314,7 @@ function ModuleFields({
           </div>
           <p className="text-xs text-gray-500">
             Shows published articles from your{" "}
-            <a href={`/app/${ws}/knowledge`} target="_blank" className="font-medium text-indigo-600 hover:underline">
+            <a href={`/app/${ws}/knowledge`} target="_blank" className="font-medium text-brand-600 hover:underline">
               knowledge base
             </a>{" "}
             in each user&apos;s language. With several collections, people browse by collection. The search box searches the full text.
@@ -450,7 +450,7 @@ function ArticlesField({
       {articles.map((a, i) => {
         const open = openId === a.id;
         return (
-          <div key={a.id} className={cx("rounded-lg ring-1", open ? "bg-white ring-indigo-300" : "bg-gray-50 ring-gray-200")}>
+          <div key={a.id} className={cx("rounded-lg ring-1", open ? "bg-white ring-brand-300" : "bg-gray-50 ring-gray-200")}>
             <div className="flex items-center gap-1 px-3 py-2">
               <button
                 type="button"

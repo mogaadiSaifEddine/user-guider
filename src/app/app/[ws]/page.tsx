@@ -67,7 +67,7 @@ export default async function OverviewPage({ params }: { params: Promise<{ ws: s
             {o.guides.map((g) => (
               <tr key={g.id} className="hover:bg-gray-50">
                 <td className="px-5 py-3">
-                  <Link href={`/app/${ws}/guides/${g.id}/analytics`} className="font-medium hover:text-indigo-600">
+                  <Link href={`/app/${ws}/guides/${g.id}/analytics`} className="font-medium hover:text-brand-600">
                     {g.name}
                   </Link>
                   <div className="mt-0.5 flex gap-1.5">

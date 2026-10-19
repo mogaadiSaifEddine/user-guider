@@ -18,7 +18,7 @@ export default async function ImportPage({ params }: { params: Promise<{ ws: str
         description={
           <>
             Copies your UserGuiding guides and checklists into this workspace as drafts. Your UserGuiding account isn&apos;t changed.{" "}
-            <a href="/docs/import-userguiding" target="_blank" className="font-medium text-indigo-600 hover:underline">
+            <a href="/docs/import-userguiding" target="_blank" className="font-medium text-brand-600 hover:underline">
               How it works
             </a>
           </>

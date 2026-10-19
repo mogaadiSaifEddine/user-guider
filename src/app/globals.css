@@ -2,13 +2,54 @@
 @plugin "@tailwindcss/typography";
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
 }
 
+@theme {
+  /* Violet-indigo brand scale. 500/700 are the two ends of the primary gradient. */
+  --color-brand-50: #f4f1ff;
+  --color-brand-100: #ebe5ff;
+  --color-brand-200: #d8ccff;
+  --color-brand-300: #bba7ff;
+  --color-brand-400: #9c7fff;
+  --color-brand-500: #7c5cff;
+  --color-brand-600: #6847f5;
+  --color-brand-700: #5236e0;
+  --color-brand-800: #432cb6;
+  --color-brand-900: #37278f;
+  --color-brand-950: #211562;
+
+  /* Neutrals with a slight violet bias, replacing Tailwind's gray. */
+  --color-gray-50: #f7f7fb;
+  --color-gray-100: #efeff6;
+  --color-gray-200: #e4e4ef;
+  --color-gray-300: #d0d1e1;
+  --color-gray-400: #a3a5bf;
+  --color-gray-500: #6e7191;
+  --color-gray-600: #575975;
+  --color-gray-700: #42445d;
+  --color-gray-800: #2b2d42;
+  --color-gray-900: #14152b;
+  --color-gray-950: #0f1222;
+
+  --shadow-card: 0 1px 2px rgb(20 21 43 / 0.04), 0 8px 24px rgb(20 21 43 / 0.05);
+  --shadow-card-hover: 0 4px 10px rgb(20 21 43 / 0.06), 0 18px 40px rgb(92 70 240 / 0.14);
+  --shadow-brand: 0 6px 18px rgb(92 70 240 / 0.32);
+}
+
 body {
-  background: #f7f7f9;
-  color: #111827;
+  background: #f6f6fb;
+  color: #14152b;
+}
+
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-brand-950);
 }
 
 /* Lists inside rendered guide text (richText in src/lib/format.ts). */

@@ -43,7 +43,7 @@ export default async function CompaniesPage({
             <Link
               key={s}
               href={qs({ sort: s })}
-              className={cx("rounded-md px-3 py-1 text-sm font-medium", s === sort ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:text-gray-900")}
+              className={cx("rounded-md px-3 py-1 text-sm font-medium", s === sort ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:text-gray-900")}
             >
               {SORTS[s]}
             </Link>
@@ -56,7 +56,7 @@ export default async function CompaniesPage({
           {!q && (
             <>
               Users are grouped by the company attributes they send with <code>identify()</code> (here: {attrs}).{" "}
-              <Link href={`/app/${ws}/settings`} className="font-medium text-indigo-600 hover:underline">
+              <Link href={`/app/${ws}/settings`} className="font-medium text-brand-600 hover:underline">
                 Change in Settings
               </Link>
               .
@@ -89,7 +89,7 @@ export default async function CompaniesPage({
                 return (
                   <tr key={c.companyId} className="hover:bg-gray-50">
                     <td className="px-5 py-3">
-                      <Link href={users()} className="font-medium hover:text-indigo-600">
+                      <Link href={users()} className="font-medium hover:text-brand-600">
                         {c.companyName ?? c.companyId}
                       </Link>
                       {c.companyName && c.companyName !== c.companyId && <div className="font-mono text-xs text-gray-400">{c.companyId}</div>}
@@ -110,7 +110,7 @@ export default async function CompaniesPage({
       )}
       <p className="mt-3 text-xs text-gray-500">
         Company attributes: {attrs}.{" "}
-        <Link href={`/app/${ws}/settings`} className="font-medium text-indigo-600 hover:underline">
+        <Link href={`/app/${ws}/settings`} className="font-medium text-brand-600 hover:underline">
           Settings
         </Link>
       </p>
@@ -122,7 +122,7 @@ function Cell({ href, value }: { href: string; value: number }) {
   return (
     <td className="px-3 py-3 text-right tabular-nums">
       {value ? (
-        <Link href={href} className="hover:text-indigo-600 hover:underline">
+        <Link href={href} className="hover:text-brand-600 hover:underline">
           {value}
         </Link>
       ) : (

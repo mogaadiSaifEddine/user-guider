@@ -107,7 +107,7 @@ export default async function GuideAnalyticsPage({
         title={guide.name}
         description={
           <span className="flex items-center gap-2">
-            <Badge color="indigo">{typeLabels[type]}</Badge> Last {days} days
+            <Badge color="brand">{typeLabels[type]}</Badge> Last {days} days
           </span>
         }
         actions={
@@ -116,7 +116,7 @@ export default async function GuideAnalyticsPage({
               <Link
                 key={r}
                 href={`?days=${r}`}
-                className={cx("rounded-md px-3 py-1 text-sm font-medium", r === days ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:text-gray-900")}
+                className={cx("rounded-md px-3 py-1 text-sm font-medium", r === days ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:text-gray-900")}
               >
                 {r}d
               </Link>

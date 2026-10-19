@@ -64,7 +64,7 @@ export function TranslationsEditor({
         <div className="font-semibold">Show this guide in your users&apos; languages</div>
         <p className="text-gray-600">
           This workspace only uses English. Add languages in{" "}
-          <Link href={`/app/${ws}/settings#languages`} className="font-medium text-indigo-600 hover:underline">
+          <Link href={`/app/${ws}/settings#languages`} className="font-medium text-brand-600 hover:underline">
             Settings → Languages
           </Link>
           , then translate each guide here, by hand or with AI. Everyone sees guides in their own language; anything not translated shows in English.
@@ -129,7 +129,7 @@ export function TranslationsEditor({
                 }}
                 className={cx(
                   "flex items-center gap-2 rounded-md px-3 py-1.5 text-sm ring-1",
-                  l === locale ? "bg-indigo-50 font-semibold text-indigo-800 ring-indigo-300" : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50",
+                  l === locale ? "bg-brand-50 font-semibold text-brand-800 ring-brand-300" : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50",
                 )}
               >
                 {languageName(l, true)}
@@ -219,7 +219,7 @@ function Row({
           {languageName(locale)}
           {outdated && <Badge color="yellow">outdated</Badge>}
           {outdated && (
-            <button type="button" className="font-medium text-indigo-600 hover:underline" onClick={() => onChange(entry!.text)}>
+            <button type="button" className="font-medium text-brand-600 hover:underline" onClick={() => onChange(entry!.text)}>
               Still correct
             </button>
           )}

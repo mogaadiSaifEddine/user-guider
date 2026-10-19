@@ -182,13 +182,13 @@ export function GuideEditor({
       </div>
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <input
-          className="min-w-0 flex-1 rounded-md bg-transparent px-1 py-1 text-xl font-semibold outline-none hover:bg-white focus:bg-white focus:ring-2 focus:ring-indigo-500"
+          className="min-w-0 flex-1 rounded-md bg-transparent px-1 py-1 text-xl font-semibold outline-none hover:bg-white focus:bg-white focus:ring-2 focus:ring-brand-500"
           value={name}
           maxLength={191}
           onChange={(e) => edit(setName)(e.target.value)}
           aria-label="Guide name"
         />
-        <Badge color="indigo">{typeLabels[guide.type]}</Badge>
+        <Badge color="brand">{typeLabels[guide.type]}</Badge>
         <Badge color={statusColors[guide.status]}>{live ? "live" : guide.status.toLowerCase()}</Badge>
         {needsPublish && <Badge color="yellow">unpublished changes</Badge>}
       </div>
@@ -224,7 +224,7 @@ export function GuideEditor({
         </div>
       </Card>
 
-      <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f7f7f9]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+      <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f6f6fb]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
         <div className="flex gap-1">
           {(usesBuilder ? (["content", "translations", "targeting", "builder"] as const) : (["content", "translations", "targeting"] as const)).map((t) => (
             <button
@@ -322,7 +322,7 @@ function CopyCode({ code }: { code: string }) {
       <code className="truncate text-xs">{code}</code>
       <button
         type="button"
-        className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-indigo-600 hover:bg-indigo-50"
+        className="shrink-0 rounded px-2 py-0.5 text-xs font-medium text-brand-600 hover:bg-brand-50"
         onClick={() =>
           navigator.clipboard.writeText(code).then(() => {
             setCopied(true);
@@ -379,7 +379,7 @@ function BuilderLauncher({
         <div className="text-sm font-semibold">Visual builder</div>
         <p className="mt-1 text-xs text-gray-500">
           Opens your site with the builder panel. Click elements to attach steps, then save. The snippet must be installed on that page.{" "}
-          <a href="/docs/builder" target="_blank" className="font-medium text-indigo-600 hover:underline">
+          <a href="/docs/builder" target="_blank" className="font-medium text-brand-600 hover:underline">
             How it works
           </a>
         </p>
@@ -488,7 +488,7 @@ function TargetingEditor({
           <div className="text-sm font-semibold">Pages</div>
           <p className="text-xs text-gray-500">
             Shown on pages matching any rule. No rules: every page.{" "}
-            <a href="/docs/targeting" target="_blank" className="font-medium text-indigo-600 hover:underline">
+            <a href="/docs/targeting" target="_blank" className="font-medium text-brand-600 hover:underline">
               Targeting docs
             </a>
           </p>

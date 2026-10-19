@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 
 // Colors follow the reference categorical order (slot 1 blue, slot 2 orange, slot 3 aqua).
-export const CATEGORICAL = ["#2a78d6", "#eb6834", "#1baf7a"] as const;
+export const CATEGORICAL = ["#6847f5", "#eb6834", "#1baf7a"] as const;
 
 export type Series = { key: string; label: string; color: string };
 
@@ -193,7 +193,7 @@ export function FunnelBars({ rows, base }: { rows: { label: string; value: numbe
             </div>
             <div className="h-2 rounded bg-gray-100">
               <div
-                className="h-2 rounded bg-[#2a78d6] transition-opacity group-hover:opacity-80"
+                className="h-2 rounded bg-[#6847f5] transition-opacity group-hover:opacity-80"
                 style={{ width: `${(r.value / max) * 100}%` }}
               />
             </div>
@@ -213,7 +213,7 @@ export function ShareBars({ rows, total }: { rows: { label: string; value: numbe
       {rows.map((r) => {
         const share = total ? Math.round((r.value / total) * 100) : 0;
         const label = r.href ? (
-          <a href={r.href} className="truncate text-gray-700 hover:text-indigo-600 hover:underline">
+          <a href={r.href} className="truncate text-gray-700 hover:text-brand-600 hover:underline">
             {r.label}
           </a>
         ) : (
@@ -228,7 +228,7 @@ export function ShareBars({ rows, total }: { rows: { label: string; value: numbe
               </span>
             </div>
             <div className="h-2 rounded bg-gray-100">
-              <div className="h-2 rounded bg-[#2a78d6] transition-opacity group-hover:opacity-80" style={{ width: `${(r.value / max) * 100}%` }} />
+              <div className="h-2 rounded bg-[#6847f5] transition-opacity group-hover:opacity-80" style={{ width: `${(r.value / max) * 100}%` }} />
             </div>
           </li>
         );

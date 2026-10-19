@@ -30,14 +30,14 @@ export default async function DocPage({ params }: Params) {
   return (
     <div className="flex gap-10 px-4 py-8 md:px-10 md:py-10">
       <article className="min-w-0 flex-1 xl:max-w-3xl">
-        <div className="mb-2 text-sm font-medium text-indigo-600">{doc.section}</div>
+        <div className="mb-2 text-sm font-medium text-brand-600">{doc.section}</div>
         <div
-          className="prose prose-gray max-w-none prose-headings:scroll-mt-20 prose-h1:mb-3 prose-h1:text-3xl prose-a:text-indigo-600 prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-normal prose-code:before:content-none prose-code:after:content-none prose-pre:bg-gray-900 prose-pre:text-[13px] prose-table:text-sm prose-img:rounded-lg [&_.anchor]:text-inherit [&_.anchor]:no-underline [&_pre_code]:bg-transparent [&_pre_code]:p-0"
+          className="prose prose-gray max-w-none prose-headings:scroll-mt-20 prose-h1:mb-3 prose-h1:text-3xl prose-a:text-brand-600 prose-code:rounded prose-code:bg-gray-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-normal prose-code:before:content-none prose-code:after:content-none prose-pre:bg-gray-900 prose-pre:text-[13px] prose-table:text-sm prose-img:rounded-lg [&_.anchor]:text-inherit [&_.anchor]:no-underline [&_pre_code]:bg-transparent [&_pre_code]:p-0"
           dangerouslySetInnerHTML={{ __html: html }}
         />
         <nav className="mt-12 grid gap-3 border-t border-gray-200 pt-6 sm:grid-cols-2">
           {prev ? (
-            <Link href={`/docs/${prev.slug}`} className="rounded-lg p-4 ring-1 ring-gray-200 hover:ring-indigo-300">
+            <Link href={`/docs/${prev.slug}`} className="rounded-lg p-4 ring-1 ring-gray-200 hover:ring-brand-300">
               <div className="text-xs text-gray-500">← Previous</div>
               <div className="font-medium">{prev.title}</div>
             </Link>
@@ -45,7 +45,7 @@ export default async function DocPage({ params }: Params) {
             <span />
           )}
           {next && (
-            <Link href={`/docs/${next.slug}`} className="rounded-lg p-4 text-right ring-1 ring-gray-200 hover:ring-indigo-300">
+            <Link href={`/docs/${next.slug}`} className="rounded-lg p-4 text-right ring-1 ring-gray-200 hover:ring-brand-300">
               <div className="text-xs text-gray-500">Next →</div>
               <div className="font-medium">{next.title}</div>
             </Link>

@@ -97,14 +97,14 @@ export function TourEditor({
         const open = openId === s.id;
         const kind = s.selector ? "tooltip" : "modal";
         return (
-          <Card key={s.id} className={cx(open && "ring-2 ring-indigo-200")}>
+          <Card key={s.id} className={cx(open && "ring-2 ring-brand-200")}>
             <div className="flex items-center gap-2 px-4 py-3">
               <button type="button" className="flex min-w-0 flex-1 items-center gap-2.5 text-left" onClick={() => setOpenId(open ? null : s.id)}>
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">
                   {i + 1}
                 </span>
                 <span className="min-w-0 truncate text-sm font-semibold">{blocksLabel(s.blocks) || "Untitled step"}</span>
-                <Badge color={kind === "modal" ? "indigo" : "gray"}>{kind === "modal" ? "Modal" : "Tooltip"}</Badge>
+                <Badge color={kind === "modal" ? "brand" : "gray"}>{kind === "modal" ? "Modal" : "Tooltip"}</Badge>
               </button>
               <Button type="button" variant="ghost" className="px-2" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Move up">
                 ↑

@@ -36,7 +36,7 @@ export function NewGuideButton({ ws }: { ws: string }) {
                   key={t}
                   className={cx(
                     "cursor-pointer rounded-lg p-3 ring-1",
-                    type === t ? "bg-indigo-50 ring-2 ring-indigo-500" : "ring-gray-200 hover:bg-gray-50",
+                    type === t ? "bg-brand-50 ring-2 ring-brand-500" : "ring-gray-200 hover:bg-gray-50",
                   )}
                 >
                   <input type="radio" name="type" value={t} checked={type === t} onChange={() => setType(t)} className="sr-only" />

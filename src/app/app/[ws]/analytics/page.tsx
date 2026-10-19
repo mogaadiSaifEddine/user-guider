@@ -58,7 +58,7 @@ export default async function AnalyticsPage({
               <Link
                 key={r}
                 href={`?days=${r}`}
-                className={cx("rounded-md px-3 py-1 text-sm font-medium", r === days ? "bg-indigo-50 text-indigo-700" : "text-gray-600 hover:text-gray-900")}
+                className={cx("rounded-md px-3 py-1 text-sm font-medium", r === days ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:text-gray-900")}
               >
                 {r}d
               </Link>
@@ -127,7 +127,7 @@ export default async function AnalyticsPage({
               {companies.rows.map((c) => (
                 <tr key={c.companyId} className="hover:bg-gray-50">
                   <td className="px-5 py-2.5">
-                    <Link href={users({ company: c.companyId })} className="font-medium hover:text-indigo-600">
+                    <Link href={users({ company: c.companyId })} className="font-medium hover:text-brand-600">
                       {c.companyName ?? c.companyId}
                     </Link>
                   </td>
@@ -142,7 +142,7 @@ export default async function AnalyticsPage({
         ) : (
           <p className="px-5 pb-5 text-sm text-gray-500">
             No companies yet. Send a company attribute with <code>identify()</code>, or choose which attributes hold it in{" "}
-            <Link href={`/app/${ws}/settings`} className="font-medium text-indigo-600 hover:underline">
+            <Link href={`/app/${ws}/settings`} className="font-medium text-brand-600 hover:underline">
               Settings
             </Link>
             .
@@ -155,7 +155,7 @@ export default async function AnalyticsPage({
 
 function StatLink({ href, ...props }: { href: string; label: string; value: number; sub?: string }) {
   return (
-    <Link href={href} className="block rounded-xl transition hover:ring-2 hover:ring-indigo-200">
+    <Link href={href} className="block rounded-xl transition hover:ring-2 hover:ring-brand-200">
       <Stat {...props} />
     </Link>
   );

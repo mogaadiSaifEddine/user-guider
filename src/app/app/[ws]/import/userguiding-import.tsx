@@ -66,10 +66,10 @@ export function UserGuidingImport({ ws }: { ws: string }) {
           {result.created.map((g) => (
             <li key={g.id} className="px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Link href={`/app/${ws}/guides/${g.id}`} className="font-medium hover:text-indigo-600">
+                <Link href={`/app/${ws}/guides/${g.id}`} className="font-medium hover:text-brand-600">
                   {g.name}
                 </Link>
-                <Badge color="indigo">{typeLabels[g.kind as keyof typeof typeLabels]}</Badge>
+                <Badge color="brand">{typeLabels[g.kind as keyof typeof typeLabels]}</Badge>
               </div>
               {g.warnings.length > 0 && (
                 <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-amber-700">
@@ -176,7 +176,7 @@ export function UserGuidingImport({ ws }: { ws: string }) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="font-medium">{i.name}</span>
-                    <Badge color="indigo">{typeLabels[i.kind]}</Badge>
+                    <Badge color="brand">{typeLabels[i.kind]}</Badge>
                     <Badge>
                       {i.stepCount} {i.kind === "CHECKLIST" ? "items" : "steps"}
                     </Badge>

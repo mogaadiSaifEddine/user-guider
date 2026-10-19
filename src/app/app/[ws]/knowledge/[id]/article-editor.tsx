@@ -124,7 +124,7 @@ export function ArticleEditor({
           ← Knowledge base
         </Link>
       </div>
-      <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f7f7f9]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
+      <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-gray-200 bg-[#f6f6fb]/95 px-4 py-3 backdrop-blur md:-mx-8 md:px-8">
         <Badge color={live ? "green" : "gray"}>{live ? "published" : "draft"}</Badge>
         {article.source !== "MANUAL" && (
           <span className="text-xs text-gray-500">
@@ -132,7 +132,7 @@ export function ArticleEditor({
             {article.externalUrl && (
               <>
                 {" · "}
-                <a href={article.externalUrl} target="_blank" rel="noopener" className="text-indigo-600 hover:underline">
+                <a href={article.externalUrl} target="_blank" rel="noopener" className="text-brand-600 hover:underline">
                   original
                 </a>
               </>
@@ -186,14 +186,14 @@ export function ArticleEditor({
                     onClick={() => setLang(l)}
                     className={cx(
                       "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm ring-1",
-                      l === lang ? "bg-indigo-50 font-semibold text-indigo-800 ring-indigo-300" : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50",
+                      l === lang ? "bg-brand-50 font-semibold text-brand-800 ring-brand-300" : "bg-white text-gray-700 ring-gray-200 hover:bg-gray-50",
                     )}
                   >
                     {languageName(l, true)}
                     <span
                       className={cx(
                         "h-2 w-2 rounded-full",
-                        state === "source" ? "bg-indigo-400" : state === "missing" ? "bg-gray-300" : state === "outdated" ? "bg-amber-400" : "bg-emerald-500",
+                        state === "source" ? "bg-brand-400" : state === "missing" ? "bg-gray-300" : state === "outdated" ? "bg-amber-400" : "bg-emerald-500",
                       )}
                       title={state}
                     />

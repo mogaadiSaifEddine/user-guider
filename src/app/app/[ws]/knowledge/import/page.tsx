@@ -21,7 +21,7 @@ export default async function KbImportPage({ params }: { params: Promise<{ ws: s
           <>
             Copies your Zendesk or Intercom help center into this knowledge base, with its collections and translations. Nothing changes on
             their side. Importing again updates the same articles.{" "}
-            <a href="/docs/knowledge-base#import-from-zendesk-or-intercom" target="_blank" className="font-medium text-indigo-600 hover:underline">
+            <a href="/docs/knowledge-base#import-from-zendesk-or-intercom" target="_blank" className="font-medium text-brand-600 hover:underline">
               How it works
             </a>
           </>

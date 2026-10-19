@@ -32,7 +32,15 @@ export function StepPreview({
   const font = theme.fontFamily === "inherit" ? FONT_STACK : theme.fontFamily;
   const btn = (style: "primary" | "secondary" | "link"): CSSProperties =>
     style === "primary"
-      ? { background: theme.primaryColor, color: "#fff", borderRadius: theme.radius * 0.7, padding: "7px 14px", fontWeight: 600, fontSize: 14 }
+      ? {
+          background: `linear-gradient(135deg, color-mix(in srgb, ${theme.primaryColor} 72%, #fff), ${theme.primaryColor})`,
+          boxShadow: `0 6px 16px color-mix(in srgb, ${theme.primaryColor} 32%, transparent)`,
+          color: "#fff",
+          borderRadius: theme.radius * 0.7,
+          padding: "7px 14px",
+          fontWeight: 650,
+          fontSize: 14,
+        }
       : style === "secondary"
         ? { color: theme.textColor, opacity: 0.75, padding: "7px 14px", fontWeight: 600, fontSize: 14, borderRadius: theme.radius * 0.7 }
         : { color: theme.primaryColor, textDecoration: "underline", padding: "7px 4px", fontWeight: 600, fontSize: 14 };
@@ -82,7 +90,7 @@ export function StepPreview({
         fontFamily: font,
         fontSize: 14,
         lineHeight: 1.5,
-        boxShadow: "0 12px 40px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.08)",
+        boxShadow: "0 20px 50px rgba(20,21,43,.22), 0 4px 12px rgba(20,21,43,.06), 0 0 0 1px rgba(20,21,43,.05)",
         overflow: "hidden",
       }}
     >

@@ -39,7 +39,7 @@ export function DocsNav({ sections }: { sections: Section[] }) {
                       href={`/docs${p.slug ? `/${p.slug}` : ""}`}
                       className={cx(
                         "block rounded-md px-2 py-1.5 text-sm",
-                        active ? "bg-indigo-50 font-medium text-indigo-700" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                        active ? "bg-brand-50 font-medium text-brand-700" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
                       )}
                     >
                       {p.title}

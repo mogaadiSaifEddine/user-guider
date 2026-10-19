@@ -252,7 +252,7 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
                 <div className="truncate text-xs text-gray-500">{m.email}</div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge color={m.role === "OWNER" ? "indigo" : "gray"}>{m.role.toLowerCase()}</Badge>
+                <Badge color={m.role === "OWNER" ? "brand" : "gray"}>{m.role.toLowerCase()}</Badge>
                 {isOwner && (
                   <Button
                     variant="ghost"

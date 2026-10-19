@@ -133,7 +133,7 @@ export function GuideRowActions({ ws, guide }: { ws: string; guide: Row }) {
   );
 }
 
-const iconClass = "rounded-md p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none";
+const iconClass = "rounded-md p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-900 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none";
 
 function Icon({ children }: { children: ReactNode }) {
   return (

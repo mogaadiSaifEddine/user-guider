@@ -77,7 +77,7 @@ export function LanguagesForm({
       <ul className="divide-y divide-gray-100 rounded-lg ring-1 ring-gray-200">
         <li className="flex items-center gap-2 px-3 py-2 text-sm">
           <span className="font-medium">English</span>
-          <Badge color="indigo">source and fallback</Badge>
+          <Badge color="brand">source and fallback</Badge>
         </li>
         {languages.map((code) => {
           const info = builtins[code];

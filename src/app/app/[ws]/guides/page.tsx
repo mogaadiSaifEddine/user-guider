@@ -3,7 +3,7 @@ import type { GuideStatus, GuideType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
 import { guideStats, pct } from "@/lib/analytics";
-import { Badge, ButtonLink, Card, EmptyState, PageHeader, cx, statusColors, typeLabels } from "@/components/ui";
+import { Badge, ButtonLink, Card, EmptyState, GuideTypeIcon, PageHeader, cx, statusColors, typeLabels } from "@/components/ui";
 import { NewGuideButton } from "./new-guide";
 import { GuideFilters } from "./guide-filters";
 import { GuideRowActions } from "./guide-row-actions";
@@ -100,13 +100,16 @@ export default async function GuidesPage({
       ) : (
         <Card className="divide-y divide-gray-100">
           {guides.map((g) => (
-            <div key={g.id} className="flex flex-wrap items-center gap-x-4 gap-y-1 py-4 pr-3 pl-5 hover:bg-gray-50">
-              <Link href={`/app/${ws}/guides/${g.id}`} className="min-w-0 flex-1">
-                <div className="truncate font-medium">{g.name}</div>
+            <div key={g.id} className="group flex flex-wrap items-center gap-x-4 gap-y-1 py-4 pr-3 pl-4 transition-colors first:rounded-t-2xl last:rounded-b-2xl hover:bg-brand-50/40">
+              <Link href={`/app/${ws}/guides/${g.id}`} className="flex min-w-0 flex-1 items-center gap-3.5">
+                <GuideTypeIcon type={g.type} />
+                <div className="min-w-0">
+                <div className="truncate font-semibold text-gray-900 group-hover:text-brand-700">{g.name}</div>
                 <div className="mt-1 flex flex-wrap gap-1.5">
-                  <Badge color="indigo">{typeLabels[g.type]}</Badge>
+                  <Badge color="brand">{typeLabels[g.type]}</Badge>
                   <Badge color={statusColors[g.status]}>{g.status === "PUBLISHED" ? "live" : g.status.toLowerCase()}</Badge>
                   {g.priority !== 0 && <Badge>priority {g.priority}</Badge>}
+                </div>
                 </div>
               </Link>
               <GuideNumbers

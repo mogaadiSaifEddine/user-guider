@@ -40,7 +40,7 @@ export function ListItem({
   return (
     <Card className="p-4">
       <div className="mb-3 flex items-center gap-2">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">
           {index + 1}
         </span>
         <span className="min-w-0 flex-1 truncate text-sm font-semibold">{title}</span>

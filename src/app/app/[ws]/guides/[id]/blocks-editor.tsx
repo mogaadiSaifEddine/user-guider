@@ -55,7 +55,7 @@ export function BlocksEditor({
       {blocks.map((b, i) => {
         const open = openId === b.id;
         return (
-          <div key={b.id} className={cx("rounded-lg ring-1", open ? "bg-white ring-indigo-300" : "bg-gray-50 ring-gray-200")}>
+          <div key={b.id} className={cx("rounded-lg ring-1", open ? "bg-white ring-brand-300" : "bg-gray-50 ring-gray-200")}>
             <div className="flex items-center gap-1 px-3 py-2">
               <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setOpenId(open ? null : b.id)}>
                 <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-semibold text-gray-600 ring-1 ring-gray-200">
@@ -92,7 +92,7 @@ export function BlocksEditor({
               onChange([...blocks, b]);
               setOpenId(b.id);
             }}
-            className="rounded-md border border-dashed border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-indigo-400 hover:text-indigo-700 disabled:opacity-40"
+            className="rounded-md border border-dashed border-gray-300 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-brand-400 hover:text-brand-700 disabled:opacity-40"
           >
             + {blockNames[t]}
           </button>

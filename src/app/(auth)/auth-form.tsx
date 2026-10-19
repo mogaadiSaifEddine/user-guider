@@ -21,7 +21,7 @@ export function AuthForm({
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-linear-to-br from-brand-400 to-brand-700 text-lg font-extrabold text-white shadow-brand">
             L
           </div>
           <h1 className="text-xl font-semibold">
@@ -61,14 +61,14 @@ export function AuthForm({
           {mode === "login" ? (
             <>
               No account?{" "}
-              <Link className="font-semibold text-indigo-600" href="/signup">
+              <Link className="font-semibold text-brand-600" href="/signup">
                 Sign up
               </Link>
             </>
           ) : (
             <>
               Already have an account?{" "}
-              <Link className="font-semibold text-indigo-600" href="/login">
+              <Link className="font-semibold text-brand-600" href="/login">
                 Sign in
               </Link>
             </>

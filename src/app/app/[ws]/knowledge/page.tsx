@@ -54,7 +54,7 @@ export default async function KnowledgePage({
         description={
           <>
             Help articles for your resource center, in every language you use.{" "}
-            <a href="/docs/knowledge-base" target="_blank" className="font-medium text-indigo-600 hover:underline">
+            <a href="/docs/knowledge-base" target="_blank" className="font-medium text-brand-600 hover:underline">
               How it works
             </a>
           </>
@@ -102,7 +102,7 @@ export default async function KnowledgePage({
               name="q"
               defaultValue={query}
               placeholder="Search articles, in any language"
-              className="block w-full rounded-md border-0 bg-white px-2.5 py-1.5 text-sm ring-1 ring-gray-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="block w-full rounded-md border-0 bg-white px-2.5 py-1.5 text-sm ring-1 ring-gray-300 focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </form>
           {!articles.length ? (
@@ -160,7 +160,7 @@ function FilterLink({ href, active, label, count }: { href: string; active: bool
       href={href}
       className={cx(
         "flex items-center gap-2 rounded-md px-2.5 py-1.5",
-        active ? "bg-indigo-50 font-medium text-indigo-700" : "text-gray-700 hover:bg-gray-50",
+        active ? "bg-brand-50 font-medium text-brand-700" : "text-gray-700 hover:bg-gray-50",
       )}
     >
       <span className="min-w-0 flex-1 truncate">{label}</span>

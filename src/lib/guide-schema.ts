@@ -444,10 +444,10 @@ export function parseTargeting(raw: unknown): Targeting {
 const color = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
 
 export const themeSchema = z.object({
-  primaryColor: color.default("#4f46e5"),
-  textColor: color.default("#1f2937"),
+  primaryColor: color.default("#6847f5"),
+  textColor: color.default("#14152b"),
   backgroundColor: color.default("#ffffff"),
-  radius: z.number().int().min(0).max(24).default(10),
+  radius: z.number().int().min(0).max(24).default(14),
   fontFamily: z.string().max(200).default("inherit"),
 });
 

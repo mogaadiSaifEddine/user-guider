@@ -59,7 +59,7 @@ user_hash = hmac.new(
         description={
           <>
             Add the snippet to every page of your site, then identify signed-in users. Full guide in the{" "}
-            <a href="/docs/install" target="_blank" className="font-medium text-indigo-600 hover:underline">
+            <a href="/docs/install" target="_blank" className="font-medium text-brand-600 hover:underline">
               developer docs
             </a>
             .

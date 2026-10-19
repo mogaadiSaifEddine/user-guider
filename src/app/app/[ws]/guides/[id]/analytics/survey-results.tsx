@@ -5,7 +5,7 @@ import { Card } from "@/components/ui";
 import { plainText } from "@/lib/format";
 
 // NPS groups use the diverging pair (orange ↔ blue) with a gray midpoint.
-const NPS_COLORS = { detractors: "#eb6834", passives: "#a3a3a3", promoters: "#2a78d6" };
+const NPS_COLORS = { detractors: "#eb6834", passives: "#a3a3a3", promoters: "#6847f5" };
 const typeNames = { nps: "NPS", rating: "Rating", choice: "Choice", text: "Open text" } as const;
 
 export function SurveyResults({ ws, results }: { ws: string; results: QuestionResult[] }) {
@@ -40,7 +40,7 @@ export function SurveyResults({ ws, results }: { ws: string; results: QuestionRe
                 <li key={k} className="py-2.5 text-sm">
                   <p className="whitespace-pre-wrap text-gray-900">{a.text}</p>
                   <p className="mt-0.5 text-xs text-gray-500">
-                    <Link href={`/app/${ws}/users/${a.user.id}`} className="hover:text-indigo-600">
+                    <Link href={`/app/${ws}/users/${a.user.id}`} className="hover:text-brand-600">
                       {a.user.label}
                     </Link>
                     {a.user.company ? ` · ${a.user.company}` : ""} · {a.at.toLocaleString()}
@@ -108,7 +108,7 @@ function RatingResult({ r }: { r: Extract<QuestionResult, { kind: "rating" }> })
           </div>
         )}
       </div>
-      <ScoreColumns counts={r.counts} start={1} max={Math.max(1, ...r.counts)} color={() => "#2a78d6"} />
+      <ScoreColumns counts={r.counts} start={1} max={Math.max(1, ...r.counts)} color={() => "#6847f5"} />
     </div>
   );
 }

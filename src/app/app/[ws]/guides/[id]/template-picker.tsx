@@ -65,7 +65,7 @@ export function TemplatePicker({
                   onClick={() => setTab(k)}
                   className={cx(
                     "rounded-full px-4 py-1.5 text-sm font-semibold",
-                    tab === k ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200",
+                    tab === k ? "bg-brand-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200",
                   )}
                 >
                   {tabLabels[k]}
@@ -82,7 +82,7 @@ export function TemplatePicker({
               <button
                 key={t.id}
                 onClick={() => onPick(t)}
-                className="group flex flex-col overflow-hidden rounded-xl bg-white text-left ring-1 ring-gray-200 transition hover:shadow-md hover:ring-2 hover:ring-indigo-400"
+                className="group flex flex-col overflow-hidden rounded-xl bg-white text-left ring-1 ring-gray-200 transition hover:shadow-md hover:ring-2 hover:ring-brand-400"
               >
                 <div className="pointer-events-none relative flex h-52 items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
                   {/* Scale so every size fits the ~250px-wide thumbnail. */}
@@ -100,7 +100,7 @@ export function TemplatePicker({
                   </div>
                 </div>
                 <div className="p-3.5">
-                  <div className="text-sm font-semibold group-hover:text-indigo-700">{t.name}</div>
+                  <div className="text-sm font-semibold group-hover:text-brand-700">{t.name}</div>
                   <div className="mt-0.5 text-xs text-gray-500">{t.description}</div>
                 </div>
               </button>

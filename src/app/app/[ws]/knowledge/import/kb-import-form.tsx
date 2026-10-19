@@ -89,7 +89,7 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
             onClick={() => setKind(k)}
             className={cx(
               "rounded-xl bg-white p-4 text-left ring-1",
-              kind === k ? "ring-2 ring-indigo-500" : "ring-gray-200 hover:bg-gray-50",
+              kind === k ? "ring-2 ring-brand-500" : "ring-gray-200 hover:bg-gray-50",
             )}
           >
             <div className="text-sm font-semibold">{k === "zendesk" ? "Zendesk Guide" : "Intercom Articles"}</div>

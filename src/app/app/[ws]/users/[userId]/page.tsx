@@ -19,7 +19,7 @@ const eventLabels: Record<string, string> = {
   custom: "Event",
 };
 
-const statusColor = { STARTED: "indigo", COMPLETED: "green", DISMISSED: "yellow" } as const;
+const statusColor = { STARTED: "brand", COMPLETED: "green", DISMISSED: "yellow" } as const;
 
 export default async function EndUserPage({ params }: { params: Promise<{ ws: string; userId: string }> }) {
   const { ws, userId } = await params;
@@ -72,7 +72,7 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
                   <dt className="text-xs text-gray-500">{k}</dt>
                   <dd className="truncate text-right">
                     {k === "Company" && user.companyId ? (
-                      <Link href={`/app/${ws}/users?company=${encodeURIComponent(user.companyId)}`} className="hover:text-indigo-600">
+                      <Link href={`/app/${ws}/users?company=${encodeURIComponent(user.companyId)}`} className="hover:text-brand-600">
                         {v}
                       </Link>
                     ) : (
@@ -104,7 +104,7 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
               <ul className="space-y-2 text-sm">
                 {user.progress.map((p) => (
                   <li key={p.guideId} className="flex items-center justify-between gap-2">
-                    <Link href={`/app/${ws}/guides/${p.guide.id}`} className="truncate hover:text-indigo-600">
+                    <Link href={`/app/${ws}/guides/${p.guide.id}`} className="truncate hover:text-brand-600">
                       {p.guide.name}
                     </Link>
                     <Badge color={statusColor[p.status]}>{p.status.toLowerCase()}</Badge>
@@ -131,7 +131,7 @@ export default async function EndUserPage({ params }: { params: Promise<{ ws: st
                 return (
                   <li key={a.id.toString()}>
                     <div className="text-xs text-gray-500">
-                      <Link href={`/app/${ws}/guides/${a.guide.id}/analytics`} className="hover:text-indigo-600">
+                      <Link href={`/app/${ws}/guides/${a.guide.id}/analytics`} className="hover:text-brand-600">
                         {a.guide.name}
                       </Link>{" "}
                       · {a.updatedAt.toLocaleString()}

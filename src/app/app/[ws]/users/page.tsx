@@ -60,7 +60,7 @@ export default async function UsersPage({
             title={segments[s].hint || undefined}
             className={cx(
               "-mb-px border-b-2 px-3 py-2 text-sm font-medium whitespace-nowrap",
-              s === segment ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-600 hover:text-gray-900",
+              s === segment ? "border-brand-600 text-brand-700" : "border-transparent text-gray-600 hover:text-gray-900",
             )}
           >
             {segments[s].label} <span className="ml-1 rounded-full bg-gray-100 px-1.5 text-xs text-gray-600 tabular-nums">{counts[s]}</span>
@@ -109,7 +109,7 @@ export default async function UsersPage({
               {users.map((u) => (
                 <tr key={u.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3">
-                    <Link href={`/app/${ws}/users/${u.id}`} className="font-medium hover:text-indigo-600">
+                    <Link href={`/app/${ws}/users/${u.id}`} className="font-medium hover:text-brand-600">
                       {u.anonymous ? "Anonymous visitor" : u.externalId}
                     </Link>
                     {u.anonymous && (
@@ -120,7 +120,7 @@ export default async function UsersPage({
                   </td>
                   <td className="max-w-48 px-3 py-3">
                     {u.companyId ? (
-                      <Link href={qs({ company: u.companyId, page: undefined })} className="block truncate hover:text-indigo-600">
+                      <Link href={qs({ company: u.companyId, page: undefined })} className="block truncate hover:text-brand-600">
                         {u.companyName ?? u.companyId}
                       </Link>
                     ) : (
@@ -150,12 +150,12 @@ export default async function UsersPage({
           </span>
           <div className="flex gap-2">
             {page > 1 && (
-              <Link className="font-medium text-indigo-600" href={qs({ page: String(page - 1) })}>
+              <Link className="font-medium text-brand-600" href={qs({ page: String(page - 1) })}>
                 ← Previous
               </Link>
             )}
             {page < pages && (
-              <Link className="font-medium text-indigo-600" href={qs({ page: String(page + 1) })}>
+              <Link className="font-medium text-brand-600" href={qs({ page: String(page + 1) })}>
                 Next →
               </Link>
             )}

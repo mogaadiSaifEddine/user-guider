@@ -437,7 +437,7 @@ function ensureCss(host: HTMLElement) {
 const RICH_EDITOR_CSS = `
 .rte { position:relative; display:block; width:100%; border:1px solid #d1d5db; border-radius:6px; background:#fff; color:#111827;
   font:14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; text-align:left; }
-.rte:focus-within { border-color:#6366f1; box-shadow:0 0 0 1px #6366f1; }
+.rte:focus-within { border-color:#7c5cff; box-shadow:0 0 0 1px #7c5cff; }
 .rte-bar { display:flex; flex-wrap:wrap; align-items:center; gap:1px; padding:3px 4px; border-bottom:1px solid #f1f5f9; background:#fafafa;
   border-radius:6px 6px 0 0; }
 .rte-inline:not(:focus-within) .rte-bar { display:none; }
@@ -451,10 +451,10 @@ const RICH_EDITOR_CSS = `
 .rte-link { display:flex; flex-wrap:wrap; gap:4px; padding:6px; border-bottom:1px solid #f1f5f9; background:#f8fafc; }
 .rte-link[hidden] { display:none; }
 .rte-link input { flex:1 1 160px; min-width:0; padding:4px 8px; border:1px solid #d1d5db; border-radius:4px; font:inherit; font-size:13px; color:#111827; background:#fff; }
-.rte-link input:focus { outline:2px solid #6366f1; outline-offset:-1px; }
+.rte-link input:focus { outline:2px solid #7c5cff; outline-offset:-1px; }
 .rte-small { padding:3px 8px; border:1px solid #d1d5db; border-radius:4px; background:#fff; color:#374151; font:600 12px/1.4 system-ui, sans-serif; cursor:pointer; }
 .rte-small:hover { background:#f3f4f6; }
-.rte-primary { background:#4f46e5; border-color:#4f46e5; color:#fff; }
+.rte-primary { background:#6847f5; border-color:#6847f5; color:#fff; }
 .rte-primary:hover { background:#4338ca; }
 .rte-area { position:relative; padding:6px 10px; outline:none; overflow-wrap:anywhere; cursor:text; }
 .rte-inline .rte-area { min-height:calc(1.5em + 12px); }
@@ -462,7 +462,7 @@ const RICH_EDITOR_CSS = `
 .rte-area ul, .rte-area ol { margin:2px 0; padding-left:22px; }
 .rte-area ul { list-style:disc; }
 .rte-area ol { list-style:decimal; }
-.rte-area a { color:#4f46e5; text-decoration:underline; }
+.rte-area a { color:#6847f5; text-decoration:underline; }
 .rte-area b, .rte-area strong { font-weight:700; }
 .rte-count { padding:0 8px 4px; font-size:11px; color:#6b7280; text-align:right; }
 .rte-count[hidden] { display:none; }

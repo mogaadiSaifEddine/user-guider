@@ -42,7 +42,7 @@ export function FilterBar({ filters }: { filters: { key: string; label: string; 
       ))}
       {active && (
         <button
-          className="text-sm font-medium text-indigo-600 hover:underline"
+          className="text-sm font-medium text-brand-600 hover:underline"
           onClick={() => {
             const next = new URLSearchParams(params);
             for (const f of filters) next.delete(f.key);
