@@ -22,7 +22,7 @@ Changes reach users the next time they load a page.
 
 ## Saving
 
-- **Save draft** stores your edits. The editor warns you if you try to leave with unsaved changes.
+- **Save draft** (or **Ctrl+S** / **⌘S**) stores your edits. The editor warns you if you try to leave with unsaved changes.
 - **Publish** / **Publish changes** saves and publishes in one go.
 - Edits saved from the [builder](builder) show up in the editor when you switch back to its tab, as long as you have no unsaved changes there.
 

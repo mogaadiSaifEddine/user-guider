@@ -9,10 +9,12 @@ export function AuthForm({
   mode,
   action,
   next,
+  notice,
 }: {
   mode: "login" | "signup";
   action: (s: AuthState, f: FormData) => Promise<AuthState>;
   next?: string;
+  notice?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   return (
@@ -26,6 +28,11 @@ export function AuthForm({
             {mode === "login" ? "Sign in to Locatify Guides" : "Create your account"}
           </h1>
         </div>
+        {notice && !state?.error && (
+          <p className="mb-4 rounded-md bg-amber-50 px-4 py-2.5 text-sm text-amber-800 ring-1 ring-amber-200" role="status">
+            {notice}
+          </p>
+        )}
         <form action={formAction} className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
           {mode === "signup" && (
             <Field label="Name">

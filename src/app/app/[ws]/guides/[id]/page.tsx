@@ -3,10 +3,18 @@ import { requireGuide } from "@/lib/auth";
 import { parseContent, parseTargeting, parseTheme, type GuideTypeName } from "@/lib/guide-schema";
 import { aiEnabled } from "@/lib/ai";
 import { pruneTranslations, workspaceLanguages, type Translations } from "@/lib/i18n";
+import { guideFootprint } from "@/lib/analytics";
 import { GuideEditor } from "./guide-editor";
 
-export default async function GuidePage({ params }: { params: Promise<{ ws: string; id: string }> }) {
+export default async function GuidePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ ws: string; id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { ws, id } = await params;
+  const { tab } = await searchParams;
   const { guide, workspace } = await requireGuide(ws, id);
   const kbCollections = await prisma.kbCollection.findMany({
     where: { workspaceId: ws },
@@ -18,6 +26,8 @@ export default async function GuidePage({ params }: { params: Promise<{ ws: stri
     select: { id: true, name: true, type: true },
     orderBy: { name: "asc" },
   });
+
+  const footprint = await guideFootprint(id);
 
   const content = parseContent(guide.type as GuideTypeName, guide.content);
   const languages = workspaceLanguages(workspace.languages);
@@ -41,12 +51,15 @@ export default async function GuidePage({ params }: { params: Promise<{ ws: stri
         translations,
         unpublishedChanges,
         updatedAt: guide.updatedAt.toISOString(),
+        footprint,
       }}
       others={others.map((g) => ({ id: g.id, name: g.name, type: g.type as GuideTypeName }))}
       aiEnabled={aiEnabled()}
       languages={languages}
       kbCollections={kbCollections}
       theme={parseTheme(workspace.theme)}
+      // ?tab=builder etc., e.g. from the guides list. Builder only exists for tours and hotspots.
+      initialTab={tab === "translations" || tab === "targeting" || (tab === "builder" && (guide.type === "TOUR" || guide.type === "HOTSPOT")) ? tab : "content"}
     />
   );
 }

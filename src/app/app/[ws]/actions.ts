@@ -19,6 +19,7 @@ import {
   type SurveyContent,
 } from "@/lib/guide-schema";
 import { companyFrom } from "@/lib/companies";
+import { guideFootprint } from "@/lib/analytics";
 import { AiError, aiEnabled } from "@/lib/ai";
 import { translateTexts } from "@/lib/ai-translate";
 import {
@@ -164,7 +165,8 @@ export async function setGuideStatus(ws: string, id: string, status: "DRAFT" | "
   return { ok: true, message: status === "DRAFT" ? "Unpublished." : "Archived." };
 }
 
-export async function duplicateGuide(ws: string, id: string) {
+// Opens the copy, or with open=false stays put (the guides list) and reports back.
+export async function duplicateGuide(ws: string, id: string, open = true): Promise<ActionResult> {
   const { guide } = await requireGuide(ws, id);
   const copy = await prisma.guide.create({
     data: {
@@ -177,7 +179,15 @@ export async function duplicateGuide(ws: string, id: string) {
       priority: guide.priority,
     },
   });
-  redirect(`/app/${ws}/guides/${copy.id}`);
+  if (open) redirect(`/app/${ws}/guides/${copy.id}`);
+  revalidatePath(`/app/${ws}/guides`);
+  return { ok: true, message: `Created "${copy.name}" as a draft.` };
+}
+
+// What deleting a guide takes with it, for the confirm dialog on the guides list.
+export async function getGuideFootprint(ws: string, id: string) {
+  await requireGuide(ws, id);
+  return guideFootprint(id);
 }
 
 export async function deleteGuide(ws: string, id: string) {

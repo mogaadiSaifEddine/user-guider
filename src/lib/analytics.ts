@@ -36,6 +36,38 @@ function toSeries(rows: DailyRow[], days: number): DailyPoint[] {
   return [...map.values()];
 }
 
+export type GuideStats = { seen: number; completed: number; dismissed: number };
+const noStats: GuideStats = { seen: 0, completed: 0, dismissed: 0 };
+
+// Distinct users who saw / completed / dismissed each guide in the window.
+export async function guideStats(workspaceId: string, days = 30) {
+  const rows = await prisma.$queryRaw<{ guideId: string; type: string; c: bigint }[]>`
+    SELECT "guideId", type, COUNT(DISTINCT "endUserId") AS c
+    FROM "Event"
+    WHERE "workspaceId" = ${workspaceId} AND "createdAt" >= ${since(days)} AND "guideId" IS NOT NULL
+      AND type IN ('guide_shown', 'guide_completed', 'guide_dismissed')
+    GROUP BY "guideId", type`;
+  const stats = new Map<string, GuideStats>();
+  for (const r of rows) {
+    const s = stats.get(r.guideId) ?? { ...noStats };
+    if (r.type === "guide_shown") s.seen = Number(r.c);
+    if (r.type === "guide_completed") s.completed = Number(r.c);
+    if (r.type === "guide_dismissed") s.dismissed = Number(r.c);
+    stats.set(r.guideId, s);
+  }
+  return stats;
+}
+
+// Everything deleting a guide would take with it, for the confirm dialog.
+export async function guideFootprint(guideId: string) {
+  const [[users], answers] = await Promise.all([
+    prisma.$queryRaw<{ c: bigint }[]>`
+      SELECT COUNT(DISTINCT "endUserId") AS c FROM "Event" WHERE "guideId" = ${guideId} AND type = 'guide_shown'`,
+    prisma.surveyAnswer.count({ where: { guideId } }),
+  ]);
+  return { users: Number(users?.c ?? 0), answers };
+}
+
 export async function workspaceOverview(workspaceId: string, days = 30) {
   const from = since(days);
   const [activeUsers, identifiedUsers, totalUsers, publishedGuides, perGuide, daily] = await Promise.all([
@@ -43,12 +75,7 @@ export async function workspaceOverview(workspaceId: string, days = 30) {
     prisma.endUser.count({ where: { workspaceId, lastSeenAt: { gte: from }, anonymous: false } }),
     prisma.endUser.count({ where: { workspaceId } }),
     prisma.guide.count({ where: { workspaceId, status: "PUBLISHED" } }),
-    prisma.$queryRaw<{ guideId: string; type: string; c: bigint }[]>`
-      SELECT "guideId", type, COUNT(DISTINCT "endUserId") AS c
-      FROM "Event"
-      WHERE "workspaceId" = ${workspaceId} AND "createdAt" >= ${from} AND "guideId" IS NOT NULL
-        AND type IN ('guide_shown', 'guide_completed', 'guide_dismissed')
-      GROUP BY "guideId", type`,
+    guideStats(workspaceId, days),
     prisma.$queryRaw<DailyRow[]>`
       SELECT "createdAt"::date AS d, type, COUNT(DISTINCT "endUserId") AS c
       FROM "Event"
@@ -62,22 +89,13 @@ export async function workspaceOverview(workspaceId: string, days = 30) {
     select: { id: true, name: true, type: true, status: true },
     orderBy: { updatedAt: "desc" },
   });
-  const stats = new Map<string, { seen: number; completed: number; dismissed: number }>();
-  for (const r of perGuide) {
-    const s = stats.get(r.guideId) ?? { seen: 0, completed: 0, dismissed: 0 };
-    if (r.type === "guide_shown") s.seen = Number(r.c);
-    if (r.type === "guide_completed") s.completed = Number(r.c);
-    if (r.type === "guide_dismissed") s.dismissed = Number(r.c);
-    stats.set(r.guideId, s);
-  }
-
   return {
     activeUsers,
     identifiedUsers,
     totalUsers,
     publishedGuides,
     daily: toSeries(daily, days),
-    guides: guides.map((g) => ({ ...g, ...(stats.get(g.id) ?? { seen: 0, completed: 0, dismissed: 0 }) })),
+    guides: guides.map((g) => ({ ...g, ...(perGuide.get(g.id) ?? noStats) })),
   };
 }
 

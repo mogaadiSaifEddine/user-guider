@@ -10,6 +10,7 @@ const buttonStyles = {
   secondary: "bg-white text-gray-900 ring-1 ring-gray-300 hover:bg-gray-50 shadow-sm",
   ghost: "text-gray-700 hover:bg-gray-100",
   danger: "bg-white text-red-600 ring-1 ring-red-200 hover:bg-red-50",
+  destructive: "bg-red-600 text-white hover:bg-red-500 shadow-sm",
 };
 
 const buttonBase =

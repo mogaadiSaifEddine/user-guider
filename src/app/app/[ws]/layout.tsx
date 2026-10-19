@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireWorkspace } from "@/lib/auth";
 import { Button } from "@/components/ui";
+import { FeedbackProvider } from "@/components/feedback";
 import { logout } from "../../(auth)/actions";
 import { NavLinks } from "./nav-links";
 
@@ -44,7 +45,9 @@ export default async function WorkspaceLayout({
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">
-        <div className="mx-auto max-w-6xl">{children}</div>
+        <div className="mx-auto max-w-6xl">
+          <FeedbackProvider>{children}</FeedbackProvider>
+        </div>
       </main>
     </div>
   );

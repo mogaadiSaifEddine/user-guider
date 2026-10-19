@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type {
   AnnouncementContent,
   ChecklistContent,
@@ -32,6 +32,9 @@ import { SurveyEditor } from "./survey-editor";
 import { ResourceCenterEditor } from "./resource-center-editor";
 import { TranslationsEditor } from "./translations-editor";
 import type { Translations } from "@/lib/i18n";
+import { useConfirm, useToast } from "@/components/feedback";
+
+type EditorTab = "content" | "translations" | "targeting" | "builder";
 
 type EditorGuide = {
   id: string;
@@ -44,6 +47,8 @@ type EditorGuide = {
   translations: Translations;
   unpublishedChanges: boolean;
   updatedAt: string;
+  // Distinct users who saw it and survey answers stored, shown before deleting.
+  footprint: { users: number; answers: number };
 };
 
 export function GuideEditor({
@@ -54,8 +59,10 @@ export function GuideEditor({
   theme,
   languages,
   kbCollections,
+  initialTab = "content",
 }: {
   ws: string;
+  initialTab?: EditorTab;
   guide: EditorGuide;
   others: OtherGuide[];
   aiEnabled: boolean;
@@ -70,9 +77,10 @@ export function GuideEditor({
   const [targeting, setTargeting] = useState(guide.targeting);
   const [translations, setTranslations] = useState(guide.translations);
   const [dirty, setDirty] = useState(false);
-  const [tab, setTab] = useState<"content" | "translations" | "targeting" | "builder">("content");
-  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const [tab, setTab] = useState<EditorTab>(initialTab);
   const [pending, startTransition] = useTransition();
+  const toast = useToast();
+  const confirm = useConfirm();
 
   // Pick up edits saved from the builder (another tab) when nothing local is pending.
   useEffect(() => {
@@ -101,11 +109,11 @@ export function GuideEditor({
     (v: T) => {
       setter(v);
       setDirty(true);
-      setNotice(null);
     };
 
   function report(r: ActionResult) {
-    setNotice(r.ok ? (r.message ? { kind: "ok", text: r.message } : null) : { kind: "error", text: r.error });
+    if (!r.ok) toast(r.error, "error");
+    else if (r.message) toast(r.message);
     return r.ok;
   }
 
@@ -116,18 +124,49 @@ export function GuideEditor({
           const r = await saveGuide(ws, guide.id, { name, priority, content, targeting, translations });
           if (!report(r)) return;
           setDirty(false);
-          if (!then) setNotice({ kind: "ok", text: guide.status === "PUBLISHED" ? "Saved. Publish to update the live version." : "Saved." });
+          if (!then) toast(guide.status === "PUBLISHED" ? "Saved. Publish to update the live version." : "Saved.");
         }
         if (then) report(await then());
         router.refresh();
       } catch {
         // Usually a new deployment: this page's server action ids no longer exist.
-        setNotice({
-          kind: "error",
-          text: "Couldn't reach the server, or the app was updated since this page loaded. Copy any unsaved text, then reload the page.",
-        });
+        toast("Couldn't reach the server, or the app was updated since this page loaded. Copy any unsaved text, then reload the page.", "error");
       }
     });
+  }
+
+  // Ctrl/Cmd+S saves the draft. The ref keeps the listener on the latest state.
+  const saveShortcut = useRef(() => {});
+  saveShortcut.current = () => dirty && !pending && save();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveShortcut.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  async function confirmDelete() {
+    const { users, answers } = guide.footprint;
+    const lost = [
+      users && `analytics for ${users} user${users === 1 ? "" : "s"} who saw it`,
+      answers && `${answers} survey answer${answers === 1 ? "" : "s"}`,
+    ].filter(Boolean);
+    const ok = await confirm({
+      title: `Delete "${guide.name}"?`,
+      body: (
+        <>
+          {lost.length > 0 && <>This also deletes {lost.join(" and ")}. </>}
+          This can&apos;t be undone.{guide.status !== "ARCHIVED" && " To hide it but keep its data, archive it instead."}
+        </>
+      ),
+      confirmLabel: "Delete guide",
+      danger: true,
+    });
+    if (ok) startTransition(() => deleteGuide(ws, guide.id));
   }
 
   const live = guide.status === "PUBLISHED";
@@ -178,11 +217,7 @@ export function GuideEditor({
           <Button
             variant="danger"
             disabled={pending}
-            onClick={() => {
-              if (confirm(`Delete "${guide.name}" and its analytics? This can't be undone.`)) {
-                startTransition(() => deleteGuide(ws, guide.id));
-              }
-            }}
+            onClick={confirmDelete}
           >
             Delete
           </Button>
@@ -208,7 +243,7 @@ export function GuideEditor({
           <ButtonLink variant="ghost" href={`/app/${ws}/guides/${guide.id}/analytics`}>
             Analytics
           </ButtonLink>
-          <Button variant="secondary" disabled={pending || !dirty} onClick={() => save()}>
+          <Button variant="secondary" disabled={pending || !dirty} onClick={() => save()} title="Ctrl+S / ⌘S">
             {dirty ? "Save draft" : "Saved"}
           </Button>
           {live ? (
@@ -227,18 +262,6 @@ export function GuideEditor({
           )}
         </div>
       </div>
-
-      {notice && (
-        <div
-          className={cx(
-            "mb-4 rounded-md px-4 py-2.5 text-sm",
-            notice.kind === "ok" ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700",
-          )}
-          role="status"
-        >
-          {notice.text}
-        </div>
-      )}
 
       <div className="min-w-0">
         {tab === "content" ? (
@@ -335,7 +358,12 @@ function BuilderLauncher({
   const [useAi, setUseAi] = useState(false);
   const [goal, setGoal] = useState("");
   const [error, setError] = useState("");
+  const [warned, setWarned] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!dirty) setWarned(false);
+  }, [dirty]);
 
   useEffect(() => {
     try {
@@ -361,7 +389,8 @@ function BuilderLauncher({
         onSubmit={(e) => {
           e.preventDefault();
           setError("");
-          if (dirty && !confirm("You have unsaved changes here. The builder edits the saved draft. Continue?")) return;
+          // A second click goes ahead. No async dialog here: the tab must open synchronously.
+          if (dirty && !warned) return setWarned(true);
           // Open the tab synchronously so popup blockers allow it.
           const tab = window.open("about:blank", "_blank");
           startTransition(async () => {
@@ -403,8 +432,13 @@ function BuilderLauncher({
           </div>
         )}
         {error && <p className="text-xs text-red-600">{error}</p>}
+        {warned && (
+          <p className="rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+            You have unsaved changes here. The builder edits the saved draft, so save first (Ctrl+S) or open it anyway.
+          </p>
+        )}
         <Button className="w-full" disabled={pending}>
-          {useAi ? "Open builder and draft with AI" : "Open builder"}
+          {warned ? "Open anyway" : useAi ? "Open builder and draft with AI" : "Open builder"}
         </Button>
       </form>
     </Card>

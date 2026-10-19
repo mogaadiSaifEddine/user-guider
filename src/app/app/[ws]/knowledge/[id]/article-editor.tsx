@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { useConfirm } from "@/components/feedback";
 import type { Theme } from "@/lib/guide-schema";
 import { languageName } from "@/lib/i18n";
 import { isOutdated, kbHash, type KbContent, type KbTranslation, type KbTranslations } from "@/lib/kb";
@@ -43,6 +44,7 @@ export function ArticleEditor({
   aiEnabled: boolean;
   theme: Theme;
 }) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [content, setContent] = useState(article.content);
   const [translations, setTranslations] = useState(article.translations);
@@ -142,7 +144,10 @@ export function ArticleEditor({
           <Button
             variant="danger"
             disabled={pending}
-            onClick={() => confirm("Delete this article in every language?") && start(() => deleteArticle(ws, article.id))}
+            onClick={async () =>
+              (await confirm({ title: "Delete this article?", body: "It is deleted in every language. This can't be undone.", confirmLabel: "Delete article", danger: true })) &&
+              start(() => deleteArticle(ws, article.id))
+            }
           >
             Delete
           </Button>
@@ -261,7 +266,10 @@ export function ArticleEditor({
                 <Button
                   variant="ghost"
                   className="text-red-600"
-                  onClick={() => confirm(`Remove the ${languageName(lang)} translation?`) && setTranslation(lang, null)}
+                  onClick={async () =>
+                    (await confirm({ title: `Remove the ${languageName(lang)} translation?`, confirmLabel: "Remove", danger: true })) &&
+                    setTranslation(lang, null)
+                  }
                 >
                   Remove translation
                 </Button>

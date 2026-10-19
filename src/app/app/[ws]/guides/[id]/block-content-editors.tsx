@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useConfirm } from "@/components/feedback";
 import {
   blocksLabel,
   newId,
@@ -62,6 +63,7 @@ export function TourEditor({
   others: OtherGuide[];
   theme: Theme;
 }) {
+  const confirm = useConfirm();
   const [openId, setOpenId] = useState<string | null>(value.steps[0]?.id ?? null);
   const [picking, setPicking] = useState(false);
   const set = (steps: TourStep[]) => onChange({ ...value, steps });
@@ -115,7 +117,10 @@ export function TourEditor({
                 variant="ghost"
                 className="px-2 text-red-600"
                 aria-label="Delete step"
-                onClick={() => confirm("Delete this step?") && set(value.steps.filter((_, j) => j !== i))}
+                onClick={async () =>
+                  (await confirm({ title: `Delete step ${i + 1}?`, confirmLabel: "Delete step", danger: true })) &&
+                  set(value.steps.filter((_, j) => j !== i))
+                }
               >
                 ✕
               </Button>
@@ -248,6 +253,7 @@ export function AnnouncementEditor({
   others: OtherGuide[];
   theme: Theme;
 }) {
+  const confirm = useConfirm();
   const [picking, setPicking] = useState(false);
   const patch = (p: Partial<AnnouncementContent>) => onChange({ ...value, ...p });
   const banner = value.format === "banner";
@@ -287,7 +293,11 @@ export function AnnouncementEditor({
           <Button
             type="button"
             variant="secondary"
-            onClick={() => (value.blocks.length === 0 || confirm("Replace the current content with a template?")) && setPicking(true)}
+            onClick={async () =>
+              (value.blocks.length === 0 ||
+                (await confirm({ title: "Replace the current content?", body: "The template replaces everything in this announcement.", confirmLabel: "Pick a template" }))) &&
+              setPicking(true)
+            }
           >
             Start from a template
           </Button>

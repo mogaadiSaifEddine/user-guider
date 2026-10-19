@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useConfirm } from "@/components/feedback";
 import type { Theme } from "@/lib/guide-schema";
 import { Badge, Button, Card, Field, Input, Select, Textarea, cx } from "@/components/ui";
 import { LanguagesForm, type LanguageInfo } from "./languages-form";
@@ -48,6 +49,7 @@ function Section({ title, description, children, id }: { title: string; descript
 }
 
 export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, aiEnabled, i18n }: Props) {
+  const confirm = useConfirm();
   const [name, setName] = useState(workspace.name);
   const [verify, setVerify] = useState(workspace.requireIdentityVerification);
   const [aiContext, setAiContext] = useState(workspace.aiContext);
@@ -196,8 +198,13 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
               <Button
                 variant="secondary"
                 disabled={pending}
-                onClick={() =>
-                  confirm("Rotating breaks the snippet on your site until you update it. Continue?") &&
+                onClick={async () =>
+                  (await confirm({
+                    title: "Rotate the public key?",
+                    body: "The snippet on your site stops working until you update it with the new key.",
+                    confirmLabel: "Rotate key",
+                    danger: true,
+                  })) &&
                   start(async () => setKeys(await rotateKey(ws, "public")))
                 }
               >
@@ -216,8 +223,13 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
               <Button
                 variant="secondary"
                 disabled={pending}
-                onClick={() =>
-                  confirm("Existing user hashes stop working until your server uses the new secret. Continue?") &&
+                onClick={async () =>
+                  (await confirm({
+                    title: "Rotate the secret key?",
+                    body: "Existing user hashes stop working until your server uses the new secret.",
+                    confirmLabel: "Rotate key",
+                    danger: true,
+                  })) &&
                   start(async () => setKeys(await rotateKey(ws, "secret")))
                 }
               >
@@ -246,7 +258,10 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
                     variant="ghost"
                     className="px-2 text-xs"
                     disabled={pending}
-                    onClick={() => confirm(`Remove ${m.name}?`) && start(async () => setTeam(await removeMember(ws, m.id)))}
+                    onClick={async () =>
+                      (await confirm({ title: `Remove ${m.name}?`, body: `${m.email} loses access to this workspace.`, confirmLabel: "Remove", danger: true })) &&
+                      start(async () => setTeam(await removeMember(ws, m.id)))
+                    }
                   >
                     Remove
                   </Button>

@@ -5,7 +5,7 @@ import { SESSION_COOKIE } from "@/lib/tokens";
 // different database). Clear it here: the middleware would otherwise send /login straight
 // back to /app, which redirects to /login again.
 export function GET(req: NextRequest) {
-  const res = NextResponse.redirect(new URL("/login", req.url));
+  const res = NextResponse.redirect(new URL("/login?expired=1", req.url));
   res.cookies.delete(SESSION_COOKIE);
   return res;
 }

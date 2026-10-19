@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useConfirm } from "@/components/feedback";
 import { LANGUAGES, languageName, normalizeLocale } from "@/lib/i18n";
 import { UI_STRING_HINTS, UI_STRING_KEYS, type UiStrings } from "@/lib/ui-strings";
 import { Badge, Button, Input, Select } from "@/components/ui";
@@ -31,6 +32,7 @@ export function LanguagesForm({
   aiEnabled: boolean;
   Notice: (p: { result: ActionResult | null }) => React.ReactNode;
 }) {
+  const confirm = useConfirm();
   const [languages, setLanguages] = useState(initial);
   const [strings, setStrings] = useState(initialStrings);
   const [adding, setAdding] = useState("");
@@ -94,8 +96,13 @@ export function LanguagesForm({
                     type="button"
                     variant="ghost"
                     className="text-red-600"
-                    onClick={() => {
-                      if (confirm(`Stop showing guides in ${languageName(code)}? Translations are kept and come back if you add it again.`))
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: `Stop showing guides in ${languageName(code)}?`,
+                        body: "Translations are kept and come back if you add it again.",
+                        confirmLabel: "Remove language",
+                      });
+                      if (ok)
                         setLanguages(languages.filter((l) => l !== code));
                     }}
                   >

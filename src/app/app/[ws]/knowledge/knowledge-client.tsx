@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useConfirm } from "@/components/feedback";
 import { languageName } from "@/lib/i18n";
 import type { KbCollectionTranslations } from "@/lib/kb";
 import { Badge, Button, Card, Field, Input, Textarea, cx } from "@/components/ui";
@@ -105,6 +106,7 @@ function CollectionForm({
   collection?: Collection;
   onDone: (r: ActionResult) => void;
 }) {
+  const confirm = useConfirm();
   const router = useRouter();
   const [name, setName] = useState(collection?.name ?? "");
   const [description, setDescription] = useState(collection?.description ?? "");
@@ -154,8 +156,14 @@ function CollectionForm({
             type="button"
             variant="danger"
             disabled={pending}
-            onClick={() => {
-              if (!confirm(`Delete "${collection.name}"? Its articles stay, without a collection.`)) return;
+            onClick={async () => {
+              const ok = await confirm({
+                title: `Delete "${collection.name}"?`,
+                body: "Its articles stay, without a collection.",
+                confirmLabel: "Delete collection",
+                danger: true,
+              });
+              if (!ok) return;
               start(async () => {
                 const r = await deleteCollection(ws, collection.id);
                 onDone(r);
