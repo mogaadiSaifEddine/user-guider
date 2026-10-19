@@ -2,8 +2,6 @@
 
 All methods live on `window.UserOnboarder`. They can be called before the script has loaded; calls are queued and run in order once it does. None of them throw, and only `getLocale()` returns a value.
 
-The old name `window.LocatifyGuides` still works and points at the same object, and the old `locatify-guides:contact` event is still sent next to `user-onboarder:contact`. New code should use the new names.
-
 ## identify(userId, attributes?, options?)
 
 Sets the signed-in user and reloads their guides. See [Identify users](identify).

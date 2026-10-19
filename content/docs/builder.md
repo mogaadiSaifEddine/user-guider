@@ -5,7 +5,7 @@ The builder opens your real app with an editing panel, so you can attach tour st
 ## Open the builder
 
 1. Open a tour or hotspot guide in the dashboard.
-2. Open the **Visual builder** tab (next to Content and Targeting) and enter the full address of the page you want to start on, e.g. `https://cms.locatify.com/projects`. The dashboard remembers it for next time.
+2. Open the **Visual builder** tab (next to Content and Targeting) and enter the full address of the page you want to start on, e.g. `https://app.example.com/projects`. The dashboard remembers it for next time.
 3. Choose **Open builder**. Your app opens in a new tab with the builder panel in the bottom-left corner.
 
 Requirements:

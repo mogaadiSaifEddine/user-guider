@@ -18,7 +18,7 @@ With `GEMINI_API_KEY` set, the builder can draft tours and hotspots: `sdk/snapsh
 cp .env.example .env        # then set DATABASE_URL, DIRECT_URL (Neon) and AUTH_SECRET
 npm install
 npm run db:migrate
-npm run db:seed             # optional: demo@locatify.local / demo1234
+npm run db:seed             # optional: demo@useronboarder.local / demo1234
 npm run dev                 # builds sdk.js, starts Next on :3000
 ```
 

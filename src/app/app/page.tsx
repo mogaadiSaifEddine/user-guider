@@ -49,7 +49,7 @@ export default async function WorkspacesPage({ searchParams }: { searchParams: P
 
       <Card className="p-5">
         <form action={createWorkspace} className="flex gap-2">
-          <Input name="name" placeholder="Workspace name, e.g. Locatify CMS" required maxLength={100} />
+          <Input name="name" placeholder="Workspace name, e.g. Acme Dashboard" required maxLength={100} />
           <Button>Create</Button>
         </form>
         <p className="mt-2 text-xs text-gray-500">

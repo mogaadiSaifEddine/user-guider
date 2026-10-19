@@ -126,7 +126,7 @@ export function SettingsForms({ ws, isOwner, currentUserId, workspace, members, 
               rows={4}
               maxLength={4000}
               value={aiContext}
-              placeholder="e.g. Locatify CMS lets museums and tourism boards build location-based audio tours and games for the Locatify app. Users are content editors, usually not technical. A 'project' is one tour or game; 'pins' are map locations with media."
+              placeholder="e.g. Acme Tours lets museums and tourism boards build location-based audio tours and games for their own mobile app. Users are content editors, usually not technical. A 'project' is one tour or game; 'pins' are map locations with media."
               onChange={(e) => setAiContext(e.target.value)}
             />
           </Field>

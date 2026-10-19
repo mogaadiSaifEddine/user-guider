@@ -21,7 +21,7 @@ The id you sign must be exactly the string you pass to `identify()`.
 ```js
 import { createHmac } from "crypto";
 
-const hash = createHmac("sha256", process.env.LOCATIFY_GUIDES_SECRET)
+const hash = createHmac("sha256", process.env.USER_ONBOARDER_SECRET)
   .update(String(user.id))
   .digest("hex");
 ```
@@ -32,7 +32,7 @@ const hash = createHmac("sha256", process.env.LOCATIFY_GUIDES_SECRET)
 import hashlib, hmac
 
 user_hash = hmac.new(
-    settings.LOCATIFY_GUIDES_SECRET.encode(),
+    settings.USER_ONBOARDER_SECRET.encode(),
     str(user.id).encode(),
     hashlib.sha256,
 ).hexdigest()
@@ -41,7 +41,7 @@ user_hash = hmac.new(
 **PHP**
 
 ```php
-$hash = hash_hmac('sha256', (string) $user->id, getenv('LOCATIFY_GUIDES_SECRET'));
+$hash = hash_hmac('sha256', (string) $user->id, getenv('USER_ONBOARDER_SECRET'));
 ```
 
 For a single-page app, return the hash from the endpoint that returns the current user (e.g. `/api/me`), next to the user's id.

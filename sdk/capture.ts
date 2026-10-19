@@ -24,7 +24,7 @@ async function capture(marks: Mark[]): Promise<string | null> {
     backgroundColor: getComputedStyle(document.body).backgroundColor || "#ffffff",
     // Render only the viewport: shift the page by the scroll position.
     style: { transform: `translate(${-scrollX}px, ${-scrollY}px)`, transformOrigin: "top left", margin: "0" },
-    filter: (n) => !(n instanceof Element && n.tagName === "LOCATIFY-GUIDES"),
+    filter: (n) => !(n instanceof Element && n.tagName === "USER-ONBOARDER"),
   });
 
   const ctx = base.getContext("2d");

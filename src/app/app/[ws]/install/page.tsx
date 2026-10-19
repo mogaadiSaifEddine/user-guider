@@ -40,14 +40,14 @@ UserOnboarder.start("GUIDE_ID");`;
 
   const hashNode = `import { createHmac } from "crypto";
 
-const hash = createHmac("sha256", process.env.LOCATIFY_GUIDES_SECRET)
+const hash = createHmac("sha256", process.env.USER_ONBOARDER_SECRET)
   .update(String(user.id))
   .digest("hex");`;
 
   const hashPython = `import hmac, hashlib
 
 user_hash = hmac.new(
-    settings.LOCATIFY_GUIDES_SECRET.encode(),
+    settings.USER_ONBOARDER_SECRET.encode(),
     str(user.id).encode(),
     hashlib.sha256,
 ).hexdigest()`;

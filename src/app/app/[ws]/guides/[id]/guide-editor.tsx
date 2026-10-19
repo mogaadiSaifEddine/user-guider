@@ -410,7 +410,7 @@ function BuilderLauncher({
           });
         }}
       >
-        <Input type="url" required placeholder="https://cms.locatify.com/dashboard" value={url} onChange={(e) => setUrl(e.target.value)} />
+        <Input type="url" required placeholder="https://app.example.com/dashboard" value={url} onChange={(e) => setUrl(e.target.value)} />
         {aiEnabled && (
           <div className="space-y-2 rounded-md bg-violet-50 p-2.5 ring-1 ring-violet-100">
             <label className="flex items-center gap-2 text-sm font-medium text-violet-900">

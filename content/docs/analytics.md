@@ -63,7 +63,7 @@ Click a figure to open the matching list on **Users**.
 
 ### Companies
 
-Users are grouped into **companies** (in the Locatify CMS: publishers) using attributes your app sends with [identify()](identify#companies). The **Companies** page lists each company with its users, new users in the last 7 days, weekly and monthly actives, inactive users, guides completed and when someone from it was last seen. Sort by size, activity or most recent, search by name or id, and click any number to list those users.
+Users are grouped into **companies** (for example publishers or teams) using attributes your app sends with [identify()](identify#companies). The **Companies** page lists each company with its users, new users in the last 7 days, weekly and monthly actives, inactive users, guides completed and when someone from it was last seen. Sort by size, activity or most recent, search by name or id, and click any number to list those users.
 
 ### Users
 

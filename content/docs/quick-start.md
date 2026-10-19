@@ -5,7 +5,7 @@ This takes about ten minutes, and you need someone who can edit your site's HTML
 ## 1. Create an account and a workspace
 
 1. Open the dashboard and choose **Sign up**.
-2. Name your workspace after the site it belongs to, for example *Locatify CMS*. You land on the **Install** page.
+2. Name your workspace after the site it belongs to, for example *Acme Dashboard*. You land on the **Install** page.
 
 ## 2. Install the snippet
 
@@ -17,7 +17,7 @@ You'll know it works when the badge at the top of the Install page says **Receiv
 
 1. Go to **Guides → New guide**, pick **Product tour**, give it a name and choose **Create**.
 2. Write the first step: a title and some text. A step without an element appears as a centered welcome modal.
-3. Open the **Visual builder** tab (next to Content and Targeting), enter the address of a page of your app, e.g. `https://cms.locatify.com/dashboard`, and choose **Open builder**.
+3. Open the **Visual builder** tab (next to Content and Targeting), enter the address of a page of your app, e.g. `https://app.example.com/dashboard`, and choose **Open builder**.
 4. Your app opens in a new tab with the builder panel at the bottom left. Choose **+ Add step**, then **Pick element**, and click the button or menu the step should point at. Write its text.
 5. Choose **Preview** to try it, then **Save**.
 

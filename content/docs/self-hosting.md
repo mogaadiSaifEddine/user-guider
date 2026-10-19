@@ -24,7 +24,7 @@ User Onboarder is one Next.js application and one PostgreSQL database. The app s
 ## Build and run
 
 ```bash
-git clone <repository> locatify-guides && cd locatify-guides
+git clone <repository> user-onboarder && cd user-onboarder
 npm ci
 npm run build        # bundles sdk.js, generates the database client, builds Next.js
 npm run db:deploy    # applies database migrations
@@ -45,7 +45,7 @@ Open `/signup` and create an account, then a workspace. Sign-up is open to anyon
 cp .env.example .env # then set DATABASE_URL and DIRECT_URL to a Neon branch
 npm install
 npm run db:migrate
-npm run db:seed      # optional demo data: demo@locatify.local / demo1234
+npm run db:seed      # optional demo data: demo@useronboarder.local / demo1234
 npm run dev          # http://localhost:3000, demo site at /demo.html
 ```
 

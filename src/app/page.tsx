@@ -261,7 +261,7 @@ export default async function Home() {
           <Link href="/docs" className="hover:text-gray-900">Docs</Link>
           <Link href="/docs/install" className="hover:text-gray-900">Install</Link>
           <Link href="/docs/self-hosting" className="hover:text-gray-900">Self-hosting</Link>
-          <span className="ml-auto">© {new Date().getFullYear()} Locatify</span>
+          <span className="ml-auto">© {new Date().getFullYear()} User Onboarder</span>
         </div>
       </footer>
     </div>

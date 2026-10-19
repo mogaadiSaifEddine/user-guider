@@ -56,13 +56,11 @@ type Stub = { q?: [string, ArrayLike<unknown>][]; key?: string; apiBase?: string
 const ANON_KEY = "lg_anon_id";
 
 (function main() {
-  // LocatifyGuides is the old global name; snippets that still use it keep working.
-  type Global = Stub & { __loaded?: boolean };
-  const w = window as unknown as { UserOnboarder?: Global; LocatifyGuides?: Global };
-  if (w.UserOnboarder?.__loaded || w.LocatifyGuides?.__loaded) return;
-  const stub: Stub = { ...w.LocatifyGuides, ...w.UserOnboarder, q: [...(w.LocatifyGuides?.q ?? []), ...(w.UserOnboarder?.q ?? [])] };
+  const w = window as unknown as { UserOnboarder?: Stub & { __loaded?: boolean } };
+  if (w.UserOnboarder?.__loaded) return;
+  const stub: Stub = w.UserOnboarder ?? {};
   const expose = (value: unknown) => {
-    w.UserOnboarder = w.LocatifyGuides = value as never;
+    w.UserOnboarder = value as never;
   };
 
   const script = document.currentScript as HTMLScriptElement | null;

@@ -6,7 +6,7 @@ import { randomBytes } from "crypto";
 import { parseTargeting, parseTheme, contentSchemas } from "../src/lib/guide-schema";
 
 const prisma = new PrismaClient();
-const DEMO_EMAIL = "demo@locatify.local";
+const DEMO_EMAIL = "demo@useronboarder.local";
 const DEMO_KEY = "pk_demo";
 
 async function main() {

@@ -59,7 +59,7 @@ UserOnboarder.identify(String(user.id), {
 
 If your attributes have other names, set them under **Settings → Company id attribute / Company name attribute**. Saving regroups everyone the snippet has already seen. A user with only a name is grouped by the name.
 
-The Locatify CMS sends `publisher` and `publisher_alias`, which are picked up automatically.
+Attributes named `publisher` and `publisher_alias` are also picked up automatically.
 
 ## Browser, device and language
 
