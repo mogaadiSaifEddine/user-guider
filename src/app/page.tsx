@@ -46,9 +46,9 @@ const capabilities = [
     path: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   },
   {
-    title: "Own your data",
-    text: "One Next.js app and one PostgreSQL database. Run it on your own servers and keep every event and answer.",
-    path: "M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6",
+    title: "Answer questions in the app",
+    text: "Write help articles in every language, or import them from Zendesk or Intercom, and show them in the resource center.",
+    path: "M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3zM8 8h6M8 12h6",
   },
 ];
 
@@ -260,7 +260,7 @@ export default async function Home() {
           <span className="font-bold text-gray-700">User Onboarder</span>
           <Link href="/docs" className="hover:text-gray-900">Docs</Link>
           <Link href="/docs/install" className="hover:text-gray-900">Install</Link>
-          <Link href="/docs/self-hosting" className="hover:text-gray-900">Self-hosting</Link>
+          <Link href="/docs/quick-start" className="hover:text-gray-900">Quick start</Link>
           <span className="ml-auto">© {new Date().getFullYear()} User Onboarder</span>
         </div>
       </footer>

@@ -6,7 +6,6 @@ User Onboarder shows onboarding content inside your website or web app: product 
 
 - **Guide authors** (product, support, customer success) create and publish guides. No coding needed. Start with the [Quick start](quick-start), then [Product tours](tours) and [The visual builder](builder).
 - **Developers** add one snippet to the site and tell User Onboarder who is signed in. Start with [Install the snippet](install) and [Identify users](identify).
-- **People who run the server** deploy and maintain the app itself. See [Deploy](self-hosting) and [Operations](operations).
 
 ## The building blocks
 

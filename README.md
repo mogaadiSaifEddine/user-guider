@@ -27,7 +27,7 @@ Run `npm run dev:sdk` in a second terminal to rebuild `sdk.js` on change.
 
 ## Documentation
 
-User docs are part of the app at `/docs` (public, no login): guide authors, developers and self-hosting. Pages are Markdown in `content/docs/`; order, titles and grouping are set in `src/lib/docs.ts`. Links between pages use the bare slug, e.g. `[Targeting](targeting#users)`.
+User docs are part of the app at `/docs` (public, no login): guide authors and developers. Pages are Markdown in `content/docs/`; order, titles and grouping are set in `src/lib/docs.ts`. Links between pages use the bare slug, e.g. `[Targeting](targeting#users)`.
 
 ## How it fits together
 

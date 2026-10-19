@@ -48,13 +48,6 @@ export const docSections: DocSection[] = [
       { slug: "troubleshooting", title: "Troubleshooting", description: "When a guide doesn't show up." },
     ],
   },
-  {
-    title: "Self-hosting",
-    pages: [
-      { slug: "self-hosting", title: "Deploy", description: "Run User Onboarder on your own servers." },
-      { slug: "operations", title: "Operations", description: "Upgrades, backups, data retention and security." },
-    ],
-  },
 ];
 
 export const allDocs = docSections.flatMap((s) => s.pages.map((p) => ({ ...p, section: s.title })));

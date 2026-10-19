@@ -2,7 +2,7 @@
 
 AI can read a page of your app, decide which features are worth pointing out, and write a first draft of a **product tour** or a set of **hotspots**, attached to the real buttons and menus on that page. You review and edit the draft before anything is saved or published.
 
-This feature appears only if the server has a Gemini API key; see [Deploy](self-hosting#environment-variables).
+This feature appears only when AI is enabled on the server.
 
 ## Get better drafts
 
