@@ -4,10 +4,12 @@ import { requireWorkspace } from "@/lib/auth";
 import { languageName, workspaceLanguages } from "@/lib/i18n";
 import { isOutdated, parseCollectionTranslations, parseKbContent, parseKbTranslations } from "@/lib/kb";
 import { plainText } from "@/lib/format";
+import { timeAgo } from "@/lib/time-ago";
 import { Badge, ButtonLink, Card, EmptyState, PageHeader, cx } from "@/components/ui";
 import { CollectionsPanel, NewArticleButton } from "./knowledge-client";
+import { ArticleRowActions } from "./article-row-actions";
 
-const sourceLabels = { MANUAL: null, ZENDESK: "Zendesk", INTERCOM: "Intercom" } as const;
+const sourceLabels = { MANUAL: null, ZENDESK: "Zendesk", INTERCOM: "Intercom", USERGUIDING: "UserGuiding" } as const;
 
 export default async function KnowledgePage({
   params,
@@ -62,7 +64,7 @@ export default async function KnowledgePage({
         actions={
           <>
             <ButtonLink variant="secondary" href={`/app/${ws}/knowledge/import`}>
-              Import from Zendesk or Intercom
+              Import from Zendesk, Intercom or UserGuiding
             </ButtonLink>
             <NewArticleButton ws={ws} collectionId={c && c !== "none" ? c : null} />
           </>
@@ -107,7 +109,7 @@ export default async function KnowledgePage({
           </form>
           {!articles.length ? (
             <EmptyState title={query ? "No articles match" : total ? "No articles here" : "No articles yet"}>
-              {!total && "Write your first article, or import your help center from Zendesk or Intercom. Then add a Knowledge base section to your resource center."}
+              {!total && "Write your first article, or import your help center from Zendesk, Intercom or UserGuiding. Then add a Knowledge base section to your resource center."}
             </EmptyState>
           ) : (
             <Card className="divide-y divide-gray-100">
@@ -115,15 +117,19 @@ export default async function KnowledgePage({
                 const content = parseKbContent(a.content);
                 const translations = parseKbTranslations(a.translations);
                 const langs = languages.slice(1);
+                const title = plainText(content.title) || "Untitled article";
                 return (
-                  <Link key={a.id} href={`/app/${ws}/knowledge/${a.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-3 hover:bg-gray-50">
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-gray-900">{plainText(content.title) || "Untitled article"}</div>
+                  <div
+                    key={a.id}
+                    className="group flex flex-wrap items-center gap-x-3 gap-y-1 py-3 pr-3 pl-4 transition-colors first:rounded-t-2xl last:rounded-b-2xl hover:bg-brand-50/40"
+                  >
+                    <Link href={`/app/${ws}/knowledge/${a.id}`} className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-gray-900 group-hover:text-brand-700">{title}</div>
                       <div className="truncate text-xs text-gray-500">
                         {a.collectionId ? collectionName.get(a.collectionId) : "No collection"}
                         {content.summary ? ` · ${plainText(content.summary)}` : ""}
                       </div>
-                    </div>
+                    </Link>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {langs.map((l) => {
                         const t = translations[l];
@@ -143,7 +149,11 @@ export default async function KnowledgePage({
                       {sourceLabels[a.source] && <Badge>{sourceLabels[a.source]}</Badge>}
                       <Badge color={a.status === "PUBLISHED" ? "green" : "gray"}>{a.status === "PUBLISHED" ? "published" : "draft"}</Badge>
                     </div>
-                  </Link>
+                    <div className="w-28 text-right text-xs text-gray-500" title={a.updatedAt.toLocaleString()}>
+                      Edited {timeAgo(a.updatedAt)}
+                    </div>
+                    <ArticleRowActions ws={ws} article={{ id: a.id, title, status: a.status, source: sourceLabels[a.source] }} />
+                  </div>
                 );
               })}
             </Card>

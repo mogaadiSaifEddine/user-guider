@@ -16,6 +16,8 @@ import {
   kbContentSchema,
   kbHash,
   kbTranslationsSchema,
+  parseKbContent,
+  parseKbTranslations,
   searchTextOf,
   type KbContent,
   type KbTranslation,
@@ -103,6 +105,43 @@ export async function deleteArticle(ws: string, id: string) {
   await prisma.kbArticle.delete({ where: { id } });
   revalidatePath(`/app/${ws}/knowledge`);
   redirect(`/app/${ws}/knowledge`);
+}
+
+// ---------- List row actions ----------
+
+// A draft copy in the same collection, with its translations. It's a manual
+// article: importing again won't touch it.
+export async function duplicateArticle(ws: string, id: string): Promise<ActionResult> {
+  const a = await requireArticle(ws, id);
+  const content = parseKbContent(a.content);
+  const translations = parseKbTranslations(a.translations);
+  const title = `Copy of ${plainText(content.title) || "article"}`;
+  const copy: KbContent = { ...content, title };
+  // The translations were made from the original's text; keep them current against the copy.
+  const hash = kbHash(content);
+  const copyHash = kbHash(copy);
+  for (const t of Object.values(translations)) if (t.source === hash) t.source = copyHash;
+  await prisma.kbArticle.create({
+    data: {
+      workspaceId: ws,
+      collectionId: a.collectionId,
+      title: title.slice(0, 255),
+      content: copy as unknown as Prisma.InputJsonObject,
+      translations: translations as unknown as Prisma.InputJsonObject,
+      searchText: searchTextOf(copy, translations),
+      position: a.position,
+    },
+  });
+  revalidatePath(`/app/${ws}/knowledge`, "layout");
+  return { ok: true, message: "Duplicated as a draft." };
+}
+
+// Like deleteArticle, but stays on the list.
+export async function removeArticle(ws: string, id: string): Promise<ActionResult> {
+  await requireArticle(ws, id);
+  await prisma.kbArticle.delete({ where: { id } });
+  revalidatePath(`/app/${ws}/knowledge`, "layout");
+  return { ok: true, message: "Article deleted." };
 }
 
 // Translates the English article with AI; returns it for review, nothing is saved.
@@ -199,8 +238,13 @@ const importSchema = z.object({
       token: z.string().trim().min(1, "Enter an Intercom access token").max(500),
       region: z.enum(["us", "eu", "au"]),
     }),
+    z.object({
+      kind: z.literal("userguiding"),
+      url: z.string().trim().min(1, "Enter your UserGuiding knowledge base address or container id").max(2000),
+    }),
   ]),
   status: z.enum(["source", "draft"]),
+  copyImages: z.boolean().default(false),
 });
 
 export async function runImport(ws: string, input: unknown): Promise<(ActionResult & { report?: ImportReport })> {
@@ -208,7 +252,10 @@ export async function runImport(ws: string, input: unknown): Promise<(ActionResu
   const parsed = importSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describe(parsed.error) };
   try {
-    const report = await importKnowledgeBase(ws, parsed.data.source as ImportSource, { status: parsed.data.status });
+    const report = await importKnowledgeBase(ws, parsed.data.source as ImportSource, {
+      status: parsed.data.status,
+      copyImages: parsed.data.copyImages,
+    });
     revalidatePath(`/app/${ws}/knowledge`, "layout");
     return { ok: true, report };
   } catch (e) {

@@ -8,6 +8,7 @@ import { NewGuideButton } from "./new-guide";
 import { GuideFilters } from "./guide-filters";
 import { GuideRowActions } from "./guide-row-actions";
 import type { GuideTypeName } from "@/lib/guide-schema";
+import { timeAgo } from "@/lib/time-ago";
 
 const tabs: { key: GuideStatus | "ALL"; label: string }[] = [
   { key: "ALL", label: "Active" },
@@ -152,22 +153,4 @@ function GuideNumbers({ type, live, seen, completed }: { type: GuideType; live: 
       )}
     </div>
   );
-}
-
-const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-const units: [Intl.RelativeTimeFormatUnit, number][] = [
-  ["year", 31_536_000],
-  ["month", 2_592_000],
-  ["week", 604_800],
-  ["day", 86_400],
-  ["hour", 3_600],
-  ["minute", 60],
-];
-
-function timeAgo(d: Date) {
-  const secs = (d.getTime() - Date.now()) / 1000;
-  for (const [unit, size] of units) {
-    if (Math.abs(secs) >= size) return rtf.format(Math.round(secs / size), unit);
-  }
-  return "just now";
 }

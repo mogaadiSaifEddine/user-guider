@@ -1,7 +1,9 @@
 import "server-only";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./db";
+import { appUrl } from "./app-url";
 import { htmlToBlocks, htmlToText } from "./html-blocks";
+import { fetchUserGuidingData, parseContainerId } from "./userguiding";
 import { DEFAULT_LOCALE, matchLocale, normalizeLocale, workspaceLanguages } from "./i18n";
 import {
   kbHash,
@@ -13,27 +15,33 @@ import {
   type KbTranslations,
 } from "./kb";
 
-// Imports help center articles from Zendesk or Intercom into the knowledge
-// base. Both are read into one shape first, then upserted by their id there,
-// so importing again updates instead of duplicating.
+// Imports help center articles from Zendesk, Intercom or UserGuiding into the
+// knowledge base. All are read into one shape first, then upserted by their id
+// there, so importing again updates instead of duplicating.
 //
 // Zendesk: categories → sections → articles; sections become collections.
 //   Public help centers need no credentials; an API token adds drafts and
 //   restricted articles. Each language is listed separately.
 // Intercom: collections → articles, every language inside the article's
 //   translated_content. Always needs an access token.
+// UserGuiding: categories → subcategories → articles, read from the JSON API
+//   behind its public knowledge base page (<host>.help.userguiding.com). It
+//   lists published articles only; each language is listed separately.
 //
 // The English version becomes the article; other languages become
 // translations when the workspace has that language. Images stay on the
-// source's servers.
+// source's servers unless copyImages copies them into our asset store.
 
 export type ImportSource =
   | { kind: "zendesk"; url: string; email?: string; token?: string }
-  | { kind: "intercom"; token: string; region: "us" | "eu" | "au" };
+  | { kind: "intercom"; token: string; region: "us" | "eu" | "au" }
+  | { kind: "userguiding"; url: string };
 
 export type ImportOptions = {
   // source: published there = published here. draft: new articles start as drafts.
   status: "source" | "draft";
+  // Copy article images here, so they survive cancelling the old tool.
+  copyImages?: boolean;
 };
 
 export type ImportReport = {
@@ -43,6 +51,7 @@ export type ImportReport = {
   // Languages the source has but this workspace doesn't use.
   skippedLocales: string[];
   sourceLocale: string;
+  images: { copied: number; failed: number };
   warnings: { title: string; issues: string[] }[];
 };
 
@@ -66,6 +75,7 @@ type ExtArticle = {
   url: string;
   position: number;
   translations: Record<string, { title: string; html: string; summary: string }>;
+  warnings?: string[];
 };
 
 type Extracted = { sourceLocale: string; collections: ExtCollection[]; articles: ExtArticle[]; skippedLocales: string[] };
@@ -329,9 +339,201 @@ async function extractIntercom(src: Extract<ImportSource, { kind: "intercom" }>,
   return { sourceLocale: plan.source, collections, articles, skippedLocales: plan.skipped };
 }
 
+// ---------- UserGuiding ----------
+
+const UG_HELP_DOMAIN = "help.userguiding.com";
+
+// The knowledge base host, from a subdomain (acme), an address, or the
+// container id in the UserGuiding snippet (looked up in its sdk JSON).
+async function userGuidingHost(input: string) {
+  const v = input.trim().replace(/\/+$/, "");
+  if (!v) throw new ImportError("Enter your UserGuiding knowledge base address or container id.");
+  const fromSnippet = /userGuidingLayer|-embedded\.js/.test(v) ? parseContainerId(v) : null;
+  const container = fromSnippet ?? (/^[A-Z0-9]{8,32}$/.test(v) && /\d/.test(v) ? v : null);
+  if (container) {
+    let data: { knowledgeBasePage?: { userguiding_host?: unknown } } | null;
+    try {
+      data = await fetchUserGuidingData(container);
+    } catch (e) {
+      throw new ImportError(e instanceof Error ? e.message : "No UserGuiding data found for that container id.");
+    }
+    const slug = str(data?.knowledgeBasePage?.userguiding_host);
+    if (!slug) throw new ImportError("That UserGuiding account has no knowledge base.");
+    return `${slug}.${UG_HELP_DOMAIN}`;
+  }
+  if (/^[a-z0-9-]+$/i.test(v)) return `${v.toLowerCase()}.${UG_HELP_DOMAIN}`;
+  try {
+    return new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`).host;
+  } catch {
+    throw new ImportError("That doesn't look like a UserGuiding knowledge base address.");
+  }
+}
+
+// Runs fn over items, a few at a time.
+async function pool<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>) {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(size, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    }),
+  );
+  return out;
+}
+
+type UgRow = Record<string, unknown>;
+
+async function extractUserGuiding(src: Extract<ImportSource, { kind: "userguiding" }>, workspaceLangs: string[]): Promise<Extracted> {
+  const host = await userGuidingHost(src.url);
+  const base = `https://${host}`;
+  const tree = async (lang: string) => {
+    const data = await getJson(
+      `${base}/api/knowledge-base?hostname=${encodeURIComponent(host)}&langCode=${encodeURIComponent(lang)}&articleId=`,
+      {},
+      "UserGuiding",
+    );
+    if (!data || !Array.isArray(data.articles)) throw new ImportError(`There's no UserGuiding knowledge base at ${host}. Check the address.`);
+    return data as { categories?: UgRow[]; subCategories?: UgRow[]; articles: UgRow[]; orders?: { category_orders?: UgRow[] }; page?: UgRow; languages?: UgRow[] };
+  };
+
+  // Any language answers with the list of languages.
+  const first = await tree("en");
+  const languages = (first.languages ?? []).map((l) => str(l.lang_code)).filter(Boolean);
+  const defaultLocale = str((first.languages ?? []).find((l) => l.is_default)?.lang_code) || languages[0] || "en";
+  const plan = planLocales(languages.length ? languages : ["en"], defaultLocale, workspaceLangs);
+  const main = plan.source === "en" ? first : await tree(plan.source);
+  const pageId = str(main.page?.id);
+  if (!pageId) throw new ImportError(`There's no UserGuiding knowledge base at ${host}. Check the address.`);
+
+  // The editor's drag-and-drop order: one list of categories, subcategories
+  // and articles. It can be stale (after a restructure it still lists the old
+  // ids); anything missing keeps the order the API lists it in.
+  const order = new Map((main.orders?.category_orders ?? []).map((o, i) => [`${str(o.type)}:${str(o.id)}`, num(o.order ?? i)]));
+  const pos = (type: string, id: unknown, index: number) => order.get(`${type}:${str(id)}`) ?? 100_000 + index;
+
+  // Subcategories become collections; so does a category holding articles directly.
+  const collectionsOf = (data: Awaited<ReturnType<typeof tree>>) => {
+    const categories = data.categories ?? [];
+    const catTitle = new Map(categories.map((c) => [str(c.id), str(c.title)]));
+    const multi = categories.length > 1;
+    const list: Omit<ExtCollection, "translations">[] = [];
+    categories.forEach((c, i) => {
+      if (data.articles.some((a) => str(a.category_id) === str(c.id) && !a.sub_category_id))
+        list.push({ externalId: `c${str(c.id)}`, name: str(c.title).slice(0, 191), description: str(c.description), position: pos("category", c.id, i) });
+    });
+    (data.subCategories ?? []).forEach((s, i) => {
+      const cat = catTitle.get(str(s.category_id));
+      list.push({
+        externalId: `s${str(s.id)}`,
+        name: (multi && cat ? `${cat} › ${str(s.title)}` : str(s.title)).slice(0, 191),
+        description: "",
+        position: pos("subcategory", s.id, i),
+      });
+    });
+    return list;
+  };
+  const collectionOf = (a: UgRow) => (a.sub_category_id ? `s${str(a.sub_category_id)}` : a.category_id ? `c${str(a.category_id)}` : null);
+
+  const detail = async (lang: string, id: string) => {
+    try {
+      const d = await getJson(
+        `${base}/api/article-detail?knowledgeBasePageId=${encodeURIComponent(pageId)}&langCode=${encodeURIComponent(lang)}&articleId=${encodeURIComponent(id)}`,
+        {},
+        "UserGuiding",
+      );
+      return d && typeof d.content === "string" ? d : null;
+    } catch (e) {
+      // Rate limiting stops the import; a single unreadable article doesn't.
+      if (e instanceof ImportError && /rate limiting/.test(e.message)) throw e;
+      return null;
+    }
+  };
+
+  const collections: ExtCollection[] = collectionsOf(main).map((c) => ({ ...c, translations: {} }));
+  const details = await pool(main.articles, 4, (a) => detail(plan.source, str(a.id)));
+  const articles: ExtArticle[] = main.articles.map((a, i) => {
+    const d = details[i];
+    const html = str(d?.content);
+    const warnings: string[] = [];
+    if (!d) warnings.push("its text couldn't be read; import again, or copy it over by hand");
+    if (a.require_authentication) warnings.push("was for signed-in users only in UserGuiding");
+    if (!a.category_id) warnings.push("isn't in any category in UserGuiding, so it has no collection here");
+    return {
+      externalId: str(a.id),
+      collectionExternalId: collectionOf(a),
+      title: str(a.title ?? a.name),
+      html,
+      summary: str(a.description) || summarize(html),
+      // The public API only lists published articles.
+      published: true,
+      url: `${base}/${plan.source}/articles/${str(a.id)}`,
+      position: pos("article", a.id, i),
+      translations: {},
+      warnings,
+    };
+  });
+
+  for (const [ugLocale, wsLocale] of plan.targets) {
+    const t = await tree(ugLocale);
+    const names = new Map(collectionsOf(t).map((c) => [c.externalId, c]));
+    for (const c of collections) {
+      const tc = names.get(c.externalId);
+      if (tc?.name.trim()) c.translations[wsLocale] = { name: tc.name, description: tc.description };
+    }
+    const listed = new Map(t.articles.map((a) => [str(a.id), a]));
+    const todo = articles.filter((a) => listed.has(a.externalId));
+    const tDetails = await pool(todo, 4, (a) => detail(ugLocale, a.externalId));
+    todo.forEach((a, i) => {
+      const html = str(tDetails[i]?.content);
+      const ta = listed.get(a.externalId)!;
+      const title = str(ta.title ?? ta.name);
+      if (title.trim() && html.trim()) a.translations[wsLocale] = { title, html, summary: str(ta.description) || summarize(html) };
+    });
+  }
+  return { sourceLocale: plan.source, collections, articles, skippedLocales: plan.skipped };
+}
+
 // Reads everything from the source without saving (also handy for checking a source by hand).
 export function extractSource(src: ImportSource, workspaceLangs: string[]) {
-  return src.kind === "zendesk" ? extractZendesk(src, workspaceLangs) : extractIntercom(src, workspaceLangs);
+  if (src.kind === "zendesk") return extractZendesk(src, workspaceLangs);
+  if (src.kind === "intercom") return extractIntercom(src, workspaceLangs);
+  return extractUserGuiding(src, workspaceLangs);
+}
+
+// ---------- Images ----------
+
+const IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"]);
+const MAX_IMAGE = 5 * 1024 * 1024;
+
+// Copies images into the asset store, once per source URL (importing again
+// reuses the earlier copy). Returns the new URL, or null to keep the old one.
+function imageCopier(workspaceId: string, appBase: string) {
+  const done = new Map<string, Promise<string | null>>();
+  const copy = async (url: string) => {
+    const known = await prisma.asset.findFirst({ where: { workspaceId, sourceUrl: url }, select: { id: true } });
+    if (known) return `${appBase}/api/assets/${known.id}`;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      const type = (res.headers.get("content-type") ?? "").split(";")[0].trim();
+      if (!res.ok || !IMAGE_TYPES.has(type)) return null;
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length > MAX_IMAGE) return null;
+      const asset = await prisma.asset.create({
+        data: { workspaceId, mimeType: type, size: buf.length, data: buf, sourceUrl: url.slice(0, 1024) },
+        select: { id: true },
+      });
+      return `${appBase}/api/assets/${asset.id}`;
+    } catch {
+      return null;
+    }
+  };
+  return (url: string) => {
+    if (!done.has(url)) done.set(url, copy(url));
+    return done.get(url)!;
+  };
 }
 
 // ---------- Save ----------
@@ -342,7 +544,7 @@ export async function importKnowledgeBase(workspaceId: string, src: ImportSource
   const workspace = await prisma.workspace.findUniqueOrThrow({ where: { id: workspaceId }, select: { languages: true } });
   const langs = workspaceLanguages(workspace.languages);
   const data = await extractSource(src, langs);
-  const source = src.kind === "zendesk" ? "ZENDESK" : "INTERCOM";
+  const source = ({ zendesk: "ZENDESK", intercom: "INTERCOM", userguiding: "USERGUIDING" } as const)[src.kind];
   const sourceBase = src.kind === "zendesk" ? zendeskBase(src.url) : "";
 
   const report: ImportReport = {
@@ -351,8 +553,43 @@ export async function importKnowledgeBase(workspaceId: string, src: ImportSource
     translations: 0,
     skippedLocales: data.skippedLocales,
     sourceLocale: data.sourceLocale,
+    images: { copied: 0, failed: 0 },
     warnings: [],
   };
+
+  // Convert everything first, so images can be copied in parallel.
+  const converted = data.articles
+    .filter((a) => a.title.trim())
+    .map((a) => {
+      const base = a.url || sourceBase;
+      const main = htmlToBlocks(a.html, base);
+      const issues = new Set([...(a.warnings ?? []), ...main.warnings]);
+      const translations = Object.entries(a.translations).map(([locale, t]) => {
+        const c = htmlToBlocks(t.html, base);
+        c.warnings.forEach((w) => issues.add(w));
+        return { locale, t, blocks: c.blocks };
+      });
+      return { a, blocks: main.blocks, translations, issues };
+    });
+
+  if (opts.copyImages) {
+    const urls = new Set<string>();
+    for (const c of converted)
+      for (const blocks of [c.blocks, ...c.translations.map((t) => t.blocks)])
+        for (const b of blocks) if (b.type === "image" && /^https?:\/\//i.test(b.url)) urls.add(b.url);
+    const copy = imageCopier(workspaceId, await appUrl());
+    const copied = new Map<string, string>();
+    await pool([...urls], 6, async (url) => {
+      const to = await copy(url);
+      if (to) copied.set(url, to);
+    });
+    report.images = { copied: copied.size, failed: urls.size - copied.size };
+    for (const c of converted)
+      for (const blocks of [c.blocks, ...c.translations.map((t) => t.blocks)])
+        for (const b of blocks)
+          if (b.type === "image" && copied.has(b.url)) b.url = copied.get(b.url)!;
+          else if (b.type === "image" && urls.has(b.url)) c.issues.add("an image couldn't be copied and still loads from the old help center");
+  }
 
   // Collections
   const collectionIds = new Map<string, string>();
@@ -370,26 +607,20 @@ export async function importKnowledgeBase(workspaceId: string, src: ImportSource
   }
 
   // Articles
-  for (const a of data.articles) {
-    if (!a.title.trim()) continue;
-    const base = a.url || sourceBase;
-    const main = htmlToBlocks(a.html, base);
-    const content: KbContent = { title: escapeMarkup(a.title).slice(0, 255), summary: escapeMarkup(a.summary).slice(0, 500), blocks: main.blocks };
+  for (const { a, blocks, translations: imported, issues } of converted) {
+    const content: KbContent = { title: escapeMarkup(a.title).slice(0, 255), summary: escapeMarkup(a.summary).slice(0, 500), blocks };
     const hash = kbHash(content);
-    const issues = new Set(main.warnings);
 
     const existing = await prisma.kbArticle.findUnique({
       where: { workspaceId_source_externalId: { workspaceId, source, externalId: a.externalId } },
     });
     // Imported languages replace what was there; others (say, AI translations) stay.
     const translations: KbTranslations = parseKbTranslations(existing?.translations);
-    for (const [locale, t] of Object.entries(a.translations)) {
-      const converted = htmlToBlocks(t.html, base);
-      converted.warnings.forEach((w) => issues.add(w));
+    for (const { locale, t, blocks: tBlocks } of imported) {
       translations[locale] = {
         title: escapeMarkup(t.title).slice(0, 255),
         summary: escapeMarkup(t.summary).slice(0, 500),
-        blocks: converted.blocks,
+        blocks: tBlocks,
         source: hash,
       };
       report.translations++;
@@ -409,7 +640,7 @@ export async function importKnowledgeBase(workspaceId: string, src: ImportSource
     if (existing) await prisma.kbArticle.update({ where: { id: existing.id }, data: fields });
     else await prisma.kbArticle.create({ data: { workspaceId, source, externalId: a.externalId, ...fields } });
     report.articles[existing ? "updated" : "created"]++;
-    if (!main.blocks.length) issues.add("no content came through");
+    if (!blocks.length) issues.add("no content came through");
     if (issues.size && report.warnings.length < 50) report.warnings.push({ title: a.title, issues: [...issues] });
   }
   return report;

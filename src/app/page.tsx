@@ -47,7 +47,7 @@ const capabilities = [
   },
   {
     title: "Answer questions in the app",
-    text: "Write help articles in every language, or import them from Zendesk or Intercom, and show them in the resource center.",
+    text: "Write help articles in every language, or import them from Zendesk, Intercom or UserGuiding, and show them in the resource center.",
     path: "M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3zM8 8h6M8 12h6",
   },
 ];
@@ -218,7 +218,7 @@ export default async function Home() {
               <h2 className="text-2xl font-extrabold tracking-tight text-gray-900">Coming from UserGuiding?</h2>
               <p className="mt-2 max-w-2xl leading-relaxed text-gray-600">
                 Import your existing guides and checklists with their steps, targeting and images. Knowledge base articles come
-                across from Zendesk or Intercom.
+                across from Zendesk, Intercom or UserGuiding.
               </p>
             </div>
             <ButtonLink href="/docs/import-userguiding" variant="secondary" className="px-5 py-2.5">

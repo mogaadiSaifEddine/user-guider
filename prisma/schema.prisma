@@ -128,11 +128,14 @@ model Asset {
   mimeType    String   @db.VarChar(100)
   size        Int
   data        Bytes
+  // Where an imported image was copied from, so importing again reuses it.
+  sourceUrl   String?  @db.VarChar(1024)
   createdAt   DateTime @default(now())
 
   workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
+  @@index([workspaceId, sourceUrl])
 }
 
 // ---------- Knowledge base ----------
@@ -141,6 +144,7 @@ enum KbSource {
   MANUAL
   ZENDESK
   INTERCOM
+  USERGUIDING
 }
 
 enum KbStatus {

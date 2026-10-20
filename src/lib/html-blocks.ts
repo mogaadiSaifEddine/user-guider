@@ -108,6 +108,11 @@ export function htmlToBlocks(html: string, baseUrl = ""): Converted {
       case "script":
       case "style":
         return "";
+      case "span":
+        // Zendesk's editor (and help centers migrated from it) underline with a class.
+        return /\bwysiwyg-underline\b/.test(n.getAttribute("class") ?? "") || /text-decoration[^;]*underline/i.test(n.getAttribute("style") ?? "")
+          ? wrap("++")
+          : inner();
       default:
         return inner();
     }

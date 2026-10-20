@@ -7,13 +7,21 @@ import { languageName } from "@/lib/i18n";
 import { Button, ButtonLink, Card, Field, Input, Select, cx } from "@/components/ui";
 import { runImport } from "../actions";
 
-type Kind = "zendesk" | "intercom";
+type Kind = "zendesk" | "intercom" | "userguiding";
+
+const sources: Record<Kind, { name: string; title: string; hint: string }> = {
+  zendesk: { name: "Zendesk", title: "Zendesk Guide", hint: "Sections become collections. Public help centers need no credentials." },
+  intercom: { name: "Intercom", title: "Intercom Articles", hint: "Collections and every language. Needs an access token." },
+  userguiding: { name: "UserGuiding", title: "UserGuiding Knowledge Base", hint: "Subcategories become collections. Reads your public knowledge base." },
+};
 
 export function KbImport({ ws, languages }: { ws: string; languages: { code: string; name: string }[] }) {
   const [kind, setKind] = useState<Kind>("zendesk");
   const [zendesk, setZendesk] = useState({ url: "", email: "", token: "" });
   const [intercom, setIntercom] = useState({ token: "", region: "us" as "us" | "eu" | "au" });
+  const [userguiding, setUserguiding] = useState({ url: "" });
   const [status, setStatus] = useState<"source" | "draft">("source");
+  const [copyImages, setCopyImages] = useState(true);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
@@ -24,8 +32,9 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
     start(async () => {
       try {
         const r = await runImport(ws, {
-          source: kind === "zendesk" ? { kind, ...zendesk } : { kind, ...intercom },
+          source: kind === "zendesk" ? { kind, ...zendesk } : kind === "intercom" ? { kind, ...intercom } : { kind, ...userguiding },
           status,
+          copyImages,
         });
         if (!r.ok) setError(r.error);
         else setReport(r.report ?? null);
@@ -46,6 +55,8 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
           <p className="mt-1 text-sm text-gray-600">
             {r.articles.created} new, {r.articles.updated} updated; {r.collections.created + r.collections.updated} collections;{" "}
             {r.translations} translations. The articles came from the {r.sourceLocale} version.
+            {r.images.copied + r.images.failed > 0 &&
+              ` ${r.images.copied} images copied${r.images.failed ? `, ${r.images.failed} couldn't be copied and still load from the old help center` : ""}.`}
           </p>
         </div>
         {r.skippedLocales.length > 0 && (
@@ -81,8 +92,8 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
 
   return (
     <div className="max-w-3xl space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
-        {(["zendesk", "intercom"] as const).map((k) => (
+      <div className="grid gap-3 sm:grid-cols-3">
+        {(["zendesk", "intercom", "userguiding"] as const).map((k) => (
           <button
             key={k}
             type="button"
@@ -92,10 +103,8 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
               kind === k ? "ring-2 ring-brand-500" : "ring-gray-200 hover:bg-gray-50",
             )}
           >
-            <div className="text-sm font-semibold">{k === "zendesk" ? "Zendesk Guide" : "Intercom Articles"}</div>
-            <div className="mt-0.5 text-xs text-gray-500">
-              {k === "zendesk" ? "Sections become collections. Public help centers need no credentials." : "Collections and every language. Needs an access token."}
-            </div>
+            <div className="text-sm font-semibold">{sources[k].title}</div>
+            <div className="mt-0.5 text-xs text-gray-500">{sources[k].hint}</div>
           </button>
         ))}
       </div>
@@ -118,6 +127,18 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
               </div>
             </details>
           </>
+        ) : kind === "userguiding" ? (
+          <Field
+            label="Knowledge base"
+            hint="Your knowledge base address (acme.help.userguiding.com), just acme, or the container id from your UserGuiding snippet."
+          >
+            <Input
+              placeholder="acme.help.userguiding.com"
+              value={userguiding.url}
+              maxLength={2000}
+              onChange={(e) => setUserguiding({ url: e.target.value })}
+            />
+          </Field>
         ) : (
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_160px]">
             <Field label="Access token" hint="Developer Hub → your app → Authentication. It needs permission to read articles.">
@@ -139,15 +160,29 @@ export function KbImport({ ws, languages }: { ws: string; languages: { code: str
             <option value="draft">New articles start as drafts; I&apos;ll publish them myself</option>
           </Select>
         </Field>
+        {kind === "userguiding" && (
+          <p className="-mt-2 text-xs text-gray-500">UserGuiding only shows published articles publicly, so drafts there don&apos;t come over.</p>
+        )}
+
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={copyImages} onChange={(e) => setCopyImages(e.target.checked)} />
+          <span>
+            <span className="font-medium">Copy images to User Onboarder</span>
+            <span className="block text-xs text-gray-500">
+              So articles keep their screenshots after you cancel {sources[kind].name}. Importing again reuses the copies.
+            </span>
+          </span>
+        </label>
 
         <p className="text-xs text-gray-500">
           English becomes the article; {languages.length > 1 ? languages.slice(1).map((l) => l.name).join(", ") : "other languages"} come over as
-          translations{languages.length > 1 ? "" : " once you add them in Settings"}. Images keep loading from{" "}
-          {kind === "zendesk" ? "Zendesk" : "Intercom"}. Credentials are used for this import only and aren&apos;t stored.
+          translations{languages.length > 1 ? "" : " once you add them in Settings"}.{" "}
+          {copyImages ? "" : `Images keep loading from ${sources[kind].name}. `}
+          {kind === "userguiding" ? "" : "Credentials are used for this import only and aren't stored."}
         </p>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <Button disabled={pending} onClick={run}>
-          {pending ? "Importing… this can take a minute" : `Import from ${kind === "zendesk" ? "Zendesk" : "Intercom"}`}
+          {pending ? "Importing… this can take a minute" : `Import from ${sources[kind].name}`}
         </Button>
       </Card>
     </div>

@@ -17,7 +17,7 @@ import { aiTranslateArticle, deleteArticle, saveArticle, setArticleStatus, type 
 type Article = {
   id: string;
   status: "DRAFT" | "PUBLISHED";
-  source: "MANUAL" | "ZENDESK" | "INTERCOM";
+  source: "MANUAL" | "ZENDESK" | "INTERCOM" | "USERGUIDING";
   externalUrl: string | null;
   collectionId: string | null;
   content: KbContent;
@@ -128,7 +128,7 @@ export function ArticleEditor({
         <Badge color={live ? "green" : "gray"}>{live ? "published" : "draft"}</Badge>
         {article.source !== "MANUAL" && (
           <span className="text-xs text-gray-500">
-            Imported from {article.source === "ZENDESK" ? "Zendesk" : "Intercom"}
+            Imported from {{ ZENDESK: "Zendesk", INTERCOM: "Intercom", USERGUIDING: "UserGuiding", MANUAL: "" }[article.source]}
             {article.externalUrl && (
               <>
                 {" · "}

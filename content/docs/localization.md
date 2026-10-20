@@ -35,4 +35,4 @@ The widgets show a few words of their own around your content: *Close*, *Back*, 
 
 ## Help articles
 
-[Knowledge base](knowledge-base) articles are translated as whole articles, because each language can have its own images and structure. Open an article and pick a language at the top: translate it with AI, or start from a copy of the English text. Imports from Zendesk and Intercom bring their translations along.
+[Knowledge base](knowledge-base) articles are translated as whole articles, because each language can have its own images and structure. Open an article and pick a language at the top: translate it with AI, or start from a copy of the English text. Imports from Zendesk, Intercom and UserGuiding bring their translations along.
