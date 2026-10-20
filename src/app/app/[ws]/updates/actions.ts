@@ -150,6 +150,40 @@ export async function removeUpdate(ws: string, id: string): Promise<ActionResult
   return { ok: true, message: "Update deleted." };
 }
 
+// Applies one action to several updates from the list. Publish only touches drafts
+// (published now); unpublish turns published and scheduled posts back into drafts.
+export async function bulkUpdates(
+  ws: string,
+  input: unknown,
+  action: "publish" | "unpublish" | "pin" | "unpin" | "delete",
+): Promise<ActionResult> {
+  await requireWorkspace(ws);
+  const ids = z.array(z.string().max(64)).min(1).max(1000).safeParse(input);
+  if (!ids.success) return { ok: false, error: "Select at least one update." };
+  const where = { workspaceId: ws, id: { in: ids.data } };
+  const n = (c: number) => `${c} update${c === 1 ? "" : "s"}`;
+  let message: string;
+  if (action === "delete") {
+    const { count } = await prisma.productUpdate.deleteMany({ where });
+    message = `Deleted ${n(count)}.`;
+  } else if (action === "publish") {
+    const { count } = await prisma.productUpdate.updateMany({
+      where: { ...where, status: "DRAFT" },
+      data: { status: "PUBLISHED", publishedAt: new Date() },
+    });
+    message = `Published ${n(count)}.`;
+  } else if (action === "unpublish") {
+    const { count } = await prisma.productUpdate.updateMany({ where: { ...where, status: "PUBLISHED" }, data: { status: "DRAFT" } });
+    message = `Unpublished ${n(count)}. They're drafts again.`;
+  } else {
+    const pinned = action === "pin";
+    const { count } = await prisma.productUpdate.updateMany({ where: { ...where, pinned: !pinned }, data: { pinned } });
+    message = `${pinned ? "Pinned" : "Unpinned"} ${n(count)}.`;
+  }
+  revalidate(ws);
+  return { ok: true, message };
+}
+
 // ---------- Page settings ----------
 
 const settingsSchema = z.object({

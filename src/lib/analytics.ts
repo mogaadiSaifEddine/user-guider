@@ -1,4 +1,5 @@
 import "server-only";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 
 // Counts are distinct end users, not raw events, so a user who sees a tour on
@@ -64,6 +65,17 @@ export async function guideFootprint(guideId: string) {
     prisma.$queryRaw<{ c: bigint }[]>`
       SELECT COUNT(DISTINCT "endUserId") AS c FROM "Event" WHERE "guideId" = ${guideId} AND type = 'guide_shown'`,
     prisma.surveyAnswer.count({ where: { guideId } }),
+  ]);
+  return { users: Number(users?.c ?? 0), answers };
+}
+
+// Same, summed over several guides.
+export async function guidesFootprint(guideIds: string[]) {
+  if (!guideIds.length) return { users: 0, answers: 0 };
+  const [[users], answers] = await Promise.all([
+    prisma.$queryRaw<{ c: bigint }[]>`
+      SELECT COUNT(DISTINCT "endUserId") AS c FROM "Event" WHERE "guideId" IN (${Prisma.join(guideIds)}) AND type = 'guide_shown'`,
+    prisma.surveyAnswer.count({ where: { guideId: { in: guideIds } } }),
   ]);
   return { users: Number(users?.c ?? 0), answers };
 }

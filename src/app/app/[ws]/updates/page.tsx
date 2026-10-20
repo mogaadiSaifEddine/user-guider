@@ -25,6 +25,8 @@ import {
 import { LabelChip, formatUpdateDate } from "@/components/update-post";
 import { NewUpdateButton } from "./updates-client";
 import { UpdateRowActions } from "./update-row-actions";
+import { UpdateBulkBar } from "./update-bulk-bar";
+import { BulkSelect, RowCheckbox } from "@/components/bulk-select";
 
 const tabs = [
   { key: "", label: "All" },
@@ -200,7 +202,20 @@ export default async function UpdatesPage({
           )}
         </EmptyState>
       ) : (
+        <BulkSelect ids={shown.map((u) => u.id)}>
         <Card className="divide-y divide-gray-100 overflow-hidden">
+          <UpdateBulkBar
+            ws={ws}
+            rows={shown.map((u) => {
+              const c = counts.get(u.id);
+              return {
+                id: u.id,
+                state: updateState(u, now),
+                pinned: u.pinned,
+                reactions: c ? reactionKinds.reduce((n, k) => n + c[k], 0) : 0,
+              };
+            })}
+          />
           {shown.map((u) => {
             const content = parseUpdateContent(u.content);
             const s = updateState(u, now);
@@ -208,11 +223,15 @@ export default async function UpdatesPage({
             return (
               <div
                 key={u.id}
-                className="flex items-center gap-2 pr-3 hover:bg-gray-50"
+                className="flex items-center gap-2 pr-3 pl-4 hover:bg-gray-50"
               >
+                <RowCheckbox
+                  id={u.id}
+                  label={plainText(content.title) || "Untitled update"}
+                />
                 <Link
                   href={`/app/${ws}/updates/${u.id}`}
-                  className="flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-4"
+                  className="flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-2"
                 >
                   <div className="hidden h-14 w-24 shrink-0 overflow-hidden rounded-lg bg-linear-to-br from-brand-100 to-brand-200 sm:block">
                     {u.coverUrl && (
@@ -295,6 +314,7 @@ export default async function UpdatesPage({
             );
           })}
         </Card>
+        </BulkSelect>
       )}
     </>
   );

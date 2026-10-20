@@ -9,6 +9,7 @@ Open **Knowledge base** in the sidebar.
 - **New article** opens the editor: a title, a one-line summary (shown in lists and searched), and the content, built from the same blocks as announcements: headings, text, images, videos, buttons, dividers. An article can have up to 400 blocks.
 - **Collections** group articles, like *Billing* or *Getting started*. Create, rename, translate and order them in the Collections box; pick an article's collection in its editor. Deleting a collection keeps its articles, without a collection.
 - An article is a **draft** until you press **Publish**. Only published articles show in resource centers, and changes to a published article show right away: there's no separate live version, so save drafts of big rewrites as a new article.
+- To change several articles at once, tick their checkboxes in the list. The bar above the list can **Publish**, **Unpublish**, **Move to** another collection, or **Delete** them.
 
 Search at the top of the list looks through titles and text in every language.
 

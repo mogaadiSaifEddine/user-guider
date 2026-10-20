@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import type { Prisma } from "@prisma/client";
+import type { GuideStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireGuide, requireWorkspace } from "@/lib/auth";
 import { newPublicKey, newSecretKey } from "@/lib/keys";
@@ -19,7 +19,7 @@ import {
   type SurveyContent,
 } from "@/lib/guide-schema";
 import { companyFrom } from "@/lib/companies";
-import { guideFootprint } from "@/lib/analytics";
+import { guideFootprint, guidesFootprint } from "@/lib/analytics";
 import { AiError, aiEnabled } from "@/lib/ai";
 import { translateTexts } from "@/lib/ai-translate";
 import {
@@ -93,15 +93,31 @@ export async function saveGuide(ws: string, id: string, input: unknown): Promise
 
 export async function publishGuide(ws: string, id: string): Promise<ActionResult> {
   const { guide, workspace } = await requireGuide(ws, id);
+  const r = await publishOne(guide, workspace);
+  if ("error" in r) return { ok: false, error: r.error };
+  revalidatePath(`/app/${ws}/guides`);
+  return {
+    ok: true,
+    message:
+      "Published. Live on your site within a page load." +
+      (r.gaps.length ? ` Not fully translated (untranslated texts show in English): ${r.gaps.join(", ")}.` : ""),
+  };
+}
+
+// Checks and publishes one guide. Returns the languages that will partly show English.
+async function publishOne(
+  guide: { id: string; type: string; content: Prisma.JsonValue; translations: Prisma.JsonValue },
+  workspace: { languages: Prisma.JsonValue },
+): Promise<{ error: string } | { gaps: string[] }> {
   const content = contentSchemas[guide.type as GuideTypeName].safeParse(guide.content);
-  if (!content.success) return { ok: false, error: describe(content.error) };
+  if (!content.success) return { error: describe(content.error) };
   const problem = publishProblem(guide.type as GuideTypeName, content.data);
-  if (problem) return { ok: false, error: problem };
+  if (problem) return { error: problem };
 
   const languages = workspaceLanguages(workspace.languages);
   const translations = pruneTranslations(content.data, guide.translations as Translations | null, languages);
   await prisma.guide.update({
-    where: { id },
+    where: { id: guide.id },
     data: {
       status: "PUBLISHED",
       publishedContent: content.data as Prisma.InputJsonObject,
@@ -109,20 +125,13 @@ export async function publishGuide(ws: string, id: string): Promise<ActionResult
       publishedAt: new Date(),
     },
   });
-  revalidatePath(`/app/${ws}/guides`);
-  // Say which languages will partly show English.
   const fields = textFields(content.data);
   const gaps = languages.slice(1).flatMap((l) => {
     const st = translationStatus(fields, translations[l]);
     if (st.missing) return [`${languageName(l)} (${st.missing} missing)`];
     return st.outdated ? [`${languageName(l)} (${st.outdated} outdated)`] : [];
   });
-  return {
-    ok: true,
-    message:
-      "Published. Live on your site within a page load." +
-      (gaps.length ? ` Not fully translated (untranslated texts show in English): ${gaps.join(", ")}.` : ""),
-  };
+  return { gaps };
 }
 
 function publishProblem(type: GuideTypeName, content: unknown): string | null {
@@ -195,6 +204,59 @@ export async function deleteGuide(ws: string, id: string) {
   await prisma.guide.delete({ where: { id } });
   revalidatePath(`/app/${ws}/guides`);
   redirect(`/app/${ws}/guides`);
+}
+
+// ---------- Bulk actions (guides list) ----------
+
+const bulkIdsSchema = z.array(z.string().max(64)).min(1).max(1000);
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
+// What deleting these guides takes with it, for the bulk delete confirm.
+export async function getGuidesFootprint(ws: string, ids: string[]) {
+  await requireWorkspace(ws);
+  const own = await prisma.guide.findMany({ where: { workspaceId: ws, id: { in: bulkIdsSchema.parse(ids) } }, select: { id: true } });
+  return guidesFootprint(own.map((g) => g.id));
+}
+
+// Applies one action to several guides. Each action only touches the guides it makes
+// sense for (publish: drafts, unpublish: live ones, …); the others are left alone.
+export async function bulkGuides(
+  ws: string,
+  input: unknown,
+  action: "publish" | "unpublish" | "archive" | "restore" | "delete",
+): Promise<ActionResult> {
+  const { workspace } = await requireWorkspace(ws);
+  const ids = bulkIdsSchema.safeParse(input);
+  if (!ids.success) return { ok: false, error: "Select at least one guide." };
+  const where = { workspaceId: ws, id: { in: ids.data } };
+  let message: string;
+
+  if (action === "publish") {
+    const drafts = await prisma.guide.findMany({ where: { ...where, status: "DRAFT" } });
+    const failed: string[] = [];
+    let done = 0;
+    for (const g of drafts) {
+      const r = await publishOne(g, workspace);
+      if ("error" in r) failed.push(`"${g.name}": ${r.error}`);
+      else done++;
+    }
+    revalidatePath(`/app/${ws}/guides`);
+    if (!done && failed.length) return { ok: false, error: `Nothing published. ${failed.join(" ")}` };
+    message = `Published ${plural(done, "guide")}.` + (failed.length ? ` Not published: ${failed.join(" ")}` : "");
+  } else if (action === "delete") {
+    const { count } = await prisma.guide.deleteMany({ where });
+    message = `Deleted ${plural(count, "guide")}.`;
+  } else {
+    const [from, to, verb] = {
+      unpublish: ["PUBLISHED", "DRAFT", "Unpublished"],
+      archive: [{ not: "ARCHIVED" }, "ARCHIVED", "Archived"],
+      restore: ["ARCHIVED", "DRAFT", "Restored as drafts:"],
+    }[action] as [GuideStatus | { not: GuideStatus }, GuideStatus, string];
+    const { count } = await prisma.guide.updateMany({ where: { ...where, status: from }, data: { status: to } });
+    message = `${verb} ${plural(count, "guide")}.`;
+  }
+  revalidatePath(`/app/${ws}/guides`);
+  return { ok: true, message };
 }
 
 // Link that opens the customer's site in builder mode for this guide.

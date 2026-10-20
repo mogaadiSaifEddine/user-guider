@@ -8,6 +8,8 @@ import { timeAgo } from "@/lib/time-ago";
 import { Badge, ButtonLink, Card, EmptyState, PageHeader, cx } from "@/components/ui";
 import { CollectionsPanel, NewArticleButton } from "./knowledge-client";
 import { ArticleRowActions } from "./article-row-actions";
+import { ArticleBulkBar } from "./article-bulk-bar";
+import { BulkSelect, RowCheckbox } from "@/components/bulk-select";
 
 const sourceLabels = { MANUAL: null, ZENDESK: "Zendesk", INTERCOM: "Intercom", USERGUIDING: "UserGuiding" } as const;
 
@@ -112,7 +114,13 @@ export default async function KnowledgePage({
               {!total && "Write your first article, or import your help center from Zendesk, Intercom or UserGuiding. Then add a Knowledge base section to your resource center."}
             </EmptyState>
           ) : (
+            <BulkSelect ids={articles.map((a) => a.id)}>
             <Card className="divide-y divide-gray-100">
+              <ArticleBulkBar
+                ws={ws}
+                rows={articles.map((a) => ({ id: a.id, status: a.status, imported: a.source !== "MANUAL" }))}
+                collections={collections.map((x) => ({ id: x.id, name: x.name }))}
+              />
               {articles.map((a) => {
                 const content = parseKbContent(a.content);
                 const translations = parseKbTranslations(a.translations);
@@ -123,6 +131,7 @@ export default async function KnowledgePage({
                     key={a.id}
                     className="group flex flex-wrap items-center gap-x-3 gap-y-1 py-3 pr-3 pl-4 transition-colors first:rounded-t-2xl last:rounded-b-2xl hover:bg-brand-50/40"
                   >
+                    <RowCheckbox id={a.id} label={title} />
                     <Link href={`/app/${ws}/knowledge/${a.id}`} className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-gray-900 group-hover:text-brand-700">{title}</div>
                       <div className="truncate text-xs text-gray-500">
@@ -157,6 +166,7 @@ export default async function KnowledgePage({
                 );
               })}
             </Card>
+            </BulkSelect>
           )}
         </div>
       </div>

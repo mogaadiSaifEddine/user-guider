@@ -7,6 +7,8 @@ import { Badge, ButtonLink, Card, EmptyState, GuideTypeIcon, PageHeader, cx, sta
 import { NewGuideButton } from "./new-guide";
 import { GuideFilters } from "./guide-filters";
 import { GuideRowActions } from "./guide-row-actions";
+import { GuideBulkBar } from "./guide-bulk-bar";
+import { BulkSelect, RowCheckbox } from "@/components/bulk-select";
 import type { GuideTypeName } from "@/lib/guide-schema";
 import { timeAgo } from "@/lib/time-ago";
 
@@ -99,9 +101,12 @@ export default async function GuidesPage({
           </EmptyState>
         )
       ) : (
+        <BulkSelect ids={guides.map((g) => g.id)}>
         <Card className="divide-y divide-gray-100">
+          <GuideBulkBar ws={ws} rows={guides.map((g) => ({ id: g.id, status: g.status }))} />
           {guides.map((g) => (
             <div key={g.id} className="group flex flex-wrap items-center gap-x-4 gap-y-1 py-4 pr-3 pl-4 transition-colors first:rounded-t-2xl last:rounded-b-2xl hover:bg-brand-50/40">
+              <RowCheckbox id={g.id} label={g.name} />
               <Link href={`/app/${ws}/guides/${g.id}`} className="flex min-w-0 flex-1 items-center gap-3.5">
                 <GuideTypeIcon type={g.type} />
                 <div className="min-w-0">
@@ -126,6 +131,7 @@ export default async function GuidesPage({
             </div>
           ))}
         </Card>
+        </BulkSelect>
       )}
     </>
   );

@@ -28,6 +28,8 @@ A new post is a **draft**: nobody sees it.
 - Once a post is published, you can change its **Publish date**. That date is the one readers see, so you can backdate a post you forgot to write. A date in the future schedules the post again.
 - **Unpublish** turns the post back into a draft.
 
+To handle several posts at once, tick their checkboxes in the list. The bar above the list can **Publish now** (drafts only), **Unpublish** (published and scheduled posts), **Pin**, **Unpin** and **Delete** them.
+
 There's no separate live version: saving a published post changes it for readers right away.
 
 ## The public page

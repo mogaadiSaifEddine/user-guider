@@ -39,6 +39,8 @@ You can do all of these from the guide editor, or from the icons on each row of 
 | **Duplicate** | Creates a draft copy with the same content and targeting. Handy for a variant or a translated version. |
 | **Delete** | Removes the guide with all its analytics and user progress. This can't be undone. |
 
+To act on several guides at once, tick their checkboxes (or the box above the list to select every guide shown). A bar appears with **Publish**, **Unpublish**, **Archive**, **Restore as draft** and **Delete**. Each button only shows when it applies to some of the selection and only changes those guides: **Publish** publishes the drafts, **Unpublish** the live ones. When a number appears next to a button, that is how many of the selected guides it will change. If a guide can't be published yet (a tour with no steps, say), the others are still published and the message names the ones that weren't.
+
 ## Editing a live tour
 
 Users who already completed or dismissed a tour won't see it again after you publish changes; progress belongs to the guide, not to a version. To show a reworked tour to everyone again, **Duplicate** it, publish the copy, and archive the old one.

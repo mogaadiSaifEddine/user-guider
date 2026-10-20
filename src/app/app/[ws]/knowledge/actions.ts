@@ -144,6 +144,37 @@ export async function removeArticle(ws: string, id: string): Promise<ActionResul
   return { ok: true, message: "Article deleted." };
 }
 
+// Applies one action to several articles from the list. `collectionId` is the target
+// of "move" (null = no collection).
+export async function bulkArticles(
+  ws: string,
+  input: unknown,
+  action: "publish" | "unpublish" | "move" | "delete",
+  collectionId: string | null = null,
+): Promise<ActionResult> {
+  await requireWorkspace(ws);
+  const ids = z.array(z.string().max(64)).min(1).max(1000).safeParse(input);
+  if (!ids.success) return { ok: false, error: "Select at least one article." };
+  const where = { workspaceId: ws, id: { in: ids.data } };
+  const n = (c: number) => `${c} article${c === 1 ? "" : "s"}`;
+  let message: string;
+  if (action === "delete") {
+    const { count } = await prisma.kbArticle.deleteMany({ where });
+    message = `Deleted ${n(count)}.`;
+  } else if (action === "move") {
+    const target = await ownCollection(ws, collectionId);
+    if (collectionId && !target) return { ok: false, error: "That collection no longer exists." };
+    const { count } = await prisma.kbArticle.updateMany({ where, data: { collectionId: target } });
+    message = `Moved ${n(count)}.`;
+  } else {
+    const status = action === "publish" ? "PUBLISHED" : "DRAFT";
+    const { count } = await prisma.kbArticle.updateMany({ where: { ...where, status: { not: status } }, data: { status } });
+    message = `${action === "publish" ? "Published" : "Unpublished"} ${n(count)}.`;
+  }
+  revalidatePath(`/app/${ws}/knowledge`, "layout");
+  return { ok: true, message };
+}
+
 // Translates the English article with AI; returns it for review, nothing is saved.
 export async function aiTranslateArticle(
   ws: string,
