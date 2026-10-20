@@ -297,6 +297,26 @@ const CSS = `
 .lg-rc-article .lg-rc-back { margin:0 0 10px; padding:0; }
 .lg-rc-article h3.lg-b { margin:0 0 10px; font-size:17px; font-weight:650; line-height:1.3; }
 .lg-rc-article .lg-img.lg-edge { border-radius:0; }
+.lg-rc-meta { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-bottom:3px; font-size:11px; opacity:.85; }
+.lg-rc-meta > span:last-child { opacity:.7; }
+.lg-label { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; line-height:1.5; }
+.lg-new { display:inline-block; padding:1px 8px; border-radius:999px; font-size:11px; font-weight:700; line-height:1.5; color:#fff; background:var(--lg-grad, var(--lg-primary)); }
+.lg-rc-all { display:inline-block; margin:2px 8px 8px; font-size:13px; font-weight:600; color:var(--lg-primary); opacity:1; text-decoration:none; }
+.lg-rc-all:hover { text-decoration:underline; }
+.lg-rc-cover { display:block; width:calc(100% + 36px); margin:0 -18px 12px; aspect-ratio:2/1; object-fit:cover; }
+.lg-rc-post .lg-rc-meta { margin-bottom:6px; }
+.lg-react { margin-top:16px; padding-top:12px; border-top:1px solid rgba(0,0,0,.08); text-align:center; }
+.lg-react p { margin:0 0 8px; font-size:13px; font-weight:600; opacity:.75; }
+.lg-react-row { display:flex; justify-content:center; gap:8px; }
+.lg-react-btn { width:40px; height:40px; border:0; border-radius:999px; font-size:20px; line-height:1; cursor:pointer;
+  background:rgba(0,0,0,.04); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); transition:transform .12s; }
+.lg-react-btn:hover { transform:scale(1.12); }
+.lg-react-btn.lg-on { background:color-mix(in srgb, var(--lg-primary) 14%, transparent); box-shadow:inset 0 0 0 2px var(--lg-primary); }
+.lg-react-btn.lg-dim { opacity:.4; filter:grayscale(1); }
+.lg-react-btn.lg-dim:hover { opacity:1; filter:none; }
+.lg-react-comment { display:block; box-sizing:border-box; width:100%; margin:12px 0 8px; padding:8px 10px; border:0; resize:vertical; font:inherit; font-size:13px;
+  color:inherit; background:rgba(0,0,0,.04); border-radius:calc(var(--lg-radius) * .7); box-shadow:inset 0 0 0 1px rgba(0,0,0,.1); }
+.lg-react-comment:focus { outline:2px solid var(--lg-primary); outline-offset:0; }
 @keyframes lg-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes lg-down { from { transform:translateY(-100%); } to { transform:none; } }
 @keyframes lg-pulse { from { transform:scale(.6); opacity:.6; } to { transform:scale(1.8); opacity:0; } }

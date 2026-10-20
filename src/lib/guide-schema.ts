@@ -258,6 +258,13 @@ export const rcModuleSchema = z.discriminatedUnion("type", [
     title: moduleTitle("Knowledge base"),
     collectionIds: z.array(z.string().max(64)).max(50).default([]),
   }),
+  // Latest posts from the workspace's product updates (src/lib/updates.ts), with an unread badge.
+  z.object({
+    type: z.literal("updates"),
+    id: blockId,
+    title: moduleTitle("What's new"),
+    limit: z.number().int().min(1).max(20).default(3),
+  }),
   z.object({
     type: z.literal("contact"),
     id: blockId,
@@ -271,7 +278,7 @@ export const rcModuleSchema = z.discriminatedUnion("type", [
   }),
 ]);
 
-export const rcModuleTypes = ["guides", "checklist", "knowledge", "articles", "links", "contact"] as const;
+export const rcModuleTypes = ["guides", "checklist", "updates", "knowledge", "articles", "links", "contact"] as const;
 
 export const resourceCenterContentSchema = z.object({
   title: z.string().max(120).default("Help center"),
@@ -348,6 +355,7 @@ export function newRcModule(type: RcModuleType, guideId = ""): RcModule {
       return rcModuleSchema.parse({ type, id, links: [{ id: newId(), label: "Documentation", url: "" }] });
     case "contact":
     case "knowledge":
+    case "updates":
       return rcModuleSchema.parse({ type, id });
   }
 }

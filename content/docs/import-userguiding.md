@@ -1,6 +1,6 @@
 # Import from UserGuiding
 
-Moving from UserGuiding? Import your guides and checklists instead of rebuilding them. UserGuiding has no export button, so the importer reads the same published data that UserGuiding's own script loads on your site. Your UserGuiding account isn't changed.
+Moving from UserGuiding? Import your guides, checklists and product updates instead of rebuilding them. UserGuiding has no export button, so the importer reads the same published data that UserGuiding's own script loads on your site. Your UserGuiding account isn't changed.
 
 ## Run an import
 
@@ -12,8 +12,8 @@ Moving from UserGuiding? Import your guides and checklists instead of rebuilding
    ```
 
    You can also paste the whole snippet, or the address of its `user-guiding-…-embedded.js` script.
-3. Choose **Load guides**. You get a list of every guide and checklist with its number of steps, whether it starts automatically, and anything that needs checking.
-4. Untick what you don't want. Guides with the same name as one already in this workspace are unticked and marked **already here**.
+3. Choose **Load from UserGuiding**. You get a list of every guide and checklist with its number of steps, whether it starts automatically, and anything that needs checking. Product update posts follow in their own list, with their dates and labels.
+4. Untick what you don't want. Guides and updates with the same name as one already in this workspace are unticked and marked **already here**.
 5. Pick the options (below) and choose **Import**.
 
 Imported guides are **drafts**. Open each one, preview it, fix what the import flagged, then publish. If the [visual builder](builder) shows an amber dot on a step, re-pick its element.
@@ -26,6 +26,8 @@ Imported guides are **drafts**. Open each one, preview it, fix what the import f
 | **Match any domain in page rules** | Drops the domain from page rules, so a rule recorded on `https://cms.example.com/#/projects` also matches `http://localhost:8080/#/projects` and test servers. |
 | **Import theme** | Replaces this workspace's primary color, text and background colors, corner radius and font with your UserGuiding theme. |
 | **Publish guides that are active in UserGuiding** | Publishes straight away. Leave it off while the UserGuiding snippet is still on your site, or people will see both. |
+| **Publish product updates that are live in UserGuiding** | On by default. Posts keep their original publish dates. Off: they come in as drafts. Either way they only show once you turn on your [updates page](product-updates#the-public-page) or add a What's new section to a resource center. |
+| **Import the updates page header** | Copies the page title, description, logo and first header link. If this workspace has no updates page address yet, it takes UserGuiding's (for example `locatify`) when that address is free. The page stays off until you turn it on. |
 
 ## What's imported
 
@@ -45,6 +47,8 @@ Imported guides are **drafts**. Open each one, preview it, fix what the import f
 | Display priority | Priority |
 | Checklist (assistant) | [Checklist](checklists): each item starts its guide and is ticked off when that guide is completed |
 | Theme | Workspace theme (optional) |
+| Product update post | [Product update](product-updates): title, cover image, content (headings, text, lists, links, images, videos), labels and date. The resource center teaser becomes the summary. Other languages become translations. |
+| Product update label | Label with the nearest of our colors. Labels with the same name as an existing one are merged. |
 
 ## What isn't imported
 
@@ -54,7 +58,8 @@ These are listed as **things to check** on each guide, or under *Not imported* f
 - **Buttons that run JavaScript** (often used to open the Resource Center): they now finish the guide.
 - **Translations**: only the default language is imported.
 - **Scheduling**, **locked checklist order**, text colors and custom fonts inside steps.
-- **Hotspots, banners, surveys, the Resource Center, product update posts and the knowledge base.**
+- **Hotspots, banners, surveys, the Resource Center and the knowledge base.**
+- **Product update extras**: slide-out and tooltip boosters, the *signed-in users only* setting (flagged: here published posts are public), custom domains, colors and fonts of the updates page, and its footer links.
 - **Page rules of other types.** UserGuiding stores some rule types under codes we can't identify for sure. They're imported as "URL contains" and flagged.
 
 ## If the container id isn't found

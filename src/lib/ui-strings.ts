@@ -21,6 +21,12 @@ export const UI_STRINGS_EN = {
   loadError: "Couldn't load this. Try again later.",
   dismissChecklist: "Dismiss checklist",
   closeChecklist: "Close checklist",
+  reactPrompt: "How do you feel about this update?",
+  reactThanks: "Thanks for your feedback!",
+  reactComment: "Anything to add? (optional)",
+  send: "Send",
+  allUpdates: "See all updates",
+  newUpdate: "New",
 };
 
 export type UiStringKey = keyof typeof UI_STRINGS_EN;
@@ -46,6 +52,12 @@ export const UI_STRING_HINTS: Record<UiStringKey, string> = {
   loadError: "Knowledge base failed to load",
   dismissChecklist: "Hide a checklist for good",
   closeChecklist: "Hide a finished checklist",
+  reactPrompt: "Reactions under a product update",
+  reactThanks: "After someone reacts to a product update",
+  reactComment: "Comment box after reacting",
+  send: "Sends a comment on a product update",
+  allUpdates: "Link from What's new to the updates page",
+  newUpdate: "Unread product update",
 };
 
 export function formatUi(s: string, vars: Record<string, string | number> = {}) {

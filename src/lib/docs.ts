@@ -29,6 +29,7 @@ export const docSections: DocSection[] = [
       { slug: "surveys", title: "Surveys", description: "NPS, ratings, choices and open questions." },
       { slug: "resource-center", title: "Resource center", description: "A help button with guides, articles, links and contact." },
       { slug: "knowledge-base", title: "Knowledge base", description: "Help articles in every language; import from Zendesk or Intercom." },
+      { slug: "product-updates", title: "Product updates", description: "A changelog: a public updates page and What's new in the resource center." },
       { slug: "localization", title: "Languages and translation", description: "Show guides in your users' languages, with AI translation." },
       { slug: "targeting", title: "Targeting and timing", description: "Who sees a guide, where, when and how often." },
       { slug: "publishing", title: "Publishing and editing", description: "Drafts, live versions, archiving." },

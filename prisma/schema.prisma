@@ -44,15 +44,21 @@ model Workspace {
   uiStrings                   Json?
   createdAt                   DateTime @default(now())
 
-  memberships   Membership[]
-  guides        Guide[]
-  endUsers      EndUser[]
-  events        Event[]
-  assets        Asset[]
-  activity      UserActivity[]
-  surveyAnswers SurveyAnswer[]
-  kbCollections KbCollection[]
-  kbArticles    KbArticle[]
+  memberships     Membership[]
+  guides          Guide[]
+  endUsers        EndUser[]
+  events          Event[]
+  assets          Asset[]
+  activity        UserActivity[]
+  surveyAnswers   SurveyAnswer[]
+  kbCollections   KbCollection[]
+  kbArticles      KbArticle[]
+  updates         ProductUpdate[]
+  updateReactions ProductUpdateReaction[]
+  // Public product updates page at /updates/<updatesSlug>; null until set up.
+  updatesSlug     String?                 @unique @db.VarChar(64)
+  // { enabled, title, description, logoUrl, websiteUrl, websiteLabel, labels: [{ id, name, color }] }, see src/lib/updates.ts.
+  updatesPage     Json?
 }
 
 enum Role {
@@ -189,6 +195,58 @@ model KbArticle {
   @@unique([workspaceId, source, externalId])
   @@index([workspaceId, status])
   @@index([collectionId])
+}
+
+// ---------- Product updates (changelog) ----------
+
+enum UpdateStatus {
+  DRAFT
+  PUBLISHED
+}
+
+// A changelog post, shown on the public updates page and in the resource center.
+// Published with a future publishedAt = scheduled: hidden until then.
+model ProductUpdate {
+  id           String       @id @default(cuid())
+  workspaceId  String
+  // Plain-text English title, for lists.
+  title        String       @db.VarChar(255)
+  // { title, summary, blocks }: same shape as a knowledge base article (src/lib/kb.ts).
+  content      Json
+  // { [locale]: { title, summary, blocks, source } }
+  translations Json?
+  coverUrl     String?      @db.VarChar(1000)
+  // Label ids from Workspace.updatesPage.labels.
+  labels       Json
+  status       UpdateStatus @default(DRAFT)
+  pinned       Boolean      @default(false)
+  publishedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  workspace Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reactions ProductUpdateReaction[]
+
+  @@index([workspaceId, status, publishedAt])
+}
+
+// One reaction (and optional comment) per reader per post. Readers aren't
+// verified: `visitor` is "u:<identify id>", "a:<anonymous SDK id>" or "p:<public page cookie>".
+model ProductUpdateReaction {
+  updateId    String
+  workspaceId String
+  visitor     String   @db.VarChar(200)
+  // love | neutral | sad
+  reaction    String   @db.VarChar(16)
+  comment     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  update    ProductUpdate @relation(fields: [updateId], references: [id], onDelete: Cascade)
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@id([updateId, visitor])
+  @@index([workspaceId])
 }
 
 // ---------- End-user side (people using the customer's site) ----------

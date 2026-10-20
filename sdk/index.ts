@@ -370,6 +370,7 @@ const ANON_KEY = "lg_anon_id";
       },
       startGuide,
       kb: { apiBase, key: key! },
+      user: () => userPayload(false),
     });
   }
 

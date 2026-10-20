@@ -64,6 +64,9 @@ export default async function GuideAnalyticsPage({
     const kbArticles = rc.modules.some((m) => m.type === "knowledge")
       ? await prisma.kbArticle.findMany({ where: { workspaceId: ws, id: { in: [...a.items.keys()] } }, select: { id: true, title: true } })
       : [];
+    const updates = rc.modules.some((m) => m.type === "updates")
+      ? await prisma.productUpdate.findMany({ where: { workspaceId: ws, id: { in: [...a.items.keys()] } }, select: { id: true, title: true } })
+      : [];
     const rows = rc.modules.flatMap((m) => {
       switch (m.type) {
         case "guides":
@@ -76,6 +79,8 @@ export default async function GuideAnalyticsPage({
           return [{ label: `✉ ${m.buttonLabel}`, id: m.id }];
         case "knowledge":
           return kbArticles.map((k) => ({ label: `≡ ${plainText(k.title) || "Untitled article"}`, id: k.id }));
+        case "updates":
+          return updates.map((u) => ({ label: `✦ ${plainText(u.title) || "Untitled update"}`, id: u.id }));
         case "checklist":
           return [];
       }

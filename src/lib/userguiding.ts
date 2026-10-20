@@ -433,7 +433,6 @@ export function convertUserGuiding(data: any, opts: { anyDomain?: boolean } = {}
   count("banners", "banner(s)");
   count("surveys", "survey(s)");
   count("resourceCenters", "resource center(s)");
-  count("productUpdatesPosts", "product update post(s)");
   const otherAssistants = (data?.assistants ?? []).filter((a: any) => a?.data?.format && a.data.format !== "checklist").length;
   if (otherAssistants) skipped.push(`${otherAssistants} assistant(s) that aren't checklists`);
 

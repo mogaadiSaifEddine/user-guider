@@ -143,7 +143,7 @@ function Icon({ children }: { children: ReactNode }) {
   );
 }
 
-function IconButton({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: ReactNode }) {
+export function IconButton({ label, onClick, danger, children }: { label: string; onClick: () => void; danger?: boolean; children: ReactNode }) {
   return (
     <button type="button" title={label} aria-label={label} onClick={onClick} className={cx(iconClass, danger && "hover:bg-red-50 hover:text-red-600")}>
       <Icon>{children}</Icon>
@@ -151,7 +151,7 @@ function IconButton({ label, onClick, danger, children }: { label: string; onCli
   );
 }
 
-function IconLink({ label, href, children }: { label: string; href: string; children: ReactNode }) {
+export function IconLink({ label, href, children }: { label: string; href: string; children: ReactNode }) {
   return (
     <Link href={href} title={label} aria-label={label} className={iconClass}>
       <Icon>{children}</Icon>

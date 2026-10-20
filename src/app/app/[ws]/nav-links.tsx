@@ -9,6 +9,7 @@ const links = [
   { href: "", label: "Overview", icon: "M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z" },
   { href: "/guides", label: "Guides", icon: "M4 5h16M4 12h10M4 19h7M18 14a3 3 0 1 0 0 6 3 3 0 0 0 0-6" },
   { href: "/knowledge", label: "Knowledge base", icon: "M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3zM8 8h6M8 12h6" },
+  { href: "/updates", label: "Product updates", icon: "M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z" },
   { href: "/analytics", label: "Analytics", icon: "M4 20V10M10 20V4M16 20v-7M22 20H2" },
   { href: "/users", label: "Users", icon: "M9 4.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 20a6 6 0 0 0-2.5-4.8" },
   { href: "/companies", label: "Companies", icon: "M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2M15 13h2M15 17h2" },

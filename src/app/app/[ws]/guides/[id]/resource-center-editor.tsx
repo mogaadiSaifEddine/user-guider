@@ -25,6 +25,7 @@ import { ListItem, move, type OtherGuide } from "./content-editors";
 const moduleNames: Record<RcModuleType, string> = {
   guides: "Guides",
   checklist: "Checklist",
+  updates: "What's new",
   knowledge: "Knowledge base",
   articles: "Articles",
   links: "Links",
@@ -34,6 +35,7 @@ const moduleNames: Record<RcModuleType, string> = {
 const moduleHints: Record<RcModuleType, string> = {
   guides: "Tours, announcements and surveys people can start themselves.",
   checklist: "An onboarding checklist, shown inside the panel instead of its own launcher.",
+  updates: "Your latest product updates, with an unread badge on the launcher.",
   knowledge: "Articles from your knowledge base, in each user's language. Searchable.",
   articles: "Short help articles that open inside the panel.",
   links: "Docs, videos, your status page…",
@@ -287,6 +289,29 @@ function ModuleFields({
         </Field>
       );
     }
+    case "updates":
+      return (
+        <>
+          {titleField}
+          <Field label="How many updates" hint="The newest published ones; pinned updates come first.">
+            <Select value={m.limit} onChange={(e) => onChange({ ...m, limit: Number(e.target.value) })}>
+              {[1, 2, 3, 4, 5, 8, 10, 15, 20].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <p className="text-xs text-gray-500">
+            Shows posts from your{" "}
+            <a href={`/app/${ws}/updates`} target="_blank" className="font-medium text-brand-600 hover:underline">
+              product updates
+            </a>{" "}
+            in each user&apos;s language. Posts they haven&apos;t opened count toward the launcher badge. When your public updates page is on, a link to it closes the
+            section.
+          </p>
+        </>
+      );
     case "knowledge": {
       const toggle = (id: string, on: boolean) =>
         onChange({ ...m, collectionIds: on ? [...m.collectionIds, id] : m.collectionIds.filter((x) => x !== id) });
@@ -569,6 +594,16 @@ function RcPreview({
                 return m.articles.length
                   ? section(m, m.title, <ul>{m.articles.map((a) => row(a.id, a.title, a.summary, "≡", () => onArticle(a)))}</ul>)
                   : null;
+              case "updates":
+                return section(
+                  m,
+                  m.title,
+                  <ul>
+                    {Array.from({ length: Math.min(m.limit, 3) }, (_, i) =>
+                      row(`${m.id}-${i}`, i ? "An earlier update" : "Your latest update", i ? "" : "Its summary shows here.", "✦"),
+                    )}
+                  </ul>,
+                );
               case "knowledge": {
                 const cols = m.collectionIds.length ? kbCollections.filter((c) => m.collectionIds.includes(c.id)) : kbCollections;
                 return section(
