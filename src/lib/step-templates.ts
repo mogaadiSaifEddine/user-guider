@@ -76,9 +76,9 @@ export const stepTemplates: StepTemplate[] = [
     id: "modal-video",
     kind: "modal",
     name: "Video modal",
-    description: "A title and an embedded YouTube, Vimeo or MP4 video.",
+    description: "A title and an embedded YouTube, Vimeo, Loom or MP4 video.",
     build: () => ({
-      blocks: [heading("See it in action"), { type: "video", id: id(), url: "" }, text("A two-minute overview of the essentials.")],
+      blocks: [heading("See it in action"), { type: "video", id: id(), url: "", autoplay: false, loop: false, controls: true }, text("A two-minute overview of the essentials.")],
       footer: footer(),
       size: "lg",
     }),

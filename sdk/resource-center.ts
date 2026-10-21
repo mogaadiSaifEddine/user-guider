@@ -1,7 +1,7 @@
 import type { Block, ChecklistContent, RcArticle, RcModule, ResourceCenterContent } from "../src/lib/guide-schema";
 import type { SdkKbArticle, SdkKbArticleHeader, SdkKbCollection } from "../src/lib/kb";
 import { LABEL_STYLES, REACTION_EMOJI, reactionKinds, type ReactionKind, type SdkUpdate, type SdkUpdateHeader, type SdkUpdateList } from "../src/lib/updates";
-import { buttonAt, openUrl, renderBlocks } from "./blocks";
+import { buttonAt, openUrl, renderBlocks, wireMedia } from "./blocks";
 import { LAUNCHER_ICONS, plainText, svgIcon } from "../src/lib/format";
 import { currentLocale, t, te } from "./i18n";
 import { el, escapeHtml, richText, safeUrl, shadow } from "./ui";
@@ -426,6 +426,7 @@ export function runResourceCenter(
       body.innerHTML = view.update
         ? updateViewHtml(view.update, Boolean(view.commenting))
         : `<div class="lg-rc-article">${backButton}<p class="lg-rc-note">${te(view.error ? "loadError" : "loading")}</p></div>`;
+      wireMedia(body, () => {});
       return;
     }
     if (view?.kind === "article" || (view?.kind === "kb" && view.article)) {
@@ -435,6 +436,7 @@ export function runResourceCenter(
           <h3 class="lg-b">${richText(a.title)}</h3>
           ${renderBlocks(a.blocks)}
         </div>`;
+      wireMedia(body, () => {});
       return;
     }
     if (view?.kind === "kb") {

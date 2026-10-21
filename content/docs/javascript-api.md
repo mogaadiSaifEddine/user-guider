@@ -12,7 +12,7 @@ UserOnboarder.identify("42", { plan: "pro" }, { hash: "…" });
 
 ## track(name)
 
-Records a named event for the current user, e.g. something they did in your app. Checklist items set to *Done when: An event is tracked* with the same name are ticked, and the checklist on screen updates within about a second.
+Records a named event for the current user, e.g. something they did in your app. Checklist items set to *Done when: An event is tracked* with the same name are ticked, and the checklist on screen updates within about a second. A tour step set to *Advance on: An event from your app* with the same name moves on right away.
 
 ```js
 UserOnboarder.track("project_created");

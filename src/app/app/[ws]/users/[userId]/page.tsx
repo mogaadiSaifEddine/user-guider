@@ -16,6 +16,8 @@ const eventLabels: Record<string, string> = {
   hotspot_opened: "Opened hotspot",
   survey_answered: "Answered",
   resource_clicked: "Opened resource",
+  guide_lost: "Lost (element missing)",
+  media_completed: "Played to the end",
   custom: "Event",
 };
 

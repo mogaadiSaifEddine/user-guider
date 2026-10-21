@@ -11,6 +11,7 @@ import {
   type StepButton,
 } from "@/lib/guide-schema";
 import { plainText, videoEmbed } from "@/lib/format";
+import { DEFAULT_LOCALE, languageName } from "@/lib/i18n";
 import { Button, Field, Input, Select, cx } from "@/components/ui";
 import { RichField } from "@/components/rich-text-input";
 import type { OtherGuide } from "./content-editors";
@@ -20,11 +21,13 @@ const blockNames: Record<BlockType, string> = {
   text: "Text",
   image: "Image",
   video: "Video",
+  audio: "Audio",
   buttons: "Buttons",
   divider: "Divider",
   spacer: "Spacer",
 };
 
+// Tours have Next / Back buttons; everything else has a single step.
 type Ctx = "tour" | "announcement";
 
 export function BlocksEditor({
@@ -33,6 +36,7 @@ export function BlocksEditor({
   onChange,
   others,
   context,
+  languages = [DEFAULT_LOCALE],
   maxBlocks = 20,
 }: {
   ws: string;
@@ -40,6 +44,8 @@ export function BlocksEditor({
   onChange: (b: Block[]) => void;
   others: OtherGuide[];
   context: Ctx;
+  // Workspace languages, for per-language audio.
+  languages?: string[];
   maxBlocks?: number;
 }) {
   const [openId, setOpenId] = useState<string | null>(blocks[0]?.id ?? null);
@@ -75,7 +81,7 @@ export function BlocksEditor({
             </div>
             {open && (
               <div className="space-y-3 border-t border-gray-100 px-3 pt-3 pb-3">
-                <BlockFields ws={ws} block={b} onChange={(nb) => set(i, nb)} others={others} context={context} />
+                <BlockFields ws={ws} block={b} onChange={(nb) => set(i, nb)} others={others} context={context} languages={languages} />
               </div>
             )}
           </div>
@@ -125,6 +131,8 @@ function summary(b: Block) {
       return b.url ? (b.overlay ? `Hero: ${plainText(b.overlay)}` : b.url.split("/").pop()) : "No image yet";
     case "video":
       return b.url || "No video yet";
+    case "audio":
+      return b.label || (b.url || Object.values(b.byLocale).some(Boolean) ? "Audio clip" : "No audio yet");
     case "buttons":
       return b.buttons.map((x) => x.label).join(" · ") || "No buttons";
     case "divider":
@@ -152,12 +160,14 @@ function BlockFields({
   onChange,
   others,
   context,
+  languages,
 }: {
   ws: string;
   block: Block;
   onChange: (b: Block) => void;
   others: OtherGuide[];
   context: Ctx;
+  languages: string[];
 }) {
   switch (b.type) {
     case "heading":
@@ -178,12 +188,48 @@ function BlockFields({
       return <ImageFields ws={ws} block={b} onChange={onChange} />;
     case "video": {
       const ok = !b.url || videoEmbed(b.url);
+      const gif = b.autoplay && b.loop && !b.controls;
       return (
-        <Field label="Video link" hint={ok ? "YouTube or Vimeo page link, or a direct .mp4 / .webm file." : "Not recognized: use a YouTube or Vimeo link, or a .mp4 / .webm file."}>
-          <Input value={b.url} maxLength={1000} placeholder="https://www.youtube.com/watch?v=…" onChange={(e) => onChange({ ...b, url: e.target.value })} />
-        </Field>
+        <>
+          <Field
+            label="Video link"
+            hint={
+              ok
+                ? "YouTube, Vimeo or Loom link, or a direct .mp4 / .webm file. Only files can move a tour step on when they end."
+                : "Not recognized: use a YouTube, Vimeo or Loom link, or a .mp4 / .webm file."
+            }
+          >
+            <Input value={b.url} maxLength={1000} placeholder="https://www.youtube.com/watch?v=…" onChange={(e) => onChange({ ...b, url: e.target.value })} />
+          </Field>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={gif}
+              onChange={(e) => onChange({ ...b, autoplay: e.target.checked, loop: e.target.checked, controls: !e.target.checked })}
+            />
+            Play like a GIF (muted, on a loop, no controls)
+          </label>
+          {gif ? (
+            <p className="text-xs text-gray-500">
+              A short .mp4 or .webm screen recording works best: much smaller and sharper than a GIF. Loom always shows its own player. A looping video never ends, so it can&apos;t move a tour step on.
+            </p>
+          ) : (
+            <>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={b.autoplay} onChange={(e) => onChange({ ...b, autoplay: e.target.checked })} />
+                Play automatically (muted: browsers block sound without a click)
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={b.loop} onChange={(e) => onChange({ ...b, loop: e.target.checked })} />
+                Loop
+              </label>
+            </>
+          )}
+        </>
       );
     }
+    case "audio":
+      return <AudioFields ws={ws} block={b} onChange={onChange} languages={languages} />;
     case "buttons":
       return (
         <>
@@ -229,48 +275,12 @@ function BlockFields({
 }
 
 function ImageFields({ ws, block: b, onChange }: { ws: string; block: Extract<Block, { type: "image" }>; onChange: (b: Block) => void }) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState("");
-
-  async function upload(file: File) {
-    setError("");
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.set("file", file);
-      form.set("workspaceId", ws);
-      const res = await fetch("/api/assets", { method: "POST", body: form });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Upload failed");
-      onChange({ ...b, url: data.url });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  }
-
   return (
     <>
-      <div className="flex gap-2">
-        <Input value={b.url} maxLength={1000} placeholder="https://… or upload" onChange={(e) => onChange({ ...b, url: e.target.value })} />
-        <Button type="button" variant="secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>
-          {uploading ? "Uploading…" : "Upload"}
-        </Button>
-        <input
-          ref={fileRef}
-          type="file"
-          accept="image/png,image/jpeg,image/gif,image/webp"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) void upload(f);
-            e.target.value = "";
-          }}
-        />
+      <div className="flex flex-wrap gap-2">
+        <Input className="min-w-0 flex-1" value={b.url} maxLength={1000} placeholder="https://… or upload" onChange={(e) => onChange({ ...b, url: e.target.value })} />
+        <UploadButton ws={ws} accept="image/png,image/jpeg,image/gif,image/webp" onUploaded={(url) => onChange({ ...b, url })} />
       </div>
-      {error && <p className="text-xs text-red-600">{error}</p>}
       <p className="text-xs text-gray-500">PNG, JPEG, GIF or WebP, up to 2 MB.</p>
       <div className="grid grid-cols-2 gap-3">
         <Field label={`Height: ${b.height}px`}>
@@ -297,6 +307,109 @@ function ImageFields({ ws, block: b, onChange }: { ws: string; block: Extract<Bl
       <Field label="Description for screen readers">
         <Input value={b.alt} maxLength={200} onChange={(e) => onChange({ ...b, alt: e.target.value })} />
       </Field>
+    </>
+  );
+}
+
+// Uploads a file to /api/assets and hands back its public URL.
+function UploadButton({ ws, accept, onUploaded, label = "Upload" }: { ws: string; accept: string; onUploaded: (url: string) => void; label?: string }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function upload(file: File) {
+    setError("");
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.set("file", file);
+      form.set("workspaceId", ws);
+      const res = await fetch("/api/assets", { method: "POST", body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      onUploaded(data.url);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <>
+      <Button type="button" variant="secondary" disabled={uploading} onClick={() => fileRef.current?.click()}>
+        {uploading ? "Uploading…" : label}
+      </Button>
+      <input
+        ref={fileRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void upload(f);
+          e.target.value = "";
+        }}
+      />
+      {error && <span className="basis-full text-xs text-red-600">{error}</span>}
+    </>
+  );
+}
+
+const AUDIO_ACCEPT = "audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/ogg,audio/wav,audio/webm";
+
+function AudioFields({
+  ws,
+  block: b,
+  onChange,
+  languages,
+}: {
+  ws: string;
+  block: Extract<Block, { type: "audio" }>;
+  onChange: (b: Block) => void;
+  languages: string[];
+}) {
+  const others = languages.filter((l) => l !== DEFAULT_LOCALE);
+  const setLocale = (l: string, url: string) => {
+    const byLocale = { ...b.byLocale };
+    if (url) byLocale[l] = url;
+    else delete byLocale[l];
+    onChange({ ...b, byLocale });
+  };
+  return (
+    <>
+      <Field label={others.length ? `Recording (${languageName(DEFAULT_LOCALE)} and any language without its own)` : "Recording"}>
+        <div className="flex flex-wrap gap-2">
+          <Input className="min-w-0 flex-1" value={b.url} maxLength={1000} placeholder="https://… or upload" onChange={(e) => onChange({ ...b, url: e.target.value })} />
+          <UploadButton ws={ws} accept={AUDIO_ACCEPT} onUploaded={(url) => onChange({ ...b, url })} />
+        </div>
+      </Field>
+      <p className="text-xs text-gray-500">MP3, M4A, OGG, WAV or WebM, up to 10 MB.</p>
+      <Field label="Label" hint="Optional, shown above the progress bar, e.g. Listen to this step.">
+        <Input value={b.label} maxLength={120} onChange={(e) => onChange({ ...b, label: e.target.value })} />
+      </Field>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={b.autoplay} onChange={(e) => onChange({ ...b, autoplay: e.target.checked })} />
+        Try to play automatically (browsers often block sound until the user clicks; the play button stays)
+      </label>
+      {others.length > 0 && (
+        <div className="space-y-2 rounded-md bg-gray-50 p-2.5 ring-1 ring-gray-200">
+          <div className="text-xs font-semibold text-gray-600">Recordings per language</div>
+          {others.map((l) => (
+            <div key={l} className="flex flex-wrap items-center gap-2">
+              <span className="w-32 shrink-0 truncate text-sm">{languageName(l)}</span>
+              <Input
+                className="min-w-0 flex-1"
+                value={b.byLocale[l] ?? ""}
+                maxLength={1000}
+                placeholder="Uses the main recording"
+                onChange={(e) => setLocale(l, e.target.value.trim())}
+              />
+              <UploadButton ws={ws} accept={AUDIO_ACCEPT} onUploaded={(url) => setLocale(l, url)} />
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

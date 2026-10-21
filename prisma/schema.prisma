@@ -85,6 +85,7 @@ enum GuideType {
   HOTSPOT
   SURVEY
   RESOURCE_CENTER
+  INLINE
 }
 
 enum GuideStatus {

@@ -29,6 +29,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Senda",
     allUpdates: "Sjá allar uppfærslur",
     newUpdate: "Nýtt",
+    gotIt: "Ég skil",
+    play: "Spila",
+    pause: "Gera hlé",
   },
   da: {
     close: "Luk",
@@ -54,6 +57,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Send",
     allUpdates: "Se alle opdateringer",
     newUpdate: "Ny",
+    gotIt: "Forstået",
+    play: "Afspil",
+    pause: "Pause",
   },
   nb: {
     close: "Lukk",
@@ -79,6 +85,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Send",
     allUpdates: "Se alle oppdateringer",
     newUpdate: "Ny",
+    gotIt: "Skjønner",
+    play: "Spill av",
+    pause: "Pause",
   },
   sv: {
     close: "Stäng",
@@ -104,6 +113,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Skicka",
     allUpdates: "Se alla uppdateringar",
     newUpdate: "Ny",
+    gotIt: "Uppfattat",
+    play: "Spela upp",
+    pause: "Pausa",
   },
   fi: {
     close: "Sulje",
@@ -129,6 +141,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Lähetä",
     allUpdates: "Näytä kaikki päivitykset",
     newUpdate: "Uusi",
+    gotIt: "Selvä",
+    play: "Toista",
+    pause: "Tauko",
   },
   de: {
     close: "Schließen",
@@ -154,6 +169,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Senden",
     allUpdates: "Alle Updates ansehen",
     newUpdate: "Neu",
+    gotIt: "Verstanden",
+    play: "Abspielen",
+    pause: "Pause",
   },
   nl: {
     close: "Sluiten",
@@ -179,6 +197,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Versturen",
     allUpdates: "Alle updates bekijken",
     newUpdate: "Nieuw",
+    gotIt: "Begrepen",
+    play: "Afspelen",
+    pause: "Pauzeren",
   },
   fr: {
     close: "Fermer",
@@ -204,6 +225,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Envoyer",
     allUpdates: "Voir toutes les mises à jour",
     newUpdate: "Nouveau",
+    gotIt: "Compris",
+    play: "Lire",
+    pause: "Pause",
   },
   es: {
     close: "Cerrar",
@@ -229,6 +253,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Enviar",
     allUpdates: "Ver todas las novedades",
     newUpdate: "Nuevo",
+    gotIt: "Entendido",
+    play: "Reproducir",
+    pause: "Pausar",
   },
   pt: {
     close: "Fechar",
@@ -254,6 +281,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Enviar",
     allUpdates: "Ver todas as atualizações",
     newUpdate: "Novo",
+    gotIt: "Entendi",
+    play: "Reproduzir",
+    pause: "Pausar",
   },
   "pt-BR": {
     skip: "Pular",
@@ -284,6 +314,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Invia",
     allUpdates: "Vedi tutti gli aggiornamenti",
     newUpdate: "Nuovo",
+    gotIt: "Ho capito",
+    play: "Riproduci",
+    pause: "Pausa",
   },
   pl: {
     close: "Zamknij",
@@ -309,6 +342,9 @@ const BUILTIN: Record<string, Partial<UiStrings>> = {
     send: "Wyślij",
     allUpdates: "Zobacz wszystkie aktualizacje",
     newUpdate: "Nowe",
+    gotIt: "Rozumiem",
+    play: "Odtwórz",
+    pause: "Wstrzymaj",
   },
 };
 

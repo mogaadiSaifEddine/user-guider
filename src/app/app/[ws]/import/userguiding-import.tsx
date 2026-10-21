@@ -7,12 +7,15 @@ import { importUserGuiding, previewUserGuiding, type ImportResult, type UgPrevie
 
 type Preview = Extract<UgPreview, { ok: true }>;
 
+// Guides, checklists and banners are numbered separately in UserGuiding, so ids alone can clash.
+const itemKey = (i: { kind: string; ugId: number }) => `${i.kind}:${i.ugId}`;
+
 // onlyUpdates: opened from Product updates, so only posts start ticked.
 export function UserGuidingImport({ ws, onlyUpdates = false }: { ws: string; onlyUpdates?: boolean }) {
   const [containerId, setContainerId] = useState("");
   const [source, setSource] = useState<UgSource | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
-  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectedUpdates, setSelectedUpdates] = useState<Set<number>>(new Set());
   const [opts, setOpts] = useState({
     copyImages: true,
@@ -40,7 +43,7 @@ export function UserGuidingImport({ ws, onlyUpdates = false }: { ws: string; onl
       setSource(src);
       setPreview(p);
       // Everything except guides that already exist here by name.
-      setSelected(new Set(onlyUpdates ? [] : p.items.filter((i) => !i.exists).map((i) => i.ugId)));
+      setSelected(new Set(onlyUpdates ? [] : p.items.filter((i) => !i.exists).map(itemKey)));
       setSelectedUpdates(new Set(p.updates.filter((u) => !u.exists).map((u) => u.ugId)));
     });
   }
@@ -62,7 +65,11 @@ export function UserGuidingImport({ ws, onlyUpdates = false }: { ws: string; onl
 
   const counts = useMemo(() => {
     const items = preview?.items ?? [];
-    return { tours: items.filter((i) => i.kind === "TOUR").length, checklists: items.filter((i) => i.kind === "CHECKLIST").length };
+    return {
+      tours: items.filter((i) => i.kind === "TOUR").length,
+      checklists: items.filter((i) => i.kind === "CHECKLIST").length,
+      banners: items.filter((i) => i.kind === "ANNOUNCEMENT").length,
+    };
   }, [preview]);
 
   if (result?.ok) {
@@ -191,7 +198,7 @@ export function UserGuidingImport({ ws, onlyUpdates = false }: { ws: string; onl
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-5 py-4">
             <div>
               <div className="font-semibold">
-                Found {counts.tours} guides{counts.checklists ? `, ${counts.checklists} checklists` : ""}
+                Found {counts.tours} guides{counts.checklists ? `, ${counts.checklists} checklists` : ""}{counts.banners ? `, ${counts.banners} banners` : ""}
                 {preview.updates.length ? ` and ${preview.updates.length} product updates` : ""}
                 {preview.containerTitle && <span className="font-normal text-gray-500"> in “{preview.containerTitle}”</span>}
               </div>
@@ -201,22 +208,22 @@ export function UserGuidingImport({ ws, onlyUpdates = false }: { ws: string; onl
               <input
                 type="checkbox"
                 checked={selected.size === preview.items.length}
-                onChange={(e) => setSelected(new Set(e.target.checked ? preview.items.map((i) => i.ugId) : []))}
+                onChange={(e) => setSelected(new Set(e.target.checked ? preview.items.map(itemKey) : []))}
               />
               Select all
             </label>
           </div>
           <ul className="max-h-[480px] divide-y divide-gray-100 overflow-y-auto">
             {preview.items.map((i) => (
-              <li key={`${i.kind}-${i.ugId}`} className={cx("flex gap-3 px-5 py-3", !selected.has(i.ugId) && "opacity-60")}>
+              <li key={`${i.kind}-${i.ugId}`} className={cx("flex gap-3 px-5 py-3", !selected.has(itemKey(i)) && "opacity-60")}>
                 <input
                   type="checkbox"
                   className="mt-1"
-                  checked={selected.has(i.ugId)}
+                  checked={selected.has(itemKey(i))}
                   onChange={(e) => {
                     const next = new Set(selected);
-                    if (e.target.checked) next.add(i.ugId);
-                    else next.delete(i.ugId);
+                    if (e.target.checked) next.add(itemKey(i));
+                    else next.delete(itemKey(i));
                     setSelected(next);
                   }}
                   aria-label={`Import ${i.name}`}
@@ -226,7 +233,7 @@ export function UserGuidingImport({ ws, onlyUpdates = false }: { ws: string; onl
                     <span className="font-medium">{i.name}</span>
                     <Badge color="brand">{typeLabels[i.kind]}</Badge>
                     <Badge>
-                      {i.stepCount} {i.kind === "CHECKLIST" ? "items" : "steps"}
+                      {i.kind === "ANNOUNCEMENT" ? "banner" : `${i.stepCount} ${i.kind === "CHECKLIST" ? "items" : "steps"}`}
                     </Badge>
                     <Badge color={i.trigger === "auto" ? "green" : "gray"}>{i.trigger === "auto" ? "automatic" : "manual"}</Badge>
                     {!i.active && <Badge color="yellow">inactive in UserGuiding</Badge>}

@@ -113,7 +113,7 @@ export async function workspaceOverview(workspaceId: string, days = 30) {
 
 export async function guideAnalytics(guideId: string, days = 30) {
   const from = since(days);
-  const [totals, steps, items, daily] = await Promise.all([
+  const [totals, steps, items, daily, lost, media] = await Promise.all([
     prisma.$queryRaw<{ type: string; c: bigint }[]>`
       SELECT type, COUNT(DISTINCT "endUserId") AS c
       FROM "Event"
@@ -137,6 +137,18 @@ export async function guideAnalytics(guideId: string, days = 30) {
       WHERE "guideId" = ${guideId} AND "createdAt" >= ${from}
         AND type IN ('guide_shown', 'guide_completed')
       GROUP BY d, type`,
+    // Tours that ended because a step's element never showed up, by that step.
+    prisma.$queryRaw<{ stepIndex: number; c: bigint }[]>`
+      SELECT "stepIndex", COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "guideId" = ${guideId} AND "createdAt" >= ${from} AND type = 'guide_lost' AND "stepIndex" IS NOT NULL
+      GROUP BY "stepIndex"`,
+    // Videos and audio clips played to the end, by block id.
+    prisma.$queryRaw<{ name: string; c: bigint }[]>`
+      SELECT name, COUNT(DISTINCT "endUserId") AS c
+      FROM "Event"
+      WHERE "guideId" = ${guideId} AND "createdAt" >= ${from} AND type = 'media_completed' AND name IS NOT NULL
+      GROUP BY name`,
   ]);
 
   const t = Object.fromEntries(totals.map((r) => [r.type, Number(r.c)]));
@@ -147,6 +159,8 @@ export async function guideAnalytics(guideId: string, days = 30) {
     clicked: t.resource_clicked ?? 0,
     steps: new Map(steps.map((r) => [Number(r.stepIndex), Number(r.c)])),
     items: new Map(items.map((r) => [r.name, Number(r.c)])),
+    lost: new Map(lost.map((r) => [Number(r.stepIndex), Number(r.c)])),
+    media: new Map(media.map((r) => [r.name, Number(r.c)])),
     daily: toSeries(daily, days),
   };
 }

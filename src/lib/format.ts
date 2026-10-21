@@ -142,15 +142,32 @@ export function plainText(s: string) {
     .trim();
 }
 
-// YouTube / Vimeo page links become embeds; direct video files play natively.
-export function videoEmbed(url: string): { kind: "iframe" | "video"; src: string } | null {
+// YouTube / Vimeo / Loom page links become embeds; direct video files play
+// natively. Autoplay is always muted: browsers block it otherwise. Loom has no
+// loop or controls parameters, so those only apply to YouTube, Vimeo and files.
+export function videoEmbed(
+  url: string,
+  opts: { autoplay?: boolean; loop?: boolean; controls?: boolean } = {},
+): { kind: "iframe" | "video"; src: string } | null {
   const u = url.trim();
+  const auto = opts.autoplay ? "&autoplay=1&mute=1&muted=1" : "";
+  const bare = opts.controls === false ? "&controls=0" : "";
   let m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
-  if (m) return { kind: "iframe", src: `https://www.youtube-nocookie.com/embed/${m[1]}?rel=0` };
+  // YouTube only loops a video that is also its own playlist.
+  if (m) return { kind: "iframe", src: `https://www.youtube-nocookie.com/embed/${m[1]}?rel=0${auto}${bare}${opts.loop ? `&loop=1&playlist=${m[1]}` : ""}` };
   m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (m) return { kind: "iframe", src: `https://player.vimeo.com/video/${m[1]}` };
+  if (m) return { kind: "iframe", src: `https://player.vimeo.com/video/${m[1]}?dnt=1${auto}${bare}${opts.loop ? "&loop=1" : ""}` };
+  m = u.match(/loom\.com\/(?:share|embed)\/([0-9a-f]{16,})/i);
+  if (m) return { kind: "iframe", src: `https://www.loom.com/embed/${m[1]}?hide_owner=true${auto}` };
   if (/\.(mp4|webm|ogg)(\?|#|$)/i.test(u) && safeUrl(u)) return { kind: "video", src: safeUrl(u) };
   return null;
+}
+// The recording for a locale: exact, then same language (de-AT → de), then the default.
+export function audioFor(block: { url: string; byLocale: Record<string, string> }, locale: string) {
+  const exact = Object.entries(block.byLocale).find(([l, u]) => u && l.toLowerCase() === locale.toLowerCase());
+  const base = locale.split("-")[0].toLowerCase();
+  const same = Object.entries(block.byLocale).find(([l, u]) => u && l.split("-")[0].toLowerCase() === base);
+  return (exact ?? same)?.[1] ?? block.url;
 }
 
 export const CARD_WIDTH = {

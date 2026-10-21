@@ -42,7 +42,7 @@ Examples:
 
 ## Delay
 
-Seconds to wait after a matching page loads before a tour, announcement or survey starts (0–600). Use a few seconds so users get their bearings first. If the user leaves the page during the delay, the guide waits for the next matching page.
+Seconds to wait after a matching page loads before a tour, announcement, banner or survey starts (0–600). Use a few seconds so users get their bearings first. If the user leaves the page during the delay, the guide waits for the next matching page.
 
 ## How often
 
@@ -55,6 +55,10 @@ Seconds to wait after a matching page loads before a tour, announcement or surve
 | **On every page load** | Shown on every page load, even after completion. Mostly useful for testing. |
 
 Within a single page load, a tour, announcement or survey starts automatically at most once. In a single-page app, a "page load" lasts until the browser fully reloads; moving between screens of the app doesn't count as a new one.
+
+## Schedule
+
+Optional **From** and **Until** dates and times (in your time zone). Outside that window the guide isn't shown at all: not automatically, not from a checklist and not with `start()`. Leave either one empty for no limit. Good for maintenance banners, sales and trials.
 
 ## Priority
 

@@ -1,20 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  newId,
-  type ChecklistContent,
-  type ChecklistItem,
-  type Hotspot,
-  type HotspotContent,
-} from "@/lib/guide-schema";
+import { newId, type ChecklistContent, type ChecklistItem } from "@/lib/guide-schema";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
 import { plainText } from "@/lib/format";
 import { RichField } from "@/components/rich-text-input";
 
 export type OtherGuide = { id: string; name: string; type: string };
-
-const placements = ["auto", "top", "bottom", "left", "right"] as const;
 
 export function move<T>(list: T[], i: number, dir: -1 | 1) {
   const next = [...list];
@@ -56,58 +48,6 @@ export function ListItem({
       </div>
       <div className="space-y-3">{children}</div>
     </Card>
-  );
-}
-
-function SelectorField({ value, onChange, emptyHint }: { value: string; onChange: (v: string) => void; emptyHint: string }) {
-  return (
-    <Field label="Element (CSS selector)" hint={value ? "Pick it on your site with the builder, or edit by hand." : emptyHint}>
-      <Input className="font-mono text-xs" value={value} placeholder="#create-tour-button" onChange={(e) => onChange(e.target.value)} />
-    </Field>
-  );
-}
-
-// ---------- Hotspots ----------
-
-export function HotspotEditor({ value, onChange }: { value: HotspotContent; onChange: (v: HotspotContent) => void }) {
-  const set = (hotspots: Hotspot[]) => onChange({ ...value, hotspots });
-  const patch = (i: number, p: Partial<Hotspot>) => set(value.hotspots.map((h, j) => (j === i ? { ...h, ...p } : h)));
-
-  return (
-    <div className="space-y-3">
-      {value.hotspots.length === 0 && (
-        <p className="text-sm text-gray-500">No hotspots yet. The easiest way to add them is the builder on your site.</p>
-      )}
-      {value.hotspots.map((h, i) => (
-        <ListItem
-          key={h.id}
-          index={i}
-          total={value.hotspots.length}
-          title={plainText(h.title) || "Untitled hotspot"}
-          onMove={(d) => set(move(value.hotspots, i, d))}
-          onDelete={() => set(value.hotspots.filter((_, j) => j !== i))}
-        >
-          <RichField label="Title" value={h.title} maxLength={200} onChange={(title) => patch(i, { title })} />
-          <RichField label="Text" multiline rows={2} value={h.body} maxLength={2000} onChange={(body) => patch(i, { body })} />
-          <SelectorField value={h.selector} onChange={(v) => patch(i, { selector: v })} emptyHint="Required: the beacon sits on this element." />
-          <Field label="Tooltip position">
-            <Select value={h.placement} onChange={(e) => patch(i, { placement: e.target.value as Hotspot["placement"] })}>
-              {placements.map((p) => (
-                <option key={p}>{p}</option>
-              ))}
-            </Select>
-          </Field>
-        </ListItem>
-      ))}
-      <Button
-        type="button"
-        variant="secondary"
-        className="w-full"
-        onClick={() => set([...value.hotspots, { id: newId(), title: "", body: "", selector: "", placement: "auto" }])}
-      >
-        + Add hotspot
-      </Button>
-    </div>
   );
 }
 

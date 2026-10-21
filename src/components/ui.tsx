@@ -124,6 +124,7 @@ export const typeLabels = {
   HOTSPOT: "Hotspots",
   SURVEY: "Survey",
   RESOURCE_CENTER: "Resource center",
+  INLINE: "Inline card",
 } as const;
 
 export const statusColors = { DRAFT: "gray", PUBLISHED: "green", ARCHIVED: "yellow" } as const;
@@ -136,6 +137,7 @@ const typeIcons: Record<keyof typeof typeLabels, { path: string; tile: string }>
   HOTSPOT: { path: "M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16", tile: "bg-sky-50 text-sky-600" },
   SURVEY: { path: "M12 21s-7-4.5-7-11a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 6.5-7 11-7 11z", tile: "bg-rose-50 text-rose-600" },
   RESOURCE_CENTER: { path: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01", tile: "bg-violet-50 text-violet-600" },
+  INLINE: { path: "M4 5h16M4 19h16M6 9h12v6H6z", tile: "bg-teal-50 text-teal-600" },
 };
 
 export function GuideTypeIcon({ type, className }: { type: keyof typeof typeLabels; className?: string }) {

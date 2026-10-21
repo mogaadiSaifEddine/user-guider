@@ -1,10 +1,10 @@
-import type { Block, Hotspot, HotspotContent, Theme, TourContent, TourStep } from "../src/lib/guide-schema";
+import type { Advance, Block, Hotspot, HotspotContent, InlineContent, Theme, TourContent, TourStep } from "../src/lib/guide-schema";
 import { plainText } from "../src/lib/format";
 import { mountRichEditor, type RichEditor } from "../src/lib/rich-editor";
 import { selectorFor } from "./selector";
 import { takeSnapshot, type PageSnapshot } from "./snapshot";
 import { applyTheme, el, escapeHtml, findTarget, isOwnElement, shadow } from "./ui";
-import { runHotspots, runTour } from "./widgets";
+import { runHotspots, runInline, runTour } from "./widgets";
 
 // Builder mode: opened from the dashboard with ?lg_builder=<token>. Lets the
 // author pick elements on the real page and edit step text, then saves the
@@ -16,37 +16,34 @@ const STORAGE_KEY = "lg_builder_token";
 type BuilderGuide = {
   id: string;
   name: string;
-  type: "TOUR" | "HOTSPOT" | "CHECKLIST" | "ANNOUNCEMENT";
-  content: TourContent | HotspotContent;
+  type: "TOUR" | "HOTSPOT" | "INLINE" | "CHECKLIST" | "ANNOUNCEMENT";
+  content: TourContent | HotspotContent | InlineContent;
   theme: Theme;
   ai: { enabled: boolean; autoGoal: string | null };
 };
 
-type Item = TourStep | Hotspot;
+// A tour step, a hotspot, or the one inline card.
+type Item = TourStep | Hotspot | InlineContent;
 
-// Tour steps are made of blocks; the builder edits their first heading and text
+// Everything is made of blocks; the builder edits the first heading and text
 // block as "Title" and "Text". Images, video and buttons are edited in the dashboard.
 function isStep(it: Item): it is TourStep {
-  return "blocks" in it;
+  return "advanceOn" in it;
 }
 
-function firstOf(step: TourStep, type: "heading" | "text") {
-  return step.blocks.find((b) => b.type === type) as Extract<Block, { type: "heading" | "text" }> | undefined;
+function firstOf(it: Item, type: "heading" | "text") {
+  return it.blocks.find((b) => b.type === type) as Extract<Block, { type: "heading" | "text" }> | undefined;
 }
 
 function titleOf(it: Item) {
-  return isStep(it) ? (firstOf(it, "heading")?.text ?? "") : it.title;
+  return firstOf(it, "heading")?.text ?? "";
 }
 
 function bodyOf(it: Item) {
-  return isStep(it) ? (firstOf(it, "text")?.text ?? "") : it.body;
+  return firstOf(it, "text")?.text ?? "";
 }
 
 function setText(it: Item, field: "title" | "body", value: string) {
-  if (!isStep(it)) {
-    it[field] = value;
-    return;
-  }
   const type = field === "title" ? "heading" : "text";
   const existing = firstOf(it, type);
   if (existing) {
@@ -74,13 +71,70 @@ function newStep(selector: string, title: string, body: string): TourStep {
     size: "md",
     selector,
     placement: "auto",
-    advanceOn: "next",
+    advanceOn: { type: "next" },
+    skipIf: { when: "never", selector: "" },
+    optional: false,
     backdrop: true,
   };
 }
 
+function newHotspot(selector: string, title: string, body: string): Hotspot {
+  return {
+    id: rid(),
+    selector,
+    blocks: [
+      { type: "heading", id: rid(), text: title, align: "left" },
+      { type: "text", id: rid(), text: body, align: "left" },
+    ],
+    size: "sm",
+    placement: "auto",
+    style: "beacon",
+    icon: "help",
+    persistent: false,
+    openOn: "click",
+    offset: "top-right",
+  };
+}
+
+// Same defaults as advanceSchema; the SDK doesn't bundle zod.
+function newAdvance(type: string): Advance {
+  switch (type) {
+    case "click":
+    case "media_end":
+      return { type };
+    case "input":
+      return { type, minLength: 1, format: "any", pattern: "" };
+    case "element":
+      return { type, selector: "" };
+    case "url":
+      return { type, rule: { op: "contains", value: "" } };
+    case "event":
+      return { type, name: "" };
+    default:
+      return { type: "next" };
+  }
+}
+
+const ADVANCE_LABELS: [Advance["type"], string][] = [
+  ["next", "Next button"],
+  ["click", "Click on element"],
+  ["input", "Typing in the field"],
+  ["element", "Another element appears"],
+  ["url", "Going to a page"],
+  ["event", "An event (track)"],
+  ["media_end", "The video or audio ends"],
+];
+
+const INLINE_POSITIONS: [InlineContent["position"], string][] = [
+  ["before", "Above it"],
+  ["after", "Below it"],
+  ["prepend", "Inside, at the top"],
+  ["append", "Inside, at the bottom"],
+  ["replace", "Instead of it"],
+];
+
 function hasExtraBlocks(it: Item) {
-  return isStep(it) && it.blocks.some((b) => b.type !== "heading" && b.type !== "text");
+  return it.blocks.some((b) => b.type !== "heading" && b.type !== "text");
 }
 
 // Returns the builder token if this page load is a builder session.
@@ -124,7 +178,8 @@ export async function startBuilder(apiBase: string, token: string) {
   const guide = data as BuilderGuide;
   applyTheme(guide.theme);
   const isTour = guide.type === "TOUR";
-  if (!isTour && guide.type !== "HOTSPOT") {
+  const isInline = guide.type === "INLINE";
+  if (!isTour && !isInline && guide.type !== "HOTSPOT") {
     const box = el("div", { class: "lg lgb" }, `<div class="lgb-head"><strong>${escapeHtml(guide.name)}</strong></div>
       <p class="lgb-msg">This guide type has no on-page elements. Edit it in the dashboard.</p>
       <div class="lgb-actions"><button class="lgb-btn" data-act="exit">Exit builder</button></div>`);
@@ -135,7 +190,10 @@ export async function startBuilder(apiBase: string, token: string) {
 
   const items: Item[] = isTour
     ? (guide.content as TourContent).steps
-    : (guide.content as HotspotContent).hotspots;
+    : isInline
+      ? [guide.content as InlineContent]
+      : (guide.content as HotspotContent).hotspots;
+  const kindLabel = isTour ? "Tour" : isInline ? "Inline card" : "Hotspots";
   let open = 0;
   let dirty = false;
   let status = "";
@@ -191,11 +249,55 @@ export async function startBuilder(apiBase: string, token: string) {
     mountEditors();
   }
 
+  function advanceFields(it: TourStep, i: number) {
+    const a = it.advanceOn;
+    const select = `<label>Advance on<select data-f="advanceOn" data-i="${i}">
+      ${ADVANCE_LABELS.map(([v, l]) => `<option value="${v}" ${v === a.type ? "selected" : ""}>${l}</option>`).join("")}
+    </select></label>`;
+    let extra = "";
+    if (a.type === "element") {
+      extra = `<div class="lgb-sel">
+        <code title="${escapeHtml(a.selector)}">${escapeHtml(a.selector || "No element picked: the step waits for this one to appear")}</code>
+        <div class="lgb-row-btns"><button class="lgb-btn" data-act="pick-adv" data-i="${i}">${a.selector ? "Re-pick" : "Pick"} the element to wait for</button></div>
+      </div>`;
+    } else if (a.type === "url") {
+      extra = `<label>URL contains<input data-adv="url" data-i="${i}" value="${escapeHtml(a.rule.value)}" placeholder="/projects/new"></label>`;
+    } else if (a.type === "event") {
+      extra = `<label>Event name<input data-adv="event" data-i="${i}" value="${escapeHtml(a.name)}" placeholder="project_created"></label>`;
+    } else if (a.type === "input") {
+      extra = `<label>At least this many characters<input type="number" min="1" max="500" data-adv="minLength" data-i="${i}" value="${a.minLength}"></label>`;
+    }
+    return { select, extra };
+  }
+
+  function itemFields(it: Item, i: number) {
+    if (isInline) {
+      const c = it as InlineContent;
+      return `<div class="lgb-grid">
+          <label>Place the card<select data-f="position" data-i="${i}">
+            ${INLINE_POSITIONS.map(([v, l]) => `<option value="${v}" ${v === c.position ? "selected" : ""}>${l}</option>`).join("")}
+          </select></label>
+        </div>
+        <label class="lgb-check"><input type="checkbox" data-f="dismissible" data-i="${i}" ${c.dismissible ? "checked" : ""}> People can close it</label>`;
+    }
+    const position = `<label>Position<select data-f="placement" data-i="${i}">
+        ${["auto", "top", "bottom", "left", "right"].map((p) => `<option ${p === (it as TourStep | Hotspot).placement ? "selected" : ""}>${p}</option>`).join("")}
+      </select></label>`;
+    if (!isStep(it)) {
+      return `<div class="lgb-grid">${position}</div>
+        <label class="lgb-check"><input type="checkbox" data-f="persistent" data-i="${i}" ${(it as Hotspot).persistent ? "checked" : ""}> Keep it after it's opened</label>`;
+    }
+    const adv = advanceFields(it, i);
+    return `<div class="lgb-grid">${position}${adv.select}</div>${adv.extra}
+      <label class="lgb-check"><input type="checkbox" data-f="optional" data-i="${i}" ${it.optional ? "checked" : ""}> Skip this step if its element isn't found</label>
+      <label class="lgb-check"><input type="checkbox" data-f="backdrop" data-i="${i}" ${it.backdrop !== false ? "checked" : ""}> Dim the rest of the page</label>`;
+  }
+
   function renderPanel() {
-    const noun = isTour ? "Step" : "Hotspot";
+    const noun = isTour ? "Step" : isInline ? "Card" : "Hotspot";
     panel.innerHTML = `
       <div class="lgb-head">
-        <div><strong>${escapeHtml(guide.name)}</strong><span class="lgb-type">${isTour ? "Tour" : "Hotspots"}</span></div>
+        <div><strong>${escapeHtml(guide.name)}</strong><span class="lgb-type">${kindLabel}</span></div>
         <button class="lgb-icon" data-act="collapse" title="${collapsed ? "Expand" : "Collapse"}">${collapsed ? "▴" : "▾"}</button>
       </div>
       ${
@@ -232,32 +334,23 @@ export async function startBuilder(apiBase: string, token: string) {
                     ${it.selector && isTour ? `<button class="lgb-btn lgb-ghost" data-act="clear" data-i="${i}">Make modal</button>` : ""}
                   </div>
                 </div>
-                <div class="lgb-grid">
-                  <label>Position<select data-f="placement" data-i="${i}">
-                    ${["auto", "top", "bottom", "left", "right"].map((p) => `<option ${p === it.placement ? "selected" : ""}>${p}</option>`).join("")}
-                  </select></label>
-                  ${
-                    isTour
-                      ? `<label>Advance on<select data-f="advanceOn" data-i="${i}">
-                    <option value="next" ${(it as TourStep).advanceOn !== "click" ? "selected" : ""}>Next button</option>
-                    <option value="click" ${(it as TourStep).advanceOn === "click" ? "selected" : ""}>Click on element</option>
-                  </select></label>`
-                      : ""
-                  }
-                </div>
-                ${isTour ? `<label class="lgb-check"><input type="checkbox" data-f="backdrop" data-i="${i}" ${(it as TourStep).backdrop !== false ? "checked" : ""}> Dim the rest of the page</label>` : ""}
-                <div class="lgb-row-btns">
+                ${itemFields(it, i)}
+                ${
+                  isInline
+                    ? ""
+                    : `<div class="lgb-row-btns">
                   <button class="lgb-btn lgb-ghost" data-act="up" data-i="${i}" ${i === 0 ? "disabled" : ""}>Move up</button>
                   <button class="lgb-btn lgb-ghost" data-act="down" data-i="${i}" ${i === items.length - 1 ? "disabled" : ""}>Move down</button>
                   <button class="lgb-btn lgb-danger" data-act="delete" data-i="${i}">Delete</button>
-                </div>
+                </div>`
+                }
               </div>`
                   : ""
               }
             </div>`;
           })
           .join("")}
-        <button class="lgb-add" data-act="add">+ Add ${noun.toLowerCase()}</button>
+        ${isInline ? "" : `<button class="lgb-add" data-act="add">+ Add ${noun.toLowerCase()}</button>`}
       </div>
       <div class="lgb-actions">
         <span class="lgb-status">${escapeHtml(status)}</span>
@@ -269,7 +362,7 @@ export async function startBuilder(apiBase: string, token: string) {
   }
 
   function aiSection() {
-    if (!guide.ai.enabled) return "";
+    if (!guide.ai.enabled || isInline) return "";
     const noun = isTour ? "steps" : "hotspots";
     if (!ai.open) {
       return `<div class="lgb-ai-bar"><button class="lgb-btn lgb-ai-btn" data-act="ai-toggle" ${ai.busy ? "disabled" : ""}>✨ Draft ${noun} with AI</button></div>`;
@@ -319,9 +412,7 @@ export async function startBuilder(apiBase: string, token: string) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "AI drafting failed.");
       const drafted: Item[] = (data.items as { selector: string; title: string; body: string }[]).map((d) =>
-        isTour
-          ? newStep(d.selector, d.title, d.body)
-          : { id: rid(), title: d.title, body: d.body, selector: d.selector, placement: "auto" },
+        isTour ? newStep(d.selector, d.title, d.body) : newHotspot(d.selector, d.title, d.body),
       );
       const firstNew = ai.mode === "append" ? items.length : 0;
       if (ai.mode === "append") items.push(...drafted);
@@ -347,9 +438,23 @@ export async function startBuilder(apiBase: string, token: string) {
       return;
     }
     const i = Number(t.dataset.i);
+    const it = items[i];
+    if (!it) return;
+    if (t.dataset.adv && isStep(it)) {
+      const a = it.advanceOn;
+      if (a.type === "url") a.rule = { op: "contains", value: t.value };
+      if (a.type === "event") a.name = t.value;
+      if (a.type === "input") a.minLength = Math.max(1, Math.min(500, Math.trunc(Number(t.value)) || 1));
+      return markDirty();
+    }
     const f = t.dataset.f;
-    if (!f || !items[i]) return;
-    (items[i] as Record<string, unknown>)[f] = t.type === "checkbox" ? t.checked : t.value;
+    if (!f) return;
+    if (f === "advanceOn" && isStep(it)) {
+      it.advanceOn = newAdvance(t.value);
+      markDirty();
+      return render();
+    }
+    (it as Record<string, unknown>)[f] = t.type === "checkbox" ? t.checked : t.value;
     markDirty();
   });
 
@@ -371,15 +476,15 @@ export async function startBuilder(apiBase: string, token: string) {
         open = open === i ? -1 : i;
         break;
       case "add":
-        items.push(
-          isTour ? newStep("", "", "") : { id: rid(), title: "", body: "", selector: "", placement: "auto" },
-        );
+        items.push(isTour ? newStep("", "", "") : newHotspot("", "", ""));
         open = items.length - 1;
         markDirty();
         if (!isTour) return pick(open);
         break;
       case "pick":
         return pick(i);
+      case "pick-adv":
+        return pick(i, true);
       case "clear":
         items[i].selector = "";
         markDirty();
@@ -437,8 +542,13 @@ export async function startBuilder(apiBase: string, token: string) {
     if (isTour) {
       runTour(guide.content as TourContent, { startAt: Math.max(open, 0), report: () => {}, onEnd: restore });
     } else {
-      const h = runHotspots(guide.content as HotspotContent, { opened: new Set(), report: () => {} });
-      const bar = el("div", { class: "lg lgb-previewbar" }, `Previewing hotspots <button class="lgb-btn">End preview</button>`);
+      let ended = () => {};
+      const h = isInline
+        ? runInline(guide.content as InlineContent, { report: () => {}, onEnd: () => ended() })
+        : runHotspots(guide.content as HotspotContent, { opened: new Set(), report: () => {} });
+      const bar = el("div", { class: "lg lgb-previewbar" }, `Previewing ${isInline ? "the card" : "hotspots"} <button class="lgb-btn">End preview</button>`);
+      // Closing the card from inside ends the preview too.
+      ended = () => bar.querySelector("button")!.click();
       bar.querySelector("button")!.addEventListener("click", () => {
         h.stop();
         bar.remove();
@@ -448,10 +558,16 @@ export async function startBuilder(apiBase: string, token: string) {
     }
   }
 
-  function pick(i: number) {
+  // advance: pick the element a step waits for, not the one it points at.
+  function pick(i: number, advance = false) {
     panel.style.display = "none";
     const hl = el("div", { class: "lgb-hl" });
-    const tip = el("div", { class: "lg lgb-pickbar" }, `Click the element this ${isTour ? "step" : "hotspot"} should point at. <kbd>Esc</kbd> to cancel.`);
+    const what = advance
+      ? "Click the element the step should wait for (open it first if it's in a menu or dialog)."
+      : isInline
+        ? "Click the element the card should sit next to."
+        : `Click the element this ${isTour ? "step" : "hotspot"} should point at.`;
+    const tip = el("div", { class: "lg lgb-pickbar" }, `${what} <kbd>Esc</kbd> to cancel.`);
     root.append(hl, tip);
     let current: Element | null = null;
 
@@ -476,7 +592,9 @@ export async function startBuilder(apiBase: string, token: string) {
       if (isOwnElement(e.target)) return;
       block(e);
       if (current) {
-        items[i].selector = selectorFor(current);
+        const it = items[i];
+        if (advance && isStep(it)) it.advanceOn = { type: "element", selector: selectorFor(current) };
+        else it.selector = selectorFor(current);
         markDirty();
       }
       done();

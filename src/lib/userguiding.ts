@@ -1,10 +1,12 @@
 import "server-only";
 import {
+  announcementContentSchema,
   checklistContentSchema,
   footerSchema,
   newId,
   parseTargeting,
   tourContentSchema,
+  type AnnouncementContent,
   type Block,
   type ButtonAction,
   type ChecklistContent,
@@ -22,7 +24,7 @@ import {
 // This module converts that file into our guides. The format is undocumented, so
 // everything here is defensive: unknown parts are skipped and reported.
 
-export type UgImportKind = "TOUR" | "CHECKLIST";
+export type UgImportKind = "TOUR" | "CHECKLIST" | "ANNOUNCEMENT";
 
 export type UgCandidate = {
   ugId: number;
@@ -31,7 +33,7 @@ export type UgCandidate = {
   active: boolean;
   stepCount: number;
   warnings: string[];
-  content: TourContent | ChecklistContent;
+  content: TourContent | ChecklistContent | AnnouncementContent;
   targeting: Targeting;
   priority: number;
 };
@@ -266,7 +268,7 @@ function componentsToBlocks(rows: any[], ctx: Ctx): { blocks: Block[]; hasButton
         }
         case "video": {
           const url = videoSrc(content.videoUrl ?? content.url);
-          if (url) blocks.push({ type: "video", id: newId(), url: url.slice(0, 1000) });
+          if (url) blocks.push({ type: "video", id: newId(), url: url.slice(0, 1000), autoplay: false, loop: false, controls: true });
           break;
         }
         case "button":
@@ -299,7 +301,7 @@ function convertStep(s: any, theme: any, ctx: Ctx): TourStep | null {
   const { blocks, hasButtons } = componentsToBlocks(s.components, ctx);
   const selector = modal ? "" : bestSelector(s.cssPaths);
   if (!modal && !selector) ctx.warnings.add("A step had no usable element selector; it shows as a centered modal. Re-pick its element in the builder.");
-  const advanceOn = s.type === "clickContent" && selector ? "click" : "next";
+  const advanceOn = s.type === "clickContent" && selector ? ("click" as const) : ("next" as const);
   const req = s.requisiteButtons?.buttonContents ?? {};
   const widthPx = s.fixedWidthActive
     ? Number(s.fixedWidthPixel)
@@ -319,8 +321,67 @@ function convertStep(s: any, theme: any, ctx: Ctx): TourStep | null {
     size: sizeOf(widthPx, modal),
     selector,
     placement: placementOf(s),
-    advanceOn,
+    advanceOn: { type: advanceOn },
+    skipIf: { when: "never", selector: "" },
+    optional: false,
     backdrop: !s.noBackdrop,
+  };
+}
+
+// ---------- Banners ----------
+//
+// Shape read from UserGuiding's embed script (the CMS account has none to test with):
+//   { id, data: { title, content (plain text, "\n" = new line), position: "top" | "bottom",
+//     placement: "push" | "overlay", showQuitButton, appearance: { showAfter },
+//     buttons: [{ id, label, style: "primary" | "secondary", actions: [{ type, target, payload }] }],
+//     start_urls, targeting_condition, ... } }
+// Colors come from the theme's `banners` section.
+
+function bannerAction(actions: unknown, ctx: Ctx): ButtonAction {
+  const list: any[] = Array.isArray(actions) ? actions : [];
+  const link = list.find((a) => a?.type === "link" && a.target);
+  if (link) return { type: "url", url: String(link.target).slice(0, 1000), newTab: link.payload?.openInNewTab !== false };
+  const guide = list.find((a) => a?.type === "guide" && a.target);
+  if (guide) return { type: "guide", guideId: `ug:${guide.target}` };
+  // UserGuiding "dismiss" hides the banner for good; "close" only until it shows again.
+  if (list.some((a) => a?.type === "dismiss")) return { type: "complete" };
+  if (list.some((a) => a?.type === "close")) return { type: "close" };
+  const other = list.find((a) => a?.type);
+  if (other) ctx.warnings.add(`A banner button action "${other.type}" isn't supported; the button now closes the banner.`);
+  return { type: "complete" };
+}
+
+function convertBanner(b: any, theme: any, ctx: Ctx): { content: AnnouncementContent; delay: number } {
+  const d = b?.data ?? {};
+  const lines = String(d.content ?? "")
+    .split("\n")
+    .map((l: string) => l.trim())
+    .filter(Boolean);
+  const blocks: Block[] = [];
+  if (lines.length) blocks.push({ type: "text", id: newId(), text: lines.join("\n").slice(0, 4000), align: "left" });
+  const buttons = (Array.isArray(d.buttons) ? d.buttons : []).slice(0, 4).map((x: any) => ({
+    id: newId(),
+    label: String(x?.label ?? "OK").slice(0, 60),
+    style: x?.style === "secondary" ? ("secondary" as const) : ("primary" as const),
+    action: bannerAction(x?.actions, ctx),
+  }));
+  if (buttons.length) blocks.push({ type: "buttons", id: newId(), align: "center", buttons });
+  const colors = theme?.banners ?? {};
+  const hex = (v: unknown) => (typeof v === "string" && /^#[0-9a-fA-F]{3,8}$/.test(v) ? v : "");
+  return {
+    content: announcementContentSchema.parse({
+      format: "banner",
+      blocks,
+      banner: {
+        position: d.position === "bottom" ? "bottom" : "top",
+        mode: d.placement === "push" ? "push" : "overlay",
+        // UserGuiding's own default blue, as its SDK falls back to it.
+        background: hex(colors.backgroundColor) || "#5478F0",
+        textColor: hex(colors.textColor) || "#FFFFFF",
+        dismissible: d.showQuitButton !== false,
+      },
+    }),
+    delay: Number(d.appearance?.showAfter) || 0,
   };
 }
 
@@ -423,6 +484,25 @@ export function convertUserGuiding(data: any, opts: { anyDomain?: boolean } = {}
     });
   }
 
+  for (const b of Array.isArray(data?.banners) ? data.banners : []) {
+    const ctx: Ctx = { warnings: new Set(), images: new Set(), anyDomain };
+    const d = b?.data ?? {};
+    const { content, delay } = convertBanner(b, theme, ctx);
+    if (Array.isArray(b?.localizations) && b.localizations.length) ctx.warnings.add("Translations aren't imported; only the default language is.");
+    if (d.trigger === "custom") ctx.warnings.add("The banner was shown by a custom event; it now shows automatically on its pages.");
+    candidates.push({
+      ugId: Number(b.id),
+      kind: "ANNOUNCEMENT",
+      name: String(d.title || `UserGuiding banner ${b.id}`).slice(0, 191),
+      active: d.is_active !== false,
+      stepCount: 1,
+      content,
+      targeting: baseTargeting({ ...d, segment_type: d.segment_type ?? "all" }, ctx, "auto", delay),
+      priority: 0,
+      warnings: [...ctx.warnings],
+    });
+  }
+
   const skipped: string[] = [];
   const count = (key: string, label: string) => {
     const v = data?.[key];
@@ -430,7 +510,6 @@ export function convertUserGuiding(data: any, opts: { anyDomain?: boolean } = {}
     if (n) skipped.push(`${n} ${label}`);
   };
   count("hotspots", "hotspot group(s)");
-  count("banners", "banner(s)");
   count("surveys", "survey(s)");
   count("resourceCenters", "resource center(s)");
   const otherAssistants = (data?.assistants ?? []).filter((a: any) => a?.data?.format && a.data.format !== "checklist").length;
@@ -457,7 +536,7 @@ function themeFrom(p: any): Theme {
 }
 
 // Every image URL used by the converted content, so they can be copied.
-export function imageUrls(content: TourContent | ChecklistContent): string[] {
+export function imageUrls(content: TourContent | ChecklistContent | AnnouncementContent): string[] {
   if (!("steps" in content)) return [];
   return content.steps.flatMap((s) => s.blocks.flatMap((b) => (b.type === "image" && b.url ? [b.url] : [])));
 }

@@ -58,16 +58,35 @@ export function UpdateBody({ blocks, accent }: { blocks: Block[]; accent: string
             );
           }
           case "video": {
-            const v = videoEmbed(b.url);
+            const v = videoEmbed(b.url, b);
             if (!v) return null;
             return (
               <div key={b.id} className="aspect-video overflow-hidden rounded-xl bg-black">
                 {v.kind === "iframe" ? (
                   <iframe src={v.src} title="Video" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen loading="lazy" className="h-full w-full" />
                 ) : (
-                  <video src={v.src} controls playsInline preload="metadata" className="h-full w-full" />
+                  <video
+                    src={v.src}
+                    controls={b.controls}
+                    autoPlay={b.autoplay}
+                    muted={b.autoplay}
+                    loop={b.loop}
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full"
+                  />
                 )}
               </div>
+            );
+          }
+          case "audio": {
+            const src = safeUrl(b.url);
+            if (!src) return null;
+            return (
+              <figure key={b.id} className="space-y-1">
+                {b.label && <figcaption className="text-sm font-medium text-gray-700">{b.label}</figcaption>}
+                <audio src={src} controls preload="metadata" className="w-full" />
+              </figure>
             );
           }
           case "buttons": {

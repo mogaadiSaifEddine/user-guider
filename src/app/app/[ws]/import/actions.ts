@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
 import { appUrl } from "@/lib/app-url";
-import type { Block, ChecklistContent, TourContent } from "@/lib/guide-schema";
+import type { Block } from "@/lib/guide-schema";
 import { parseUpdatesPage, SLUG_RE } from "@/lib/updates";
 import { convertUserGuidingUpdates } from "@/lib/userguiding-updates";
 import {
@@ -111,7 +111,8 @@ export async function previewUserGuiding(ws: string, source: UgSource): Promise<
 }
 
 export type ImportOptions = {
-  ugIds: number[];
+  // "<kind>:<UserGuiding id>", e.g. "TOUR:123".
+  ugIds: string[];
   copyImages: boolean;
   importTheme: boolean;
   anyDomain: boolean;
@@ -148,7 +149,7 @@ export async function importUserGuiding(ws: string, source: UgSource, opts: Impo
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Could not read UserGuiding data." };
   }
-  const chosen = conv.candidates.filter((c) => opts.ugIds.includes(c.ugId));
+  const chosen = conv.candidates.filter((c) => opts.ugIds.includes(`${c.kind}:${c.ugId}`));
   const chosenUpdates = upd.updates.filter((u) => (opts.updateIds ?? []).includes(u.ugId));
   if (!chosen.length && !chosenUpdates.length && !opts.importUpdatesPage) return { ok: false, error: "Select at least one thing to import." };
 
@@ -205,10 +206,11 @@ export async function importUserGuiding(ws: string, source: UgSource, opts: Impo
     created.push({ id: g.id, name: c.name, kind: c.kind, warnings: [...c.warnings], candidate: { ...c, content } });
   }
 
-  const idMap = new Map(created.map((x) => [String(x.candidate.ugId), x.id]));
+  // Buttons and checklist items point at UserGuiding guides, i.e. our tours.
+  const idMap = new Map(created.filter((x) => x.kind === "TOUR").map((x) => [String(x.candidate.ugId), x.id]));
   for (const x of created) {
     const warn = new Set<string>();
-    const content = relinkGuides(x.candidate.content as TourContent | ChecklistContent, idMap, (m) => warn.add(m));
+    const content = relinkGuides(x.candidate.content, idMap, (m) => warn.add(m));
     x.warnings.push(...warn);
     const publish = opts.publishActive && x.candidate.active;
     await prisma.guide.update({

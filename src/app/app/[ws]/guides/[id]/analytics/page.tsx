@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { requireGuide } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { plainText } from "@/lib/format";
+import { plainText, videoEmbed } from "@/lib/format";
 import { guideAnalytics, pct } from "@/lib/analytics";
 import {
   blocksLabel,
+  type Block,
   parseContent,
   type ChecklistContent,
   type GuideTypeName,
@@ -35,13 +36,27 @@ export default async function GuideAnalyticsPage({
   // Label steps/items from the live version when there is one.
   const content = parseContent(type, guide.publishedContent ?? guide.content);
   const survey = type === "SURVEY" ? await surveyResults(id, content as SurveyContent, days) : null;
+  // Audio clips and video files report when they play to the end; embeds (YouTube etc.) can't.
+  const media = blocksIn(content)
+    .filter(
+      (b): b is Extract<Block, { type: "audio" | "video" }> =>
+        b.type === "audio" || (b.type === "video" && !b.loop && videoEmbed(b.url)?.kind === "video"),
+    )
+    .map((b, i) => ({
+      label: b.type === "audio" ? b.label || `Audio clip ${i + 1}` : decodeURIComponent(b.url.split("/").pop() ?? "") || `Video ${i + 1}`,
+      value: a.media.get(b.id) ?? 0,
+    }));
 
   let breakdown: { title: string; note: string; rows: { label: string; value: number }[] } | null = null;
   if (type === "TOUR") {
     breakdown = {
       title: "Step funnel",
-      note: "Users who reached each step. A big drop shows where people leave the tour.",
-      rows: (content as TourContent).steps.map((s, i) => ({ label: blocksLabel(s.blocks) || `Step ${i + 1}`, value: a.steps.get(i) ?? 0 })),
+      note: "Users who reached each step. A big drop shows where people leave the tour; \"lost here\" means the step's element never showed up.",
+      rows: (content as TourContent).steps.map((s, i) => {
+        const lost = a.lost.get(i);
+        const label = blocksLabel(s.blocks) || `Step ${i + 1}`;
+        return { label: lost ? `${label} · lost here for ${lost}` : label, value: a.steps.get(i) ?? 0 };
+      }),
     };
   } else if (type === "CHECKLIST") {
     breakdown = {
@@ -97,7 +112,7 @@ export default async function GuideAnalyticsPage({
     breakdown = {
       title: "Hotspots opened",
       note: "Users who opened each hotspot.",
-      rows: (content as HotspotContent).hotspots.map((h) => ({ label: plainText(h.title) || "Untitled", value: a.items.get(h.id) ?? 0 })),
+      rows: (content as HotspotContent).hotspots.map((h) => ({ label: blocksLabel(h.blocks) || "Untitled", value: a.items.get(h.id) ?? 0 })),
     };
   }
 
@@ -161,6 +176,14 @@ export default async function GuideAnalyticsPage({
         )}
       </div>
 
+      {media.length > 0 && (
+        <Card className="mt-6 p-5">
+          <h2 className="text-sm font-semibold text-gray-900">Played to the end</h2>
+          <p className="mb-4 text-xs text-gray-500">Users who watched or listened to each clip until it ended, out of users who saw the guide.</p>
+          <FunnelBars rows={media} base={a.seen} />
+        </Card>
+      )}
+
       {survey && (
         <div className="mt-8">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -193,4 +216,19 @@ export default async function GuideAnalyticsPage({
       )}
     </>
   );
+}
+
+// Every block in a guide's content (steps, hotspots, articles…), for media stats.
+function blocksIn(content: unknown): Block[] {
+  const out: Block[] = [];
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) return v.forEach(walk);
+    if (!v || typeof v !== "object") return;
+    for (const [k, x] of Object.entries(v)) {
+      if (k === "blocks" && Array.isArray(x)) out.push(...(x as Block[]));
+      else walk(x);
+    }
+  };
+  walk(content);
+  return out;
 }

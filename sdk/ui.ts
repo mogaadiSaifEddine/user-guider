@@ -5,30 +5,49 @@ import type { Theme } from "../src/lib/guide-schema";
 
 let host: HTMLElement | null = null;
 let root: ShadowRoot | null = null;
+let theme: Theme | null = null;
+
+// Inline cards live inside the host page, each in a <user-onboarder-inline> of its own.
+export const INLINE_TAG = "user-onboarder-inline";
 
 export function isOwnElement(el: EventTarget | null) {
-  return el === host;
+  return el === host || (el instanceof Element && el.localName === INLINE_TAG);
+}
+
+function newHost(tag: string, css: string) {
+  const h = document.createElement(tag);
+  h.style.cssText = css;
+  const r = h.attachShadow({ mode: "open" });
+  const style = document.createElement("style");
+  style.textContent = CSS;
+  r.appendChild(style);
+  if (theme) setThemeVars(h, theme);
+  return { host: h, root: r };
 }
 
 export function shadow(): ShadowRoot {
   if (root) return root;
-  host = document.createElement("user-onboarder");
-  host.style.cssText = "all:initial;position:fixed;top:0;left:0;width:0;height:0;z-index:2147483000;";
-  root = host.attachShadow({ mode: "open" });
-  const style = document.createElement("style");
-  style.textContent = CSS;
-  root.appendChild(style);
+  ({ host, root } = newHost("user-onboarder", "all:initial;position:fixed;top:0;left:0;width:0;height:0;z-index:2147483000;"));
   document.documentElement.appendChild(host);
   return root;
 }
 
-export function applyTheme(theme: Theme) {
-  const h = (shadow(), host!);
-  h.style.setProperty("--lg-primary", theme.primaryColor);
-  h.style.setProperty("--lg-text", theme.textColor);
-  h.style.setProperty("--lg-bg", theme.backgroundColor);
-  h.style.setProperty("--lg-radius", theme.radius + "px");
-  h.style.setProperty("--lg-font", theme.fontFamily === "inherit" ? "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" : theme.fontFamily);
+// A host that flows with the page; the caller inserts it.
+export function inlineHost() {
+  return newHost(INLINE_TAG, "all:initial;display:block;");
+}
+
+export function applyTheme(next: Theme) {
+  theme = next;
+  setThemeVars((shadow(), host!), next);
+}
+
+function setThemeVars(h: HTMLElement, t: Theme) {
+  h.style.setProperty("--lg-primary", t.primaryColor);
+  h.style.setProperty("--lg-text", t.textColor);
+  h.style.setProperty("--lg-bg", t.backgroundColor);
+  h.style.setProperty("--lg-radius", t.radius + "px");
+  h.style.setProperty("--lg-font", t.fontFamily === "inherit" ? "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" : t.fontFamily);
 }
 
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -183,11 +202,34 @@ const CSS = `
 .lg-spot { position:fixed; border-radius:8px; pointer-events:none; box-shadow:0 0 0 4px color-mix(in srgb, var(--lg-primary) 70%, #fff), 0 0 0 9999px rgba(15,18,34,.5);
   transition:all .2s ease; }
 .lg-spot.lg-nobackdrop { box-shadow:0 0 0 3px var(--lg-primary); }
-.lg-banner { position:fixed; top:0; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:14px;
-  padding:10px 48px 10px 16px; background:var(--lg-grad); color:#fff; pointer-events:auto; animation:lg-down .2s ease-out; flex-wrap:wrap; }
-.lg-banner a { color:#fff; }
-.lg-banner .lg-btn { background:#fff; color:var(--lg-primary); padding:5px 12px; box-shadow:none; }
-.lg-banner .lg-close { color:#fff; opacity:.8; top:50%; transform:translateY(-50%); }
+/* Banner colors come from --lg-bb (background), --lg-bf (text) and --lg-bs (solid accent for buttons). */
+.lg-banner { position:fixed; left:0; right:0; display:flex; align-items:center; justify-content:center; gap:14px;
+  padding:10px 48px 10px 16px; background:var(--lg-bb, var(--lg-grad)); color:var(--lg-bf, #fff); pointer-events:auto; flex-wrap:wrap; }
+.lg-banner.lg-top { top:0; animation:lg-down .2s ease-out; }
+.lg-banner.lg-bottom { bottom:0; animation:lg-up .2s ease-out; }
+.lg-banner.lg-nodismiss { padding-right:16px; }
+.lg-banner a { color:inherit; }
+.lg-banner a.lg-banner-text { text-decoration:underline; text-underline-offset:2px; }
+.lg-banner .lg-btn { background:var(--lg-bf, #fff); color:var(--lg-bs, var(--lg-primary)); padding:5px 12px; box-shadow:none; }
+.lg-banner .lg-btn.lg-ghost { background:transparent; color:inherit; box-shadow:inset 0 0 0 1px currentColor; opacity:.9; }
+.lg-banner .lg-close { color:inherit; opacity:.8; top:50%; transform:translateY(-50%); }
+.lg-hs-icon { position:fixed; width:20px; height:20px; margin:-10px 0 0 -10px; border:0; padding:0; border-radius:50%; cursor:pointer; pointer-events:auto;
+  background:var(--lg-primary); color:#fff; font:700 12px/20px var(--lg-font); text-align:center; box-shadow:0 2px 6px rgba(20,21,43,.25); }
+.lg-hs-icon:focus-visible, .lg-beacon:focus-visible { outline:2px solid var(--lg-primary); outline-offset:2px; }
+.lg-audio { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:calc(var(--lg-radius) * .6); background:rgba(0,0,0,.04); }
+.lg-audio-btn { flex:none; width:32px; height:32px; border:0; border-radius:50%; background:var(--lg-grad); color:#fff; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; box-shadow:var(--lg-glow); }
+.lg-audio-main { flex:1; min-width:0; }
+.lg-audio-label { font-size:12px; font-weight:600; margin-bottom:5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lg-audio-bar { height:6px; border-radius:3px; background:rgba(0,0,0,.1); cursor:pointer; overflow:hidden; }
+.lg-audio-bar span { display:block; width:0; height:100%; background:var(--lg-primary); }
+.lg-audio-time { flex:none; font-size:12px; opacity:.6; font-variant-numeric:tabular-nums; }
+.lg-inline { position:relative; margin:8px 0; padding:18px 18px 6px; --lg-pad:18px; background:var(--lg-bg); border-radius:var(--lg-radius);
+  box-shadow:0 1px 3px rgba(20,21,43,.08), 0 0 0 1px rgba(20,21,43,.07); animation:lg-in .18s ease-out; overflow:hidden; }
+.lg-inline h3.lg-b { margin:0 0 6px; font-size:16px; font-weight:750; line-height:1.3; }
+.lg-inline h3.lg-first { margin-right:26px; }
+.lg-inline .lg-img.lg-edge.lg-first { margin-top:-18px; border-radius:var(--lg-radius) var(--lg-radius) 0 0; }
+.lg-skip { margin-right:auto; }
 .lg-beacon { position:fixed; width:22px; height:22px; margin:-11px 0 0 -11px; border:0; padding:0; border-radius:50%; cursor:pointer;
   background:transparent; pointer-events:auto; }
 .lg-beacon::before, .lg-beacon::after { content:""; position:absolute; inset:5px; border-radius:50%; background:var(--lg-primary); }
@@ -319,6 +361,7 @@ const CSS = `
 .lg-react-comment:focus { outline:2px solid var(--lg-primary); outline-offset:0; }
 @keyframes lg-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @keyframes lg-down { from { transform:translateY(-100%); } to { transform:none; } }
+@keyframes lg-up { from { transform:translateY(100%); } to { transform:none; } }
 @keyframes lg-pulse { from { transform:scale(.6); opacity:.6; } to { transform:scale(1.8); opacity:0; } }
 @media (prefers-reduced-motion: reduce) { * { animation:none !important; transition:none !important; } }
 `;

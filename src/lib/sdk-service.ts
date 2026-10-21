@@ -8,6 +8,8 @@ import { parseUserAgent, primaryLanguage } from "./user-agent";
 import { applyTranslations, DEFAULT_LOCALE, matchLocale, workspaceLanguages, type Translations } from "./i18n";
 import { resolveUi } from "./ui-strings-builtin";
 import {
+  inSchedule,
+  legacyHotspotKey,
   matchesUser,
   normalizeAnswer,
   parseContent,
@@ -63,6 +65,10 @@ export const eventTypes = [
   "survey_answered",
   // Resource center: an article, link, guide or contact button was clicked (name = item id).
   "resource_clicked",
+  // A tour ended because a step's element never showed up (stepIndex = that step).
+  "guide_lost",
+  // A video or audio clip played to the end (name = block id).
+  "media_completed",
   "custom",
 ] as const;
 
@@ -211,6 +217,7 @@ export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInf
     const targeting = parseTargeting(g.targeting);
     if (endUser.anonymous && !targeting.includeAnonymous) return [];
     if (!matchesUser(targeting.userRules, attributes)) return [];
+    if (!inSchedule(targeting.startsAt, targeting.endsAt)) return [];
     const p = progressByGuide.get(g.id);
     return [
       {
@@ -224,11 +231,11 @@ export async function sdkInit(input: z.infer<typeof initSchema>, req: RequestInf
           trigger: targeting.trigger,
           delaySeconds: targeting.delaySeconds,
         },
-        // Checklists and hotspots can't be started by hand, so they always run automatically.
+        // Checklists, hotspots and inline cards can't be started by hand, so they always run automatically.
         // Surveys can, like tours and announcements. A resource center is always there when it matches.
         autoShow:
           g.type === "RESOURCE_CENTER" ||
-          ((targeting.trigger === "auto" || g.type === "CHECKLIST" || g.type === "HOTSPOT") &&
+          ((targeting.trigger === "auto" || g.type === "CHECKLIST" || g.type === "HOTSPOT" || g.type === "INLINE") &&
             autoShowAllowed(targeting.frequency, p)),
         progress: progressView(p),
       },
@@ -272,7 +279,9 @@ export function pickLocale(
 function localized(g: Guide, locale: string) {
   const content = parseContent(g.type as GuideTypeName, g.publishedContent);
   if (locale === DEFAULT_LOCALE) return content;
-  return applyTranslations(content, (g.publishedTranslations as Translations | null)?.[locale]);
+  let map = (g.publishedTranslations as Translations | null)?.[locale];
+  if (map && g.type === "HOTSPOT") map = Object.fromEntries(Object.entries(map).map(([k, v]) => [legacyHotspotKey(k), v]));
+  return applyTranslations(content, map);
 }
 
 // ---------- events ----------

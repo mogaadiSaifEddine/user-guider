@@ -8,6 +8,7 @@ import type {
   ChecklistContent,
   GuideTypeName,
   HotspotContent,
+  InlineContent,
   ResourceCenterContent,
   SurveyContent,
   Targeting,
@@ -26,8 +27,8 @@ import {
   setGuideStatus,
   type ActionResult,
 } from "../../actions";
-import { ChecklistEditor, HotspotEditor, type OtherGuide } from "./content-editors";
-import { AnnouncementEditor, TourEditor } from "./block-content-editors";
+import { ChecklistEditor, type OtherGuide } from "./content-editors";
+import { AnnouncementEditor, HotspotEditor, InlineEditor, TourEditor } from "./block-content-editors";
 import { SurveyEditor } from "./survey-editor";
 import { ResourceCenterEditor } from "./resource-center-editor";
 import { TranslationsEditor } from "./translations-editor";
@@ -171,7 +172,8 @@ export function GuideEditor({
 
   const live = guide.status === "PUBLISHED";
   const needsPublish = live && (dirty || guide.unpublishedChanges);
-  const usesBuilder = guide.type === "TOUR" || guide.type === "HOTSPOT";
+  const usesBuilder = guide.type === "TOUR" || guide.type === "HOTSPOT" || guide.type === "INLINE";
+  const blockProps = { ws, others, theme, languages };
 
   return (
     <div>
@@ -266,11 +268,12 @@ export function GuideEditor({
       <div className="min-w-0">
         {tab === "content" ? (
           <>
-            {guide.type === "TOUR" && <TourEditor ws={ws} value={content as TourContent} onChange={edit(setContent)} others={others} theme={theme} />}
-            {guide.type === "HOTSPOT" && <HotspotEditor value={content as HotspotContent} onChange={edit(setContent)} />}
+            {guide.type === "TOUR" && <TourEditor {...blockProps} value={content as TourContent} onChange={edit(setContent)} />}
+            {guide.type === "HOTSPOT" && <HotspotEditor {...blockProps} value={content as HotspotContent} onChange={edit(setContent)} />}
             {guide.type === "ANNOUNCEMENT" && (
-              <AnnouncementEditor ws={ws} value={content as AnnouncementContent} onChange={edit(setContent)} others={others} theme={theme} />
+              <AnnouncementEditor {...blockProps} value={content as AnnouncementContent} onChange={edit(setContent)} />
             )}
+            {guide.type === "INLINE" && <InlineEditor {...blockProps} value={content as InlineContent} onChange={edit(setContent)} />}
             {guide.type === "CHECKLIST" && (
               <ChecklistEditor value={content as ChecklistContent} onChange={edit(setContent)} others={others} />
             )}
@@ -297,7 +300,14 @@ export function GuideEditor({
           />
         ) : tab === "builder" ? (
           <div className="max-w-xl">
-            <BuilderLauncher ws={ws} guideId={guide.id} dirty={dirty} aiEnabled={aiEnabled} noun={guide.type === "TOUR" ? "steps" : "hotspots"} />
+            <BuilderLauncher
+              ws={ws}
+              guideId={guide.id}
+              dirty={dirty}
+              aiEnabled={aiEnabled}
+              noun={guide.type === "TOUR" ? "steps" : "hotspots"}
+              ai={guide.type !== "INLINE"}
+            />
           </div>
         ) : (
           <TargetingEditor
@@ -344,15 +354,19 @@ function BuilderLauncher({
   ws,
   guideId,
   dirty,
-  aiEnabled,
+  aiEnabled: aiOn,
   noun,
+  ai = true,
 }: {
   ws: string;
   guideId: string;
   dirty: boolean;
   aiEnabled: boolean;
   noun: string;
+  // AI drafting exists for tours and hotspots only.
+  ai?: boolean;
 }) {
+  const aiEnabled = aiOn && ai;
   const storageKey = `lg.builderUrl.${ws}`;
   const [url, setUrl] = useState("");
   const [useAi, setUseAi] = useState(false);
@@ -378,7 +392,7 @@ function BuilderLauncher({
       <div>
         <div className="text-sm font-semibold">Visual builder</div>
         <p className="mt-1 text-xs text-gray-500">
-          Opens your site with the builder panel. Click elements to attach steps, then save. The snippet must be installed on that page.{" "}
+          Opens your site with the builder panel. Click elements to attach your content to them, then save. The snippet must be installed on that page.{" "}
           <a href="/docs/builder" target="_blank" className="font-medium text-brand-600 hover:underline">
             How it works
           </a>
@@ -595,7 +609,10 @@ function TargetingEditor({
                 </Select>
               </Field>
             ) : (
-              <Field label="Trigger" hint={`A ${type === "CHECKLIST" ? "checklist" : "hotspot"} appears as soon as its targeting matches.`}>
+              <Field
+                label="Trigger"
+                hint={`${type === "CHECKLIST" ? "A checklist" : type === "INLINE" ? "An inline card" : "A hotspot"} appears as soon as its targeting matches.`}
+              >
                 <Input value="Automatically when targeting matches" disabled />
               </Field>
             )}
@@ -606,7 +623,7 @@ function TargetingEditor({
                 <option value="always">On every page load</option>
               </Select>
             </Field>
-            <Field label="Delay (seconds)" hint={manualAllowed ? undefined : "Only used by tours, announcements and surveys."}>
+            <Field label="Delay (seconds)" hint={manualAllowed ? undefined : "Only used by tours, announcements, banners and surveys."}>
               <Input
                 type="number"
                 min={0}
@@ -617,7 +634,14 @@ function TargetingEditor({
             </Field>
           </>
         )}
-        <Field label="Priority" hint={rc ? "Higher wins when several resource centers match one page." : "Higher runs first when several guides match one page."}>
+        <Field
+          label="Priority"
+          hint={
+            rc
+              ? "Higher wins when several resource centers match one page."
+              : "Higher runs first when several guides (or several banners) match one page."
+          }
+        >
           <Input
             type="number"
             min={-100}
@@ -627,6 +651,46 @@ function TargetingEditor({
           />
         </Field>
       </Card>
+
+      <Card className="space-y-3 p-5">
+        <div>
+          <div className="text-sm font-semibold">Schedule</div>
+          <p className="text-xs text-gray-500">Optional. Outside these dates it isn&apos;t shown at all, not even with start(). Times are in your time zone.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="From">
+            <Input
+              type="datetime-local"
+              suppressHydrationWarning
+              value={toLocalInput(value.startsAt)}
+              onChange={(e) => patch({ startsAt: fromLocalInput(e.target.value) })}
+            />
+          </Field>
+          <Field label="Until">
+            <Input
+              type="datetime-local"
+              suppressHydrationWarning
+              value={toLocalInput(value.endsAt)}
+              onChange={(e) => patch({ endsAt: fromLocalInput(e.target.value) })}
+            />
+          </Field>
+        </div>
+        {value.startsAt && value.endsAt && value.endsAt <= value.startsAt && (
+          <p className="text-xs text-red-600">The end is before the start, so it never shows.</p>
+        )}
+      </Card>
     </div>
   );
+}
+
+// ISO date <-> the local "YYYY-MM-DDTHH:mm" of a datetime-local input.
+function toLocalInput(iso: string) {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (Number.isNaN(t)) return "";
+  return new Date(t - new Date(t).getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+function fromLocalInput(v: string) {
+  const t = v ? Date.parse(v) : NaN;
+  return Number.isNaN(t) ? "" : new Date(t).toISOString();
 }

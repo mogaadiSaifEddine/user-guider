@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { requireGuide } from "@/lib/auth";
-import { parseContent, parseTargeting, parseTheme, type GuideTypeName } from "@/lib/guide-schema";
+import { legacyHotspotKey, parseContent, parseTargeting, parseTheme, type GuideTypeName } from "@/lib/guide-schema";
 import { aiEnabled } from "@/lib/ai";
 import { pruneTranslations, workspaceLanguages, type Translations } from "@/lib/i18n";
 import { guideFootprint } from "@/lib/analytics";
@@ -31,7 +31,12 @@ export default async function GuidePage({
 
   const content = parseContent(guide.type as GuideTypeName, guide.content);
   const languages = workspaceLanguages(workspace.languages);
-  const translations = (guide.translations ?? {}) as Translations;
+  let translations = (guide.translations ?? {}) as Translations;
+  // Hotspot title/body became blocks; keep their translations attached.
+  if (guide.type === "HOTSPOT")
+    translations = Object.fromEntries(
+      Object.entries(translations).map(([l, map]) => [l, Object.fromEntries(Object.entries(map).map(([k, v]) => [legacyHotspotKey(k), v]))]),
+    );
   const unpublishedChanges =
     guide.status === "PUBLISHED" &&
     (JSON.stringify(guide.publishedContent) !== JSON.stringify(guide.content) ||
@@ -58,8 +63,12 @@ export default async function GuidePage({
       languages={languages}
       kbCollections={kbCollections}
       theme={parseTheme(workspace.theme)}
-      // ?tab=builder etc., e.g. from the guides list. Builder only exists for tours and hotspots.
-      initialTab={tab === "translations" || tab === "targeting" || (tab === "builder" && (guide.type === "TOUR" || guide.type === "HOTSPOT")) ? tab : "content"}
+      // ?tab=builder etc., e.g. from the guides list. Builder only exists for tours, hotspots and inline cards.
+      initialTab={
+        tab === "translations" || tab === "targeting" || (tab === "builder" && (guide.type === "TOUR" || guide.type === "HOTSPOT" || guide.type === "INLINE"))
+          ? tab
+          : "content"
+      }
     />
   );
 }

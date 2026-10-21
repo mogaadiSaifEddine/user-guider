@@ -13,10 +13,11 @@ export const metadata: Metadata = {
 const guideTypes: { type: keyof typeof typeLabels; text: string }[] = [
   { type: "TOUR", text: "Step-by-step tooltips and modals that point at real buttons on the page and wait for the user to click." },
   { type: "CHECKLIST", text: "A launcher with the tasks that get a new account to its first success, ticked off as people finish them." },
-  { type: "ANNOUNCEMENT", text: "Modals and banners for releases and notices, shown once to the right audience." },
+  { type: "ANNOUNCEMENT", text: "Modals, and banners that sit next to your tours, for releases, trials and outages." },
   { type: "HOTSPOT", text: "Pulsing beacons next to features people miss, with a short tip on hover or click." },
   { type: "SURVEY", text: "NPS, ratings, single or multiple choice and free text, answered without leaving the page." },
   { type: "RESOURCE_CENTER", text: "One help panel with your guides, checklist, knowledge base articles, links and contact options." },
+  { type: "INLINE", text: "Cards placed inside your own pages, like an empty state with a video and a button that starts a tour." },
 ];
 
 const capabilities = [

@@ -22,7 +22,8 @@ A step's content is a stack of **blocks**. Click a block to edit it, use ↑ ↓
 | **Heading** | A bold title. Alignment: left, center or right. |
 | **Text** | Body text with [formatting](#formatting-text): bold, italic, underline, strikethrough, links, line breaks and lists. |
 | **Image** | A picture. **Upload** one (PNG, JPEG, GIF or WebP, up to 2 MB) or paste an `https://` address. Options: height, *Fill* (crop to the box) or *Fit* (show the whole image), *Full width, edge to edge* for a hero look, *Text over the image* for a headline on the picture, and a description for screen readers. |
-| **Video** | A YouTube or Vimeo link (the normal page address is fine), or a direct `.mp4` / `.webm` file. Plays inside the step. |
+| **Video** | A YouTube, Vimeo or Loom link (the normal page address is fine), or a direct `.mp4` / `.webm` file. Plays inside the step. *Play automatically* starts it muted, because browsers block autoplay with sound. *Play like a GIF* plays it muted, on a loop and without controls; a short `.mp4` / `.webm` screen recording is much smaller and sharper than a GIF (Loom always shows its own player). A looping video never ends, so it can't move a step on with *The video or audio ends*. |
+| **Audio** | A clip with a play button and a progress bar, e.g. a voice-over. **Upload** one (MP3, M4A, OGG, WAV or WebM, up to 10 MB) or paste an address. If your workspace has more languages, upload a recording per language; users get the one for their language, or the main recording. |
 | **Buttons** | Up to four buttons, each with a label, a style (*Primary*, *Secondary*, *Link*) and an action (below). |
 | **Divider** | A thin line. |
 | **Spacer** | Empty space, 4–64 px. |
@@ -65,8 +66,26 @@ Under **Placement**:
 | **Element** | A CSS selector for the element the step points at. Leave it empty for a centered modal. The builder fills it in for you. |
 | **Size** | Small, medium or large. Tooltips are 280 / 340 / 420 px wide, modals 380 / 460 / 640 px. |
 | **Position** | Where the tooltip sits relative to the element: *auto*, *top*, *bottom*, *left* or *right*. If there isn't room on the chosen side, it flips to a side that fits. *auto* tries bottom, top, right, then left. |
-| **Advance on** | *Next button* (default), or *Click on element*: the step has no Next button and moves on when the user clicks the highlighted element. Use it to teach a real action, like "Click **New project**". |
 | **Dim the rest of the page** | Darkens everything except the highlighted element. Turn it off for a lighter touch; the element still gets an outline. |
+
+Under **Moving on**, **Advance on** decides what takes the user to the next step. Use anything but *Next button* to teach a real action: the tour moves on when the user actually does the thing.
+
+| Advance on | The step moves on when… |
+| --- | --- |
+| **Next button** (default) | The user presses Next. |
+| **Click on the element** | The user clicks the highlighted element. No Next button. |
+| **Typing in the field** | The highlighted field has a valid value: at least *N* characters, and optionally an email address, a web address, or matching a regex. It moves on a moment after the user stops typing, or on Enter. No Next button. |
+| **Another element appears** | A second element shows up, e.g. the dialog the user just opened. Pick it in the builder with *Pick the element to wait for*. No Next button. |
+| **Going to a page** | The URL matches a rule (*URL contains*, *Path is*, …). For tours that continue on another page, see below. |
+| **An event from your app** | Your app calls `UserOnboarder.track("name")` with that name. |
+| **The video or audio ends** | An audio block or a video file (`.mp4` / `.webm`) in the step plays to the end. YouTube, Vimeo and Loom can't report that, so they don't count. |
+
+*Click* and *Typing* need an element; on a centered step they show a Next button instead.
+
+Two more settings under **Moving on**:
+
+- **Optional**: if the step's element isn't found within 15 seconds, the tour skips the step instead of stopping. When the step waits for the user, it shows a **Skip** link.
+- **Skip this step** when an element is (or isn't) on the page. E.g. skip "Open settings" when the settings panel is already open.
 
 Under **Navigation buttons**: turn the automatic Back / Next / Done row on or off, hide the step counter ("2 of 5") or the Back button, and rename the buttons. If you turn the row off, add a **Buttons** block so people can move on. The *Hero modal* and *All set* templates do this.
 
@@ -75,11 +94,11 @@ Reorder steps with ↑ and ↓, remove one with ✕. A tour can have up to 50 st
 ## How tours behave
 
 - **Scrolling.** If the element is off-screen, the page scrolls to it. The tooltip follows the element as the page scrolls or resizes.
-- **Waiting for elements.** If a step's element isn't on the page yet (still loading, or on another page), the tour waits up to 15 seconds. If it still isn't there, the tour quietly stops (this counts as neither completed nor dismissed) and tries again on a later page load, from the last step the user saw.
-- **Tours across pages.** A step can point at an element on a different page. Make the previous step's action take the user there (for example *Advance on: Click on element* on a menu link) and the tour picks up when the element appears.
+- **Waiting for elements.** If a step's element isn't on the page yet (still loading, or on another page), the tour waits up to 15 seconds. If it still isn't there, an *optional* step is skipped; otherwise the tour quietly stops (this counts as neither completed nor dismissed, and shows as *lost here* on that step in [Analytics](analytics)) and tries again on a later page load, from the last step the user saw.
+- **Tours across pages.** A step can point at an element on a different page. Make the previous step take the user there (*Advance on: Click on the element* on a menu link, or *Going to a page*) and the tour picks up on the next page, even after a full page load: the tour remembers where it was for 30 minutes in that browser tab. In single-page apps it simply keeps running.
 - **Resuming.** If someone leaves mid-tour (closes the tab, navigates away), the tour resumes at the step they reached the next time it shows.
 - **Finishing.** Pressing **Done** on the last step counts as *completed*. Closing with × or Esc counts as *dismissed*. With the default frequency, either one means the tour won't show again for that user.
-- **One at a time.** Only one tour, announcement or survey is on screen. If several match a page, the one with the highest **Priority** goes first; the next one can show after it ends.
+- **One at a time.** Only one tour, modal announcement or survey is on screen. If several match a page, the one with the highest **Priority** goes first; the next one can show after it ends. [Banners](banners), hotspots, checklists and [inline cards](inline-cards) don't wait for tours.
 
 ## Starting a tour on demand
 

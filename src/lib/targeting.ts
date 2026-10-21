@@ -35,6 +35,13 @@ export function matchesUrl(rules: UrlRule[], href: string): boolean {
   });
 }
 
+// Inside the optional startsAt / endsAt window (ISO dates; empty or invalid = no limit).
+export function inSchedule(startsAt: string, endsAt: string, now = Date.now()): boolean {
+  const from = startsAt ? Date.parse(startsAt) : NaN;
+  const to = endsAt ? Date.parse(endsAt) : NaN;
+  return !(now < from) && !(now > to);
+}
+
 function stripSlash(s: string) {
   return s.length > 1 ? s.replace(/\/+$/, "") : s;
 }

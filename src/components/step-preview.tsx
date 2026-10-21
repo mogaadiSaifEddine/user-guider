@@ -1,11 +1,20 @@
 import type { CSSProperties } from "react";
-import type { Block, StepFooter, StepSize, Theme } from "@/lib/guide-schema";
+import type { BannerSettings, Block, StepFooter, StepSize, Theme } from "@/lib/guide-schema";
 import { CARD_WIDTH, richText, safeUrl, videoEmbed } from "@/lib/format";
+import { cx } from "@/components/ui";
 
 // Dashboard rendering of a tour step or announcement, matching sdk/blocks.ts.
 // Images with no URL show a placeholder so templates read well before editing.
 
 const FONT_STACK = "system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
+
+// Same as TONES in sdk/widgets.ts; brand uses the theme gradient.
+const BANNER_TONES = {
+  brand: null,
+  info: { bg: "#2563eb", fg: "#ffffff" },
+  success: { bg: "#059669", fg: "#ffffff" },
+  warning: { bg: "#f59e0b", fg: "#1c1917" },
+} as const;
 
 export function StepPreview({
   blocks,
@@ -15,17 +24,24 @@ export function StepPreview({
   footer,
   index = 0,
   total = 1,
-  advanceOnClick = false,
+  hideNext = false,
+  skipLink = false,
+  banner,
   interactive = false,
 }: {
   blocks: Block[];
   theme: Theme;
-  kind: "modal" | "tooltip" | "banner";
+  // inline: fills the width it is given, like a card inside the host page.
+  kind: "modal" | "tooltip" | "banner" | "inline";
   size: StepSize;
   footer?: StepFooter;
   index?: number;
   total?: number;
-  advanceOnClick?: boolean;
+  // The step waits for the user (click, typing, an element), so there is no Next button.
+  hideNext?: boolean;
+  // ...and it is optional, so a Skip link shows instead.
+  skipLink?: boolean;
+  banner?: BannerSettings;
   // Live preview: videos play. Thumbnails: everything static.
   interactive?: boolean;
 }) {
@@ -47,12 +63,17 @@ export function StepPreview({
 
   if (kind === "banner") {
     const buttons = blocks.find((b) => b.type === "buttons");
+    const tone = banner ? BANNER_TONES[banner.tone] : null;
+    const bg = banner?.background || tone?.bg || `linear-gradient(135deg, color-mix(in srgb, ${theme.primaryColor} 72%, #fff), ${theme.primaryColor})`;
+    const fg = banner?.textColor || (banner?.background ? "#fff" : (tone?.fg ?? "#fff"));
+    const solid = banner?.background || tone?.bg || theme.primaryColor;
     return (
       <div
-        className="flex flex-wrap items-center justify-center gap-3 px-10 py-2.5 text-sm text-white"
-        style={{ background: theme.primaryColor, fontFamily: font }}
+        className={cx("relative flex flex-wrap items-center justify-center gap-3 py-2.5 pl-4 text-sm", banner?.dismissible === false ? "pr-4" : "pr-10")}
+        style={{ background: bg, color: fg, fontFamily: font }}
       >
         <span
+          className={cx(banner?.link.url && "underline underline-offset-2")}
           dangerouslySetInnerHTML={{
             __html: blocks
               .map((b) => (b.type === "heading" && b.text ? `<strong>${richText(b.text)}</strong>` : b.type === "text" ? richText(b.text) : ""))
@@ -62,10 +83,15 @@ export function StepPreview({
         />
         {buttons?.type === "buttons" &&
           buttons.buttons.map((b) => (
-            <span key={b.id} className="rounded px-3 py-1 font-semibold" style={{ background: "#fff", color: theme.primaryColor }}>
+            <span
+              key={b.id}
+              className="rounded px-3 py-1 font-semibold"
+              style={b.style === "primary" ? { background: fg, color: solid } : { boxShadow: "inset 0 0 0 1px currentColor" }}
+            >
               {b.label}
             </span>
           ))}
+        {banner?.dismissible !== false && <span className="absolute top-1/2 right-3 -translate-y-1/2 text-lg leading-none opacity-80">×</span>}
       </div>
     );
   }
@@ -73,14 +99,14 @@ export function StepPreview({
   const pad = kind === "modal" ? 24 : 18;
   const last = index === total - 1;
   const f = footer;
-  const showNext = !advanceOnClick;
-  const showFooter = f && f.show && (showNext || (f.showBack && index > 0) || (f.showProgress && total > 1));
+  const showNext = !hideNext;
+  const showFooter = (f && f.show && (showNext || (f.showBack && index > 0) || (f.showProgress && total > 1))) || skipLink;
 
   return (
     <div
       className="relative"
       style={{
-        width: CARD_WIDTH[kind][size],
+        width: kind === "inline" ? "100%" : CARD_WIDTH[kind][size],
         maxWidth: "100%",
         background: theme.backgroundColor,
         color: theme.textColor,
@@ -90,7 +116,10 @@ export function StepPreview({
         fontFamily: font,
         fontSize: 14,
         lineHeight: 1.5,
-        boxShadow: "0 20px 50px rgba(20,21,43,.22), 0 4px 12px rgba(20,21,43,.06), 0 0 0 1px rgba(20,21,43,.05)",
+        boxShadow:
+          kind === "inline"
+            ? "0 1px 3px rgba(20,21,43,.08), 0 0 0 1px rgba(20,21,43,.07)"
+            : "0 20px 50px rgba(20,21,43,.22), 0 4px 12px rgba(20,21,43,.06), 0 0 0 1px rgba(20,21,43,.05)",
         overflow: "hidden",
       }}
     >
@@ -161,7 +190,7 @@ export function StepPreview({
             );
           }
           case "video": {
-            const v = videoEmbed(b.url);
+            const v = videoEmbed(b.url, b);
             return (
               <div
                 key={b.id}
@@ -170,14 +199,46 @@ export function StepPreview({
               >
                 {v && interactive ? (
                   v.kind === "iframe" ? (
-                    <iframe src={v.src} className="absolute inset-0 h-full w-full" allow="fullscreen; picture-in-picture" title="Video" />
+                    <iframe src={v.src} className="absolute inset-0 h-full w-full" allow="autoplay; fullscreen; picture-in-picture" title="Video" />
                   ) : (
-                    <video src={v.src} controls className="absolute inset-0 h-full w-full" />
+                    <video
+                      src={v.src}
+                      controls={b.controls}
+                      autoPlay={b.autoplay}
+                      muted={b.autoplay}
+                      loop={b.loop}
+                      playsInline
+                      className="absolute inset-0 h-full w-full"
+                    />
                   )
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
                     <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">▶</span>
                     {!v && <span className="absolute bottom-2">{b.url ? "Unsupported video link" : "Add a video link"}</span>}
+                  </div>
+                )}
+              </div>
+            );
+          }
+          case "audio": {
+            const src = interactive ? safeUrl(b.url) : "";
+            return (
+              <div key={b.id} className="mb-3 rounded-md px-2.5 py-2" style={{ background: "rgba(0,0,0,.04)", borderRadius: theme.radius * 0.6 }}>
+                {src ? (
+                  <audio src={src} controls className="h-8 w-full" />
+                ) : (
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs text-white"
+                      style={{ background: theme.primaryColor }}
+                    >
+                      ▶
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      {b.label && <div className="mb-1 truncate text-xs font-semibold">{b.label}</div>}
+                      <div className="h-1.5 rounded bg-black/10" />
+                    </div>
+                    {!b.url && <span className="text-xs opacity-60">Add audio</span>}
                   </div>
                 )}
               </div>
@@ -205,9 +266,10 @@ export function StepPreview({
       })}
       {showFooter && (
         <div className="flex items-center gap-2">
-          <span className="mr-auto text-xs opacity-60">{f.showProgress && total > 1 ? `${index + 1} of ${total}` : ""}</span>
-          {f.showBack && index > 0 && <span style={btn("secondary")}>{f.backLabel}</span>}
-          {showNext && <span style={btn("primary")}>{last ? f.doneLabel : f.nextLabel}</span>}
+          <span className="mr-auto text-xs opacity-60">{f?.show && f.showProgress && total > 1 ? `${index + 1} of ${total}` : ""}</span>
+          {skipLink && <span className="text-xs underline opacity-60">Skip</span>}
+          {f?.show && f.showBack && index > 0 && <span style={btn("secondary")}>{f.backLabel}</span>}
+          {f?.show && showNext && <span style={btn("primary")}>{last ? f.doneLabel : f.nextLabel}</span>}
         </div>
       )}
     </div>

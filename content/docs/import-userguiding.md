@@ -45,6 +45,7 @@ Imported guides are **drafts**. Open each one, preview it, fix what the import f
 | Trigger: automatic / other | Automatic / Only manually |
 | Frequency: only once / always | Show again: never / every page load |
 | Display priority | Priority |
+| Banner | [Banner](banners): text, buttons (links, "start a guide", dismiss and close), position, push or overlay, close button and its colors from your UserGuiding theme |
 | Checklist (assistant) | [Checklist](checklists): each item starts its guide and is ticked off when that guide is completed |
 | Theme | Workspace theme (optional) |
 | Product update post | [Product update](product-updates): title, cover image, content (headings, text, lists, links, images, videos), labels and date. The resource center teaser becomes the summary. Other languages become translations. |
@@ -58,7 +59,8 @@ These are listed as **things to check** on each guide, or under *Not imported* f
 - **Buttons that run JavaScript** (often used to open the Resource Center): they now finish the guide.
 - **Translations**: only the default language is imported.
 - **Scheduling**, **locked checklist order**, text colors and custom fonts inside steps.
-- **Hotspots, banners, surveys, the Resource Center and the knowledge base.**
+- **Banner buttons** that open a checklist, the Resource Center or a survey, copy text or run JavaScript: they now close the banner. Banners shown by a custom event now show automatically.
+- **Hotspots, surveys, the Resource Center and the knowledge base.**
 - **Product update extras**: slide-out and tooltip boosters, the *signed-in users only* setting (flagged: here published posts are public), custom domains, colors and fonts of the updates page, and its footer links.
 - **Page rules of other types.** UserGuiding stores some rule types under codes we can't identify for sure. They're imported as "URL contains" and flagged.
 

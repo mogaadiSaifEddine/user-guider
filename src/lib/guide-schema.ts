@@ -6,6 +6,14 @@ import { plainText } from "./format";
 
 export const placements = ["auto", "top", "bottom", "left", "right"] as const;
 
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
+
+export const urlRuleSchema = z.object({
+  // contains / regex test the full URL; equals / starts_with test the path.
+  op: z.enum(["contains", "equals", "starts_with", "regex"]),
+  value: z.string().max(500),
+});
+
 // ---------- Blocks (content of tour steps and announcements) ----------
 
 const align = z.enum(["left", "center", "right"]).default("left");
@@ -46,14 +54,32 @@ export const blockSchema = z.discriminatedUnion("type", [
     // Text drawn over the image (hero style).
     overlay: z.string().max(120).default(""),
   }),
-  // YouTube, Vimeo, or a direct .mp4/.webm link.
-  z.object({ type: z.literal("video"), id: blockId, url: z.string().max(1000).default("") }),
+  // YouTube, Vimeo, Loom, or a direct .mp4/.webm link.
+  z.object({
+    type: z.literal("video"),
+    id: blockId,
+    url: z.string().max(1000).default(""),
+    // Starts muted (browsers only allow muted autoplay).
+    autoplay: z.boolean().default(false),
+    // autoplay + loop + no controls plays it like a GIF. A looping video never ends, so media_end can't fire.
+    loop: z.boolean().default(false),
+    controls: z.boolean().default(true),
+  }),
+  // An audio clip with a play button, e.g. a voice-over. byLocale: a recording per language; the rest get `url`.
+  z.object({
+    type: z.literal("audio"),
+    id: blockId,
+    url: z.string().max(1000).default(""),
+    label: z.string().max(120).default(""),
+    byLocale: z.record(z.string().max(35), z.string().max(1000)).default({}),
+    autoplay: z.boolean().default(false),
+  }),
   z.object({ type: z.literal("buttons"), id: blockId, align, buttons: z.array(stepButtonSchema).max(4).default([]) }),
   z.object({ type: z.literal("divider"), id: blockId }),
   z.object({ type: z.literal("spacer"), id: blockId, size: z.number().int().min(4).max(64).default(16) }),
 ]);
 
-export const blockTypes = ["heading", "text", "image", "video", "buttons", "divider", "spacer"] as const;
+export const blockTypes = ["heading", "text", "image", "video", "audio", "buttons", "divider", "spacer"] as const;
 
 // Automatic Back / Next / Done row at the bottom of tour steps.
 export const footerSchema = z.object({
@@ -77,6 +103,35 @@ function legacyStep(raw: unknown) {
   return { ...r, blocks };
 }
 
+// What moves a tour step on. Saved before this was an object: "next" or "click".
+export const advanceTypes = ["next", "click", "input", "element", "url", "event", "media_end"] as const;
+export const inputFormats = ["any", "email", "url", "regex"] as const;
+
+export const advanceSchema = z.preprocess(
+  (raw) => (typeof raw === "string" ? { type: raw } : raw),
+  z.discriminatedUnion("type", [
+    // The Next button.
+    z.object({ type: z.literal("next") }),
+    // Clicking the target element.
+    z.object({ type: z.literal("click") }),
+    // The target field has a valid value.
+    z.object({
+      type: z.literal("input"),
+      minLength: z.number().int().min(1).max(500).default(1),
+      format: z.enum(inputFormats).default("any"),
+      pattern: z.string().max(300).default(""),
+    }),
+    // Another element appears, e.g. the dialog the click opened.
+    z.object({ type: z.literal("element"), selector: z.string().max(1000).default("") }),
+    // The URL matches (multi-page tours).
+    z.object({ type: z.literal("url"), rule: urlRuleSchema.default({ op: "contains", value: "" }) }),
+    // The host app calls UserOnboarder.track(name).
+    z.object({ type: z.literal("event"), name: z.string().max(191).default("") }),
+    // A video (.mp4/.webm) or audio clip in the step plays to the end.
+    z.object({ type: z.literal("media_end") }),
+  ]),
+);
+
 export const tourStepSchema = z.preprocess(
   legacyStep,
   z.object({
@@ -87,8 +142,13 @@ export const tourStepSchema = z.preprocess(
     // Empty selector = centered modal step.
     selector: z.string().max(1000).default(""),
     placement: z.enum(placements).default("auto"),
-    // "next": user presses Next. "click": clicking the target element advances.
-    advanceOn: z.enum(["next", "click"]).default("next"),
+    advanceOn: advanceSchema.default({ type: "next" }),
+    // Skipped when an element is (or isn't) on the page, e.g. "Open settings" when settings are open.
+    skipIf: z
+      .object({ when: z.enum(["never", "present", "absent"]).default("never"), selector: z.string().max(1000).default("") })
+      .prefault({}),
+    // Target not found: skip this step instead of ending the tour.
+    optional: z.boolean().default(false),
     // Darken the rest of the page around the target.
     backdrop: z.boolean().default(true),
   }),
@@ -147,25 +207,90 @@ function legacyAnnouncement(raw: unknown) {
   return { ...r, blocks };
 }
 
+export const bannerTones = ["brand", "info", "success", "warning"] as const;
+const optionalColor = z.union([hexColor, z.literal("")]).default("");
+
+// Banners run in their own slot next to tours, so both can show at once.
+export const bannerSettingsSchema = z.object({
+  position: z.enum(["top", "bottom"]).default("top"),
+  // overlay: over the page. push: the page moves to make room.
+  mode: z.enum(["overlay", "push"]).default("overlay"),
+  tone: z.enum(bannerTones).default("brand"),
+  // Override the tone's colors, e.g. to keep an imported banner's look. Empty: the tone's.
+  background: optionalColor,
+  textColor: optionalColor,
+  // false: no close button (outages); targeting's "Show again" decides when it returns.
+  dismissible: z.boolean().default(true),
+  // Makes the banner text a link.
+  link: z.object({ url: z.string().max(1000).default(""), newTab: z.boolean().default(true) }).prefault({}),
+});
+
 export const announcementContentSchema = z.preprocess(
   legacyAnnouncement,
   z.object({
     format: z.enum(["modal", "banner"]).default("modal"),
     size: z.enum(stepSizes).default("md"),
     blocks: z.array(blockSchema).max(20).default([]),
+    banner: bannerSettingsSchema.prefault({}),
   }),
 );
 
-export const hotspotSchema = z.object({
-  id: z.string().min(1).max(64),
-  selector: z.string().max(1000).default(""),
-  title: z.string().max(200).default(""),
-  body: z.string().max(2000).default(""),
-  placement: z.enum(placements).default("auto"),
-});
+export const hotspotStyles = ["beacon", "icon"] as const;
+export const hotspotIcons = ["help", "info"] as const;
+export const hotspotOffsets = ["top-right", "top-left", "bottom-right", "bottom-left", "right", "left"] as const;
+
+// Hotspots saved before blocks existed had `title` and `body`. The block ids
+// come from the hotspot id so every parse gives the same ones.
+function legacyHotspot(raw: unknown) {
+  if (!raw || typeof raw !== "object" || Array.isArray((raw as { blocks?: unknown }).blocks)) return raw;
+  const { title, body, ...rest } = raw as { id?: string; title?: string; body?: string };
+  const blocks = [];
+  if (title) blocks.push({ type: "heading", id: `${rest.id}-t`, text: title });
+  if (body) blocks.push({ type: "text", id: `${rest.id}-b`, text: body });
+  return { ...rest, blocks };
+}
+
+// Translation key of a pre-blocks hotspot title/body, renamed to the blocks above.
+export function legacyHotspotKey(key: string) {
+  const m = /^hotspots\.([^.]+)\.(title|body)$/.exec(key);
+  return m ? `hotspots.${m[1]}.blocks.${m[1]}-${m[2] === "title" ? "t" : "b"}.text` : key;
+}
+
+export const hotspotSchema = z.preprocess(
+  legacyHotspot,
+  z.object({
+    id: z.string().min(1).max(64),
+    selector: z.string().max(1000).default(""),
+    blocks: z.array(blockSchema).max(20).default([]),
+    size: z.enum(stepSizes).default("sm"),
+    placement: z.enum(placements).default("auto"),
+    // beacon: pulsing dot. icon: a still "?" or "i".
+    style: z.enum(hotspotStyles).default("beacon"),
+    icon: z.enum(hotspotIcons).default("help"),
+    // Stays after it's been opened, for help people come back to.
+    persistent: z.boolean().default(false),
+    openOn: z.enum(["click", "hover"]).default("click"),
+    // Which corner (or side) of the element it sits on.
+    offset: z.enum(hotspotOffsets).default("top-right"),
+  }),
+);
 
 export const hotspotContentSchema = z.object({
   hotspots: z.array(hotspotSchema).max(30).default([]),
+});
+
+// ---------- Inline card ----------
+
+// Content placed inside the host page next to (or instead of) an element and
+// scrolling with it: an empty state, a tip above a list.
+export const inlinePositions = ["before", "after", "prepend", "append", "replace"] as const;
+
+export const inlineContentSchema = z.object({
+  selector: z.string().max(1000).default(""),
+  // before / after: next to the element. prepend / append: inside it. replace: hides it while the card shows.
+  position: z.enum(inlinePositions).default("before"),
+  blocks: z.array(blockSchema).max(20).default([]),
+  dismissible: z.boolean().default(true),
 });
 
 // ---------- Survey ----------
@@ -304,6 +429,7 @@ export const contentSchemas = {
   HOTSPOT: hotspotContentSchema,
   SURVEY: surveyContentSchema,
   RESOURCE_CENTER: resourceCenterContentSchema,
+  INLINE: inlineContentSchema,
 } as const;
 
 export type GuideTypeName = keyof typeof contentSchemas;
@@ -314,6 +440,12 @@ export type ButtonAction = z.infer<typeof buttonActionSchema>;
 export type StepFooter = z.infer<typeof footerSchema>;
 export type StepSize = (typeof stepSizes)[number];
 export type TourStep = z.infer<typeof tourStepSchema>;
+export type Advance = z.infer<typeof advanceSchema>;
+export type AdvanceType = Advance["type"];
+export type BannerSettings = z.infer<typeof bannerSettingsSchema>;
+export type InlineContent = z.infer<typeof inlineContentSchema>;
+export type InlinePosition = (typeof inlinePositions)[number];
+export type HotspotOffset = (typeof hotspotOffsets)[number];
 export type TourContent = z.infer<typeof tourContentSchema>;
 export type ChecklistItem = z.infer<typeof checklistItemSchema>;
 export type ChecklistContent = z.infer<typeof checklistContentSchema>;
@@ -411,12 +543,6 @@ export function parseContent(type: GuideTypeName, raw: unknown) {
 
 // ---------- Targeting ----------
 
-export const urlRuleSchema = z.object({
-  // contains / regex test the full URL; equals / starts_with test the path.
-  op: z.enum(["contains", "equals", "starts_with", "regex"]),
-  value: z.string().max(500),
-});
-
 export const userRuleSchema = z.object({
   attribute: z.string().min(1).max(100),
   op: z.enum(["equals", "not_equals", "contains", "gt", "lt", "exists", "not_exists"]),
@@ -437,6 +563,9 @@ export const targetingSchema = z.object({
   frequency: z.enum(["once", "until_completed", "always"]).default("once"),
   // Include anonymous (not identified) visitors.
   includeAnonymous: z.boolean().default(false),
+  // Optional schedule as ISO dates; empty = no limit. Checked by the server on init.
+  startsAt: z.string().max(40).default(""),
+  endsAt: z.string().max(40).default(""),
 });
 
 export type UrlRule = z.infer<typeof urlRuleSchema>;
@@ -449,12 +578,10 @@ export function parseTargeting(raw: unknown): Targeting {
 
 // ---------- Theme ----------
 
-const color = z.string().regex(/^#[0-9a-fA-F]{3,8}$/);
-
 export const themeSchema = z.object({
-  primaryColor: color.default("#6847f5"),
-  textColor: color.default("#14152b"),
-  backgroundColor: color.default("#ffffff"),
+  primaryColor: hexColor.default("#6847f5"),
+  textColor: hexColor.default("#14152b"),
+  backgroundColor: hexColor.default("#ffffff"),
   radius: z.number().int().min(0).max(24).default(14),
   fontFamily: z.string().max(200).default("inherit"),
 });
@@ -465,7 +592,7 @@ export function parseTheme(raw: unknown): Theme {
   return themeSchema.parse(raw ?? {});
 }
 
-export { matchesUrl, matchesUser } from "./targeting";
+export { inSchedule, matchesUrl, matchesUser } from "./targeting";
 
 // Default content for a new guide of each type.
 export function defaultContent(type: GuideTypeName) {
@@ -487,6 +614,14 @@ export function defaultContent(type: GuideTypeName) {
     case "RESOURCE_CENTER":
       return resourceCenterContentSchema.parse({
         modules: [newRcModule("guides"), newRcModule("articles"), newRcModule("contact")],
+      });
+    case "INLINE":
+      return inlineContentSchema.parse({
+        blocks: [
+          { type: "heading", id: newId(), text: "Nothing here yet" },
+          { type: "text", id: newId(), text: "Here's how to get started in two minutes." },
+          { type: "buttons", id: newId(), align: "left", buttons: [{ id: newId(), label: "Show me", action: { type: "complete" } }] },
+        ],
       });
   }
 }

@@ -162,7 +162,7 @@ export function htmlToBlocks(html: string, baseUrl = ""): Converted {
     const url = absolute(src, baseUrl);
     if (url && videoEmbed(url)) {
       flush();
-      blocks.push({ type: "video", id: newId(), url: url.slice(0, 1000) });
+      blocks.push({ type: "video", id: newId(), url: url.slice(0, 1000), autoplay: false, loop: false, controls: true });
     } else if (url) {
       warnings.add("embeds other than YouTube, Vimeo and video files became links");
       para.push(`[${escapeText(url)}](${url})`);

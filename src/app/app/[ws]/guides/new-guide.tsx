@@ -7,10 +7,11 @@ import { createGuide } from "../actions";
 const descriptions = {
   TOUR: "Step-by-step tooltips pointing at parts of your app.",
   CHECKLIST: "A list of onboarding tasks with a progress launcher.",
-  ANNOUNCEMENT: "A modal or top banner for news and updates.",
-  HOTSPOT: "Pulsing beacons that reveal a hint when clicked.",
+  ANNOUNCEMENT: "A modal, or a banner at the top or bottom, for news and notices.",
+  HOTSPOT: "Beacons or ? icons next to elements that reveal a hint.",
   SURVEY: "NPS, ratings, multiple choice and open questions.",
   RESOURCE_CENTER: "A help button with guides, articles, links and contact.",
+  INLINE: "A card inside your page, e.g. in an empty state or above a list.",
 } as const;
 
 export function NewGuideButton({ ws }: { ws: string }) {

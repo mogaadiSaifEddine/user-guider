@@ -27,6 +27,9 @@ export const UI_STRINGS_EN = {
   send: "Send",
   allUpdates: "See all updates",
   newUpdate: "New",
+  gotIt: "Got it",
+  play: "Play",
+  pause: "Pause",
 };
 
 export type UiStringKey = keyof typeof UI_STRINGS_EN;
@@ -58,6 +61,9 @@ export const UI_STRING_HINTS: Record<UiStringKey, string> = {
   send: "Sends a comment on a product update",
   allUpdates: "Link from What's new to the updates page",
   newUpdate: "Unread product update",
+  gotIt: "Closes a hotspot tip for good",
+  play: "Play button of an audio clip (screen readers)",
+  pause: "Pause button of an audio clip (screen readers)",
 };
 
 export function formatUi(s: string, vars: Record<string, string | number> = {}) {

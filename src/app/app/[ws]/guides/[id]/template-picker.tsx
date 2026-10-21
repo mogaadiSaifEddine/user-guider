@@ -95,7 +95,7 @@ export function TemplatePicker({
                       footer={built.footer}
                       index={1}
                       total={3}
-                      advanceOnClick={built.advanceOn === "click"}
+                      hideNext={built.advanceOn === "click"}
                     />
                   </div>
                 </div>

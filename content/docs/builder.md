@@ -1,10 +1,10 @@
 # The visual builder
 
-The builder opens your real app with an editing panel, so you can attach tour steps and hotspots to elements by clicking them. It's available for **product tours** and **hotspots**; checklists and announcements don't point at elements and are edited in the dashboard only.
+The builder opens your real app with an editing panel, so you can attach tour steps, hotspots and inline cards to elements by clicking them. It's available for **product tours**, **hotspots** and **inline cards**; checklists, announcements and banners don't point at elements and are edited in the dashboard only.
 
 ## Open the builder
 
-1. Open a tour or hotspot guide in the dashboard.
+1. Open a tour, hotspot guide or inline card in the dashboard.
 2. Open the **Visual builder** tab (next to Content and Targeting) and enter the full address of the page you want to start on, e.g. `https://app.example.com/projects`. The dashboard remembers it for next time.
 3. Choose **Open builder**. Your app opens in a new tab with the builder panel in the bottom-left corner.
 
@@ -26,7 +26,7 @@ Each step (or hotspot) is a row with a number, its title and a colored dot:
 | Amber | It has an element, but that element isn't on this page. Normal for multi-page tours. |
 | Grey | No element: a centered modal (tours) or not picked yet (hotspots). |
 
-Click a row to expand it and edit the title, text, position, *Advance on* and *Dim the page*. **Title** and **Text** edit the step's first heading and text [blocks](tours#blocks). Images, videos, buttons and templates are edited in the dashboard; the builder says so on steps that have them.
+Click a row to expand it and edit the title, text, position, *Advance on* and *Dim the page*. When a step advances on *Another element appears*, **Pick the element to wait for** lets you click that element too (open the dialog or menu first, then pick). Hotspots also have *Keep it after it's opened*; an inline card has one row, with where to place it and whether people can close it, and **Preview** shows it in place on the page. **Title** and **Text** edit the step's first heading and text [blocks](tours#blocks). Images, videos, buttons and templates are edited in the dashboard; the builder says so on steps that have them.
 
 ## Let AI draft it
 

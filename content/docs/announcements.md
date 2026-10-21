@@ -7,9 +7,9 @@ Use announcements for news: a new feature, a price change, planned maintenance.
 | Format | Looks like | Closes when |
 | --- | --- | --- |
 | **Modal** | A card in the middle of the screen over a darkened page, with an optional header image | The user presses the button, ×, Esc, or clicks the dark area around it |
-| **Banner** | A colored bar across the top of the page | The user presses the button, × or Esc |
+| **Banner** | A colored bar across the top or bottom of the page, next to any tour | The user presses a button or × (if it can be closed) |
 
-The banner sits on top of your page's own header while it's open.
+Banners have their own settings (position, pushing the page down, tone, colors, a link, whether people can close it). See [Banners](banners).
 
 ## Content
 
@@ -32,4 +32,4 @@ On the **Targeting** tab, under **Show again**:
 
 See [Targeting and timing](targeting).
 
-Like tours, an announcement waits its turn when a tour is already on screen, and can be started from a checklist or with `UserOnboarder.start()` if its trigger is *Only manually*.
+Like tours, a modal announcement waits its turn when a tour is already on screen (banners don't), and can be started from a checklist or with `UserOnboarder.start()` if its trigger is *Only manually*.

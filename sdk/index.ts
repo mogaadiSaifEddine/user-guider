@@ -2,6 +2,7 @@ import type {
   AnnouncementContent,
   ChecklistContent,
   HotspotContent,
+  InlineContent,
   ResourceCenterContent,
   SurveyAnswerValue,
   SurveyContent,
@@ -15,13 +16,16 @@ import { applyTheme } from "./ui";
 import { currentLocale, setUi } from "./i18n";
 import {
   runAnnouncement,
+  runBanner,
   runChecklist,
   runHotspots,
+  runInline,
   runSurvey,
   runTour,
   type ChecklistHandle,
   type EventType,
   type Handle,
+  type TourHandle,
 } from "./widgets";
 
 type Progress = {
@@ -33,7 +37,7 @@ type Progress = {
 type SdkGuide = {
   id: string;
   name: string;
-  type: "TOUR" | "CHECKLIST" | "ANNOUNCEMENT" | "HOTSPOT" | "SURVEY" | "RESOURCE_CENTER";
+  type: "TOUR" | "CHECKLIST" | "ANNOUNCEMENT" | "HOTSPOT" | "SURVEY" | "RESOURCE_CENTER" | "INLINE";
   priority: number;
   content: unknown;
   targeting: { urlRules: UrlRule[]; trigger: "auto" | "manual"; delaySeconds: number };
@@ -54,6 +58,9 @@ type Attributes = Record<string, string | number | boolean | null>;
 type Stub = { q?: [string, ArrayLike<unknown>][]; key?: string; apiBase?: string };
 
 const ANON_KEY = "lg_anon_id";
+// The running tour and step, so a tour carries on after a full page load (multi-page tours).
+const TOUR_KEY = "lg_tour";
+const TOUR_RESUME_MS = 30 * 60 * 1000;
 
 (function main() {
   const w = window as unknown as { UserOnboarder?: Stub & { __loaded?: boolean } };
@@ -77,11 +84,15 @@ const ANON_KEY = "lg_anon_id";
   let loaded = false;
   let initSeq = 0;
   let initTimer = 0;
-  let modal: { guideId: string; handle: Handle } | null = null;
+  let modal: { guideId: string; handle: Handle & Partial<TourHandle> } | null = null;
   let modalPending = false;
+  // Banners have a slot of their own, so one can show next to a tour.
+  let banner: { guideId: string; handle: Handle } | null = null;
+  let bannerPending = false;
   const pendingStarts: string[] = [];
   const shownThisLoad = new Set<string>();
   const hotspots = new Map<string, Handle>();
+  const inlines = new Map<string, Handle>();
   const checklists = new Map<string, ChecklistHandle>();
   let resourceCenter: { guideId: string; handle: RcHandle } | null = null;
   let openRcWhenReady = false;
@@ -98,6 +109,8 @@ const ANON_KEY = "lg_anon_id";
     track(name: string) {
       if (!name) return;
       queue({ type: "custom", name: String(name) }, 0);
+      // Tour steps can wait for an event.
+      modal?.handle.event?.(String(name));
     },
     start(guideId: string) {
       if (!loaded) {
@@ -208,6 +221,7 @@ const ANON_KEY = "lg_anon_id";
       setUi(data.strings, data.locale);
       guides = data.guides;
       loaded = true;
+      resumeTour();
       evaluate();
       for (const id of pendingStarts.splice(0)) startGuide(id);
       if (openRcWhenReady) {
@@ -264,10 +278,13 @@ const ANON_KEY = "lg_anon_id";
     modal?.handle.stop();
     modal = null;
     modalPending = false;
-    for (const h of hotspots.values()) h.stop();
-    for (const h of checklists.values()) h.stop();
+    banner?.handle.stop();
+    banner = null;
+    bannerPending = false;
+    for (const h of [...hotspots.values(), ...checklists.values(), ...inlines.values()]) h.stop();
     hotspots.clear();
     checklists.clear();
+    inlines.clear();
     resourceCenter?.handle.stop();
     resourceCenter = null;
   }
@@ -295,6 +312,7 @@ const ANON_KEY = "lg_anon_id";
             runHotspots(g.content as HotspotContent, {
               opened: new Set(g.progress?.completedItems ?? []),
               report: reporter(g.id),
+              startGuide,
             }),
           );
         } else if (!here && h) {
@@ -321,19 +339,53 @@ const ANON_KEY = "lg_anon_id";
           h.stop();
           checklists.delete(g.id);
         }
+      } else if (g.type === "INLINE") {
+        // Several inline cards can show at once.
+        const h = inlines.get(g.id);
+        if (here && g.autoShow && !h) {
+          inlines.set(
+            g.id,
+            runInline(g.content as InlineContent, {
+              report: reporter(g.id),
+              startGuide,
+              onEnd: () => {
+                g.autoShow = false;
+                inlines.delete(g.id);
+                flush();
+              },
+            }),
+          );
+        } else if (!here && h) {
+          h.stop();
+          inlines.delete(g.id);
+        }
       }
     }
 
-    // One tour, announcement or survey at a time, highest priority first.
+    // One banner at a time, highest priority first; it leaves when its pages do.
+    if (banner && !matchesUrl(guides.find((g) => g.id === banner!.guideId)?.targeting.urlRules ?? [], href)) {
+      banner.handle.stop();
+      banner = null;
+    }
+    if (!banner && !bannerPending) {
+      const nextBanner = nextAuto(isBanner, href);
+      if (nextBanner) {
+        shownThisLoad.add(nextBanner.id);
+        bannerPending = true;
+        setTimeout(() => {
+          bannerPending = false;
+          if (banner || !matchesUrl(nextBanner.targeting.urlRules, location.href)) {
+            shownThisLoad.delete(nextBanner.id);
+            return evaluate();
+          }
+          showBanner(nextBanner);
+        }, nextBanner.targeting.delaySeconds * 1000);
+      }
+    }
+
+    // One tour, modal announcement or survey at a time, highest priority first.
     if (modal || modalPending) return;
-    const next = guides.find(
-      (g) =>
-        isModal(g) &&
-        g.autoShow &&
-        g.targeting.trigger === "auto" &&
-        !shownThisLoad.has(g.id) &&
-        matchesUrl(g.targeting.urlRules, href),
-    );
+    const next = nextAuto(isModal, href);
     if (!next) return;
     shownThisLoad.add(next.id);
     modalPending = true;
@@ -346,6 +398,40 @@ const ANON_KEY = "lg_anon_id";
       const resumeAt = next.progress?.status === "STARTED" ? next.progress.currentStep : 0;
       show(next, resumeAt);
     }, next.targeting.delaySeconds * 1000);
+  }
+
+  function nextAuto(kind: (g: SdkGuide) => boolean, href: string) {
+    return guides.find(
+      (g) => kind(g) && g.autoShow && g.targeting.trigger === "auto" && !shownThisLoad.has(g.id) && matchesUrl(g.targeting.urlRules, href),
+    );
+  }
+
+  function showBanner(g: SdkGuide) {
+    let ended = false;
+    const handle = runBanner(g.content as AnnouncementContent, {
+      report: reporter(g.id),
+      startGuide,
+      onEnd: () => {
+        ended = true;
+        banner = null;
+        g.autoShow = false;
+        flush();
+        evaluate();
+      },
+    });
+    if (!ended) banner = { guideId: g.id, handle };
+  }
+
+  // A tour that was running when the last page unloaded carries on here if it
+  // was waiting for the user to go somewhere, or if this page is one of its pages.
+  function resumeTour() {
+    const saved = readTour();
+    if (!saved || modal || Date.now() - saved.at > TOUR_RESUME_MS) return;
+    const g = guides.find((x) => x.id === saved.id && x.type === "TOUR");
+    if (!g || g.progress?.status === "COMPLETED") return saveTour(null);
+    if (!saved.leaving && !matchesUrl(g.targeting.urlRules, location.href)) return;
+    shownThisLoad.add(g.id);
+    show(g, saved.step);
   }
 
   function startResourceCenter(rc: SdkGuide) {
@@ -378,10 +464,17 @@ const ANON_KEY = "lg_anon_id";
     const g = guides.find((x) => x.id === guideId);
     if (!g) return console.warn("[UserOnboarder] Guide not available for this user:", guideId);
     if (g.type === "RESOURCE_CENTER") return api.openResourceCenter();
+    if (isBanner(g)) {
+      banner?.handle.stop();
+      banner = null;
+      shownThisLoad.add(g.id);
+      return showBanner(g);
+    }
     if (!isModal(g)) return;
     resourceCenter?.handle.close();
     modal?.handle.stop();
     modal = null;
+    saveTour(null);
     shownThisLoad.add(g.id);
     show(g, 0);
   }
@@ -392,12 +485,20 @@ const ANON_KEY = "lg_anon_id";
       ended = true;
       modal = null;
       g.autoShow = false;
+      if (g.type === "TOUR") saveTour(null);
       flush();
       evaluate();
     };
+    const steps = g.type === "TOUR" ? (g.content as TourContent).steps.length : 0;
     const handle =
       g.type === "TOUR"
-        ? runTour(g.content as TourContent, { startAt, report: reporter(g.id), onEnd, startGuide })
+        ? runTour(g.content as TourContent, {
+            startAt,
+            report: reporter(g.id),
+            onEnd,
+            startGuide,
+            onStep: (step, leaving) => saveTour(step < steps ? { id: g.id, step, leaving, at: Date.now() } : null),
+          })
         : g.type === "SURVEY"
           ? runSurvey(g.content as SurveyContent, { report: reporter(g.id), onEnd })
           : runAnnouncement(g.content as AnnouncementContent, { report: reporter(g.id), onEnd, startGuide });
@@ -407,8 +508,31 @@ const ANON_KEY = "lg_anon_id";
 
   // ---------- helpers ----------
 
+  function isBanner(g: SdkGuide) {
+    return g.type === "ANNOUNCEMENT" && (g.content as AnnouncementContent).format === "banner";
+  }
+
   function isModal(g: SdkGuide) {
-    return g.type === "TOUR" || g.type === "ANNOUNCEMENT" || g.type === "SURVEY";
+    return g.type === "TOUR" || g.type === "SURVEY" || (g.type === "ANNOUNCEMENT" && !isBanner(g));
+  }
+
+  type SavedTour = { id: string; step: number; leaving: boolean; at: number };
+
+  function readTour(): SavedTour | null {
+    try {
+      return JSON.parse(sessionStorage.getItem(TOUR_KEY) ?? "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function saveTour(t: SavedTour | null) {
+    try {
+      if (t) sessionStorage.setItem(TOUR_KEY, JSON.stringify(t));
+      else sessionStorage.removeItem(TOUR_KEY);
+    } catch {
+      // private mode: tours don't survive a full page load then
+    }
   }
 
   // Language, time zone and touch support for the audience breakdowns; the

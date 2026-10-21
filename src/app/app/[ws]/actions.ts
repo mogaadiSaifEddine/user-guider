@@ -15,8 +15,10 @@ import {
   targetingSchema,
   themeSchema,
   type GuideTypeName,
+  type InlineContent,
   type ResourceCenterContent,
   type SurveyContent,
+  type TourContent,
 } from "@/lib/guide-schema";
 import { companyFrom } from "@/lib/companies";
 import { guideFootprint, guidesFootprint } from "@/lib/analytics";
@@ -37,7 +39,7 @@ export type ActionResult = { ok: true; message?: string } | { ok: false; error: 
 
 // ---------- Guides ----------
 
-const guideTypes = ["TOUR", "CHECKLIST", "ANNOUNCEMENT", "HOTSPOT", "SURVEY", "RESOURCE_CENTER"] as const;
+const guideTypes = ["TOUR", "CHECKLIST", "ANNOUNCEMENT", "HOTSPOT", "SURVEY", "RESOURCE_CENTER", "INLINE"] as const;
 
 export async function createGuide(ws: string, form: FormData) {
   await requireWorkspace(ws);
@@ -163,6 +165,18 @@ function publishProblem(type: GuideTypeName, content: unknown): string | null {
     const hs = c.hotspots as { selector: string }[];
     if (!hs.length) return "Add at least one hotspot before publishing.";
     if (hs.some((h) => !h.selector)) return "Every hotspot needs an element. Pick one in the builder.";
+  }
+  if (type === "INLINE") {
+    const card = content as InlineContent;
+    if (!card.selector) return "Pick the element the card sits next to, in the builder or by hand.";
+    if (!card.blocks.length) return "Add some content to the card before publishing.";
+  }
+  if (type === "TOUR") {
+    const steps = (content as TourContent).steps;
+    const i = steps.findIndex((s) => s.advanceOn.type === "element" && !s.advanceOn.selector);
+    if (i >= 0) return `Step ${i + 1} waits for an element: pick which one.`;
+    const j = steps.findIndex((s) => (s.advanceOn.type === "event" && !s.advanceOn.name) || (s.advanceOn.type === "url" && !s.advanceOn.rule.value));
+    if (j >= 0) return `Step ${j + 1} waits for ${steps[j].advanceOn.type === "url" ? "a page" : "an event"}: fill it in.`;
   }
   return null;
 }
