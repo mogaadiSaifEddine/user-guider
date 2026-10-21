@@ -1,7 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useState, useTransition, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 import { Button, cx } from "./ui";
 import { useToast } from "./feedback";
 
@@ -25,7 +33,13 @@ export function useSelection() {
   return s;
 }
 
-export function BulkSelect({ ids, children }: { ids: string[]; children: ReactNode }) {
+export function BulkSelect({
+  ids,
+  children,
+}: {
+  ids: string[];
+  children: ReactNode;
+}) {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const key = ids.join(",");
   // Rows that left the list (deleted, filtered out) drop out of the selection.
@@ -53,10 +67,15 @@ export function BulkSelect({ ids, children }: { ids: string[]; children: ReactNo
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [key, picked],
   );
-  return <SelectionContext.Provider value={value}>{children}</SelectionContext.Provider>;
+  return (
+    <SelectionContext.Provider value={value}>
+      {children}
+    </SelectionContext.Provider>
+  );
 }
 
-const boxClass = "h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand-600";
+const boxClass =
+  "h-4 w-4 shrink-0 cursor-pointer rounded border-gray-300 accent-brand-600";
 
 export function RowCheckbox({ id, label }: { id: string; label: string }) {
   const { selected, toggle } = useSelection();
@@ -71,17 +90,24 @@ export function RowCheckbox({ id, label }: { id: string; label: string }) {
   );
 }
 
-export type BulkResult = { ok: true; message?: string } | { ok: false; error: string };
+export type BulkResult =
+  { ok: true; message?: string } | { ok: false; error: string };
 
 // The bar over a selectable list: select-all box, count, and the section's actions.
 // `children` gets `run`, which calls a server action, toasts its result, clears the
 // selection and refreshes the page.
 export function BulkBar({
   noun,
+  hint = "select some to publish, unpublish or delete them together",
   children,
 }: {
   noun: [singular: string, plural: string];
-  children: (ctx: { selected: string[]; run: (action: () => Promise<BulkResult>) => void; pending: boolean }) => ReactNode;
+  hint?: string;
+  children: (ctx: {
+    selected: string[];
+    run: (action: () => Promise<BulkResult>) => void;
+    pending: boolean;
+  }) => ReactNode;
 }) {
   const { ids, selected, setAll, clear } = useSelection();
   const router = useRouter();
@@ -98,7 +124,10 @@ export function BulkBar({
           clear();
         } else toast(r.error, "error");
       } catch {
-        toast("Couldn't reach the server, or the app was updated since this page loaded. Reload the page.", "error");
+        toast(
+          "Couldn't reach the server, or the app was updated since this page loaded. Reload the page.",
+          "error",
+        );
       }
       router.refresh();
     });
@@ -114,7 +143,9 @@ export function BulkBar({
       <input
         type="checkbox"
         className={boxClass}
-        aria-label={all ? "Clear selection" : `Select all ${ids.length} ${noun[1]}`}
+        aria-label={
+          all ? "Clear selection" : `Select all ${ids.length} ${noun[1]}`
+        }
         checked={all}
         ref={(el) => {
           if (el) el.indeterminate = selected.length > 0 && !all;
@@ -124,18 +155,28 @@ export function BulkBar({
       {selected.length ? (
         <>
           <span className="text-sm font-semibold text-gray-900 tabular-nums">
-            {selected.length} {selected.length === 1 ? noun[0] : noun[1]} selected
+            {selected.length} {selected.length === 1 ? noun[0] : noun[1]}{" "}
+            selected
           </span>
-          <button type="button" className="text-xs font-medium text-gray-500 hover:text-gray-900" onClick={clear}>
+          <button
+            type="button"
+            className="text-xs font-medium text-gray-500 hover:text-gray-900"
+            onClick={clear}
+          >
             Clear
           </button>
-          <div className={cx("ml-auto flex flex-wrap items-center gap-1.5", pending && "pointer-events-none opacity-50")}>
+          <div
+            className={cx(
+              "ml-auto flex flex-wrap items-center gap-1.5",
+              pending && "pointer-events-none opacity-50",
+            )}
+          >
             {children({ selected, run, pending })}
           </div>
         </>
       ) : (
         <span className="text-xs text-gray-500">
-          {ids.length} {ids.length === 1 ? noun[0] : noun[1]} · select some to publish, unpublish or delete them together
+          {ids.length} {ids.length === 1 ? noun[0] : noun[1]} · {hint}
         </span>
       )}
     </div>
@@ -164,10 +205,18 @@ export function BulkButton({
       variant={danger ? "danger" : "secondary"}
       className="px-2.5 py-1 text-xs"
       onClick={onClick}
-      title={count < total ? `Applies to ${count} of the ${total} selected` : undefined}
+      title={
+        count < total
+          ? `Applies to ${count} of the ${total} selected`
+          : undefined
+      }
     >
       {children}
-      {count < total && <span className="font-normal text-gray-500 tabular-nums">({count})</span>}
+      {count < total && (
+        <span className="font-normal text-gray-500 tabular-nums">
+          ({count})
+        </span>
+      )}
     </Button>
   );
 }

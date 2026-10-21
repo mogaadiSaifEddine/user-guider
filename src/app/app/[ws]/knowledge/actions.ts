@@ -8,7 +8,12 @@ import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/lib/auth";
 import { AiError, aiEnabled } from "@/lib/ai";
 import { translateTexts } from "@/lib/ai-translate";
-import { applyTranslations, normalizeLocale, textFields, workspaceLanguages } from "@/lib/i18n";
+import {
+  applyTranslations,
+  normalizeLocale,
+  textFields,
+  workspaceLanguages,
+} from "@/lib/i18n";
 import { newId } from "@/lib/guide-schema";
 import { plainText } from "@/lib/format";
 import {
@@ -22,9 +27,15 @@ import {
   type KbContent,
   type KbTranslation,
 } from "@/lib/kb";
-import { importKnowledgeBase, ImportError, type ImportReport, type ImportSource } from "@/lib/kb-import";
+import {
+  importKnowledgeBase,
+  ImportError,
+  type ImportReport,
+  type ImportSource,
+} from "@/lib/kb-import";
 
-export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
+export type ActionResult =
+  { ok: true; message?: string } | { ok: false; error: string };
 
 function describe(e: z.ZodError) {
   const i = e.issues[0];
@@ -33,14 +44,19 @@ function describe(e: z.ZodError) {
 
 async function requireArticle(ws: string, id: string) {
   await requireWorkspace(ws);
-  const article = await prisma.kbArticle.findFirst({ where: { id, workspaceId: ws } });
+  const article = await prisma.kbArticle.findFirst({
+    where: { id, workspaceId: ws },
+  });
   if (!article) throw new Error("Article not found");
   return article;
 }
 
 async function ownCollection(ws: string, id: string | null) {
   if (!id) return null;
-  const c = await prisma.kbCollection.findFirst({ where: { id, workspaceId: ws }, select: { id: true } });
+  const c = await prisma.kbCollection.findFirst({
+    where: { id, workspaceId: ws },
+    select: { id: true },
+  });
   return c?.id ?? null;
 }
 
@@ -71,14 +87,20 @@ const saveSchema = z.object({
   collectionId: z.string().max(64).nullable(),
 });
 
-export async function saveArticle(ws: string, id: string, input: unknown): Promise<ActionResult> {
+export async function saveArticle(
+  ws: string,
+  id: string,
+  input: unknown,
+): Promise<ActionResult> {
   await requireArticle(ws, id);
   const parsed = saveSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describe(parsed.error) };
   const { content, translations } = parsed.data;
-  if (!plainText(content.title)) return { ok: false, error: "The article needs a title." };
+  if (!plainText(content.title))
+    return { ok: false, error: "The article needs a title." };
   // Drop empty translations.
-  for (const [l, t] of Object.entries(translations)) if (!t.title.trim() && !t.blocks.length) delete translations[l];
+  for (const [l, t] of Object.entries(translations))
+    if (!t.title.trim() && !t.blocks.length) delete translations[l];
   await prisma.kbArticle.update({
     where: { id },
     data: {
@@ -93,11 +115,21 @@ export async function saveArticle(ws: string, id: string, input: unknown): Promi
   return { ok: true, message: "Saved." };
 }
 
-export async function setArticleStatus(ws: string, id: string, status: "DRAFT" | "PUBLISHED"): Promise<ActionResult> {
+export async function setArticleStatus(
+  ws: string,
+  id: string,
+  status: "DRAFT" | "PUBLISHED",
+): Promise<ActionResult> {
   await requireArticle(ws, id);
   await prisma.kbArticle.update({ where: { id }, data: { status } });
   revalidatePath(`/app/${ws}/knowledge`, "layout");
-  return { ok: true, message: status === "PUBLISHED" ? "Published. Resource centers show it right away." : "Unpublished." };
+  return {
+    ok: true,
+    message:
+      status === "PUBLISHED"
+        ? "Published. Resource centers show it right away."
+        : "Unpublished.",
+  };
 }
 
 export async function deleteArticle(ws: string, id: string) {
@@ -111,7 +143,10 @@ export async function deleteArticle(ws: string, id: string) {
 
 // A draft copy in the same collection, with its translations. It's a manual
 // article: importing again won't touch it.
-export async function duplicateArticle(ws: string, id: string): Promise<ActionResult> {
+export async function duplicateArticle(
+  ws: string,
+  id: string,
+): Promise<ActionResult> {
   const a = await requireArticle(ws, id);
   const content = parseKbContent(a.content);
   const translations = parseKbTranslations(a.translations);
@@ -120,7 +155,8 @@ export async function duplicateArticle(ws: string, id: string): Promise<ActionRe
   // The translations were made from the original's text; keep them current against the copy.
   const hash = kbHash(content);
   const copyHash = kbHash(copy);
-  for (const t of Object.values(translations)) if (t.source === hash) t.source = copyHash;
+  for (const t of Object.values(translations))
+    if (t.source === hash) t.source = copyHash;
   await prisma.kbArticle.create({
     data: {
       workspaceId: ws,
@@ -137,7 +173,10 @@ export async function duplicateArticle(ws: string, id: string): Promise<ActionRe
 }
 
 // Like deleteArticle, but stays on the list.
-export async function removeArticle(ws: string, id: string): Promise<ActionResult> {
+export async function removeArticle(
+  ws: string,
+  id: string,
+): Promise<ActionResult> {
   await requireArticle(ws, id);
   await prisma.kbArticle.delete({ where: { id } });
   revalidatePath(`/app/${ws}/knowledge`, "layout");
@@ -163,12 +202,19 @@ export async function bulkArticles(
     message = `Deleted ${n(count)}.`;
   } else if (action === "move") {
     const target = await ownCollection(ws, collectionId);
-    if (collectionId && !target) return { ok: false, error: "That collection no longer exists." };
-    const { count } = await prisma.kbArticle.updateMany({ where, data: { collectionId: target } });
+    if (collectionId && !target)
+      return { ok: false, error: "That collection no longer exists." };
+    const { count } = await prisma.kbArticle.updateMany({
+      where,
+      data: { collectionId: target },
+    });
     message = `Moved ${n(count)}.`;
   } else {
     const status = action === "publish" ? "PUBLISHED" : "DRAFT";
-    const { count } = await prisma.kbArticle.updateMany({ where: { ...where, status: { not: status } }, data: { status } });
+    const { count } = await prisma.kbArticle.updateMany({
+      where: { ...where, status: { not: status } },
+      data: { status },
+    });
     message = `${action === "publish" ? "Published" : "Unpublished"} ${n(count)}.`;
   }
   revalidatePath(`/app/${ws}/knowledge`, "layout");
@@ -182,9 +228,17 @@ export async function aiTranslateArticle(
   content: unknown,
 ): Promise<ActionResult & { translation?: KbTranslation; skipped?: number }> {
   const { workspace } = await requireWorkspace(ws);
-  if (!aiEnabled()) return { ok: false, error: "AI isn't set up on this server (GEMINI_API_KEY is missing)." };
+  if (!aiEnabled())
+    return {
+      ok: false,
+      error: "AI isn't set up on this server (GEMINI_API_KEY is missing).",
+    };
   const target = normalizeLocale(locale);
-  if (!target || target === "en" || !workspaceLanguages(workspace.languages).includes(target))
+  if (
+    !target ||
+    target === "en" ||
+    !workspaceLanguages(workspace.languages).includes(target)
+  )
     return { ok: false, error: "Add that language in Settings first." };
   const parsed = kbContentSchema.safeParse(content);
   if (!parsed.success) return { ok: false, error: describe(parsed.error) };
@@ -195,14 +249,18 @@ export async function aiTranslateArticle(
       target,
       workspace.aiContext ?? "",
     );
-    const map = Object.fromEntries(Object.entries(texts).map(([k, text]) => [k, { text, source: "" }]));
+    const map = Object.fromEntries(
+      Object.entries(texts).map(([k, text]) => [k, { text, source: "" }]),
+    );
     const translated = applyTranslations(parsed.data, map);
     const skipped = fields.filter((f) => !texts[f.key]).length;
     return {
       ok: true,
       translation: { ...translated, source: kbHash(parsed.data) },
       skipped,
-      message: skipped ? `Translated. ${skipped} texts stayed in English; check them before saving.` : "Translated. Review, then save.",
+      message: skipped
+        ? `Translated. ${skipped} texts stayed in English; check them before saving.`
+        : "Translated. Review, then save.",
     };
   } catch (e) {
     if (e instanceof AiError) return { ok: false, error: e.message };
@@ -218,38 +276,126 @@ const collectionSchema = z.object({
   translations: kbCollectionTranslationsSchema.default({}),
 });
 
-export async function saveCollection(ws: string, id: string | null, input: unknown): Promise<ActionResult> {
+export async function saveCollection(
+  ws: string,
+  id: string | null,
+  input: unknown,
+): Promise<ActionResult> {
   await requireWorkspace(ws);
   const parsed = collectionSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describe(parsed.error) };
-  const translations = Object.fromEntries(Object.entries(parsed.data.translations).filter(([, t]) => t.name.trim()));
-  const data = { name: parsed.data.name, description: parsed.data.description.trim() || null, translations };
+  const translations = Object.fromEntries(
+    Object.entries(parsed.data.translations).filter(([, t]) => t.name.trim()),
+  );
+  const data = {
+    name: parsed.data.name,
+    description: parsed.data.description.trim() || null,
+    translations,
+  };
   if (id) {
     const own = await ownCollection(ws, id);
     if (!own) return { ok: false, error: "Collection not found." };
     await prisma.kbCollection.update({ where: { id }, data });
   } else {
-    const last = await prisma.kbCollection.aggregate({ where: { workspaceId: ws }, _max: { position: true } });
-    await prisma.kbCollection.create({ data: { workspaceId: ws, position: (last._max.position ?? 0) + 1, ...data } });
+    const last = await prisma.kbCollection.aggregate({
+      where: { workspaceId: ws },
+      _max: { position: true },
+    });
+    await prisma.kbCollection.create({
+      data: {
+        workspaceId: ws,
+        position: (last._max.position ?? 0) + 1,
+        ...data,
+      },
+    });
   }
   revalidatePath(`/app/${ws}/knowledge`, "layout");
   return { ok: true, message: "Saved." };
 }
 
-export async function deleteCollection(ws: string, id: string): Promise<ActionResult> {
+// By default its articles stay, without a collection; `withArticles` deletes them too.
+export async function deleteCollection(
+  ws: string,
+  id: string,
+  withArticles = false,
+): Promise<ActionResult> {
   await requireWorkspace(ws);
-  if (!(await ownCollection(ws, id))) return { ok: false, error: "Collection not found." };
-  // Its articles stay, without a collection.
-  await prisma.kbCollection.delete({ where: { id } });
+  if (!(await ownCollection(ws, id)))
+    return { ok: false, error: "Collection not found." };
+  if (!withArticles) {
+    await prisma.kbCollection.delete({ where: { id } });
+    revalidatePath(`/app/${ws}/knowledge`, "layout");
+    return {
+      ok: true,
+      message: "Collection deleted. Its articles are now uncategorized.",
+    };
+  }
+  const [removed] = await prisma.$transaction([
+    prisma.kbArticle.deleteMany({
+      where: { workspaceId: ws, collectionId: id },
+    }),
+    prisma.kbCollection.delete({ where: { id } }),
+  ]);
   revalidatePath(`/app/${ws}/knowledge`, "layout");
-  return { ok: true, message: "Collection deleted. Its articles are now uncategorized." };
+  return {
+    ok: true,
+    message: `Collection deleted with ${removed.count} article${removed.count === 1 ? "" : "s"}.`,
+  };
 }
 
-export async function reorderCollections(ws: string, ids: string[]): Promise<ActionResult> {
+// Several at once, from the collections panel; same choice about their articles.
+export async function deleteCollections(
+  ws: string,
+  input: unknown,
+  withArticles = false,
+): Promise<ActionResult> {
   await requireWorkspace(ws);
-  const own = await prisma.kbCollection.findMany({ where: { workspaceId: ws, id: { in: ids.slice(0, 500) } }, select: { id: true } });
+  const ids = z.array(z.string().max(64)).min(1).max(500).safeParse(input);
+  if (!ids.success)
+    return { ok: false, error: "Select at least one collection." };
+  const where = { workspaceId: ws, id: { in: ids.data } };
+  const own = (
+    await prisma.kbCollection.findMany({ where, select: { id: true } })
+  ).map((c) => c.id);
+  if (!own.length)
+    return { ok: false, error: "Those collections no longer exist." };
+  const [removed, { count }] = await prisma.$transaction([
+    prisma.kbArticle.deleteMany({
+      where: withArticles
+        ? { workspaceId: ws, collectionId: { in: own } }
+        : { id: { in: [] } },
+    }),
+    prisma.kbCollection.deleteMany({
+      where: { workspaceId: ws, id: { in: own } },
+    }),
+  ]);
+  revalidatePath(`/app/${ws}/knowledge`, "layout");
+  const n = (c: number, noun: string) => `${c} ${noun}${c === 1 ? "" : "s"}`;
+  return {
+    ok: true,
+    message: withArticles
+      ? `Deleted ${n(count, "collection")} with ${n(removed.count, "article")}.`
+      : `Deleted ${n(count, "collection")}. Their articles are now uncategorized.`,
+  };
+}
+
+export async function reorderCollections(
+  ws: string,
+  ids: string[],
+): Promise<ActionResult> {
+  await requireWorkspace(ws);
+  const own = await prisma.kbCollection.findMany({
+    where: { workspaceId: ws, id: { in: ids.slice(0, 500) } },
+    select: { id: true },
+  });
   const ok = new Set(own.map((c) => c.id));
-  await prisma.$transaction(ids.filter((id) => ok.has(id)).map((id, i) => prisma.kbCollection.update({ where: { id }, data: { position: i } })));
+  await prisma.$transaction(
+    ids
+      .filter((id) => ok.has(id))
+      .map((id, i) =>
+        prisma.kbCollection.update({ where: { id }, data: { position: i } }),
+      ),
+  );
   revalidatePath(`/app/${ws}/knowledge`, "layout");
   return { ok: true };
 }
@@ -260,38 +406,60 @@ const importSchema = z.object({
   source: z.discriminatedUnion("kind", [
     z.object({
       kind: z.literal("zendesk"),
-      url: z.string().trim().min(1, "Enter your Zendesk subdomain or help center address").max(300),
+      url: z
+        .string()
+        .trim()
+        .min(1, "Enter your Zendesk subdomain or help center address")
+        .max(300),
       email: z.string().max(200).optional(),
       token: z.string().max(200).optional(),
     }),
     z.object({
       kind: z.literal("intercom"),
-      token: z.string().trim().min(1, "Enter an Intercom access token").max(500),
+      token: z
+        .string()
+        .trim()
+        .min(1, "Enter an Intercom access token")
+        .max(500),
       region: z.enum(["us", "eu", "au"]),
     }),
     z.object({
       kind: z.literal("userguiding"),
-      url: z.string().trim().min(1, "Enter your UserGuiding knowledge base address or container id").max(2000),
+      url: z
+        .string()
+        .trim()
+        .min(1, "Enter your UserGuiding knowledge base address or container id")
+        .max(2000),
     }),
   ]),
   status: z.enum(["source", "draft"]),
   copyImages: z.boolean().default(false),
 });
 
-export async function runImport(ws: string, input: unknown): Promise<(ActionResult & { report?: ImportReport })> {
+export async function runImport(
+  ws: string,
+  input: unknown,
+): Promise<ActionResult & { report?: ImportReport }> {
   await requireWorkspace(ws);
   const parsed = importSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: describe(parsed.error) };
   try {
-    const report = await importKnowledgeBase(ws, parsed.data.source as ImportSource, {
-      status: parsed.data.status,
-      copyImages: parsed.data.copyImages,
-    });
+    const report = await importKnowledgeBase(
+      ws,
+      parsed.data.source as ImportSource,
+      {
+        status: parsed.data.status,
+        copyImages: parsed.data.copyImages,
+      },
+    );
     revalidatePath(`/app/${ws}/knowledge`, "layout");
     return { ok: true, report };
   } catch (e) {
     if (e instanceof ImportError) return { ok: false, error: e.message };
     console.error("[kb-import]", e);
-    return { ok: false, error: "The import failed unexpectedly. Check the server log." };
+    return {
+      ok: false,
+      error: "The import failed unexpectedly. Check the server log.",
+    };
   }
 }

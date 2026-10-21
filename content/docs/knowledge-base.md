@@ -7,7 +7,7 @@ The knowledge base holds your help articles. People read them inside the [resour
 Open **Knowledge base** in the sidebar.
 
 - **New article** opens the editor: a title, a one-line summary (shown in lists and searched), and the content, built from the same blocks as announcements: headings, text, images, videos, buttons, dividers. An article can have up to 400 blocks.
-- **Collections** group articles, like *Billing* or *Getting started*. Create, rename, translate and order them in the Collections box; pick an article's collection in its editor. Deleting a collection keeps its articles, without a collection.
+- **Collections** group articles, like *Billing* or *Getting started*. Create, rename, translate and order them in the Collections box; pick an article's collection in its editor. Delete one with the ✕ on its row: its articles stay, without a collection, unless you tick *Also delete its articles*.
 - An article is a **draft** until you press **Publish**. Only published articles show in resource centers, and changes to a published article show right away: there's no separate live version, so save drafts of big rewrites as a new article.
 - To change several articles at once, tick their checkboxes in the list. The bar above the list can **Publish**, **Unpublish**, **Move to** another collection, or **Delete** them.
 
@@ -42,4 +42,4 @@ What comes over:
 - With **Copy images to User Onboarder** ticked (the default), images are copied into this workspace, so articles keep their screenshots after you cancel the old tool. Importing again reuses the copies. Images that can't be copied (larger than 5 MB, not PNG, JPEG, GIF, WebP or SVG, or behind a sign-in) keep loading from the old help center, and the report names their articles. Untick it to keep every image on the old servers.
 - Credentials are used for the import only and aren't stored.
 
-Importing again updates the same articles and collections instead of duplicating them, and **overwrites edits you made to imported articles** (and their imported translations). Translations you added here in other languages are kept. Articles you deleted come back.
+Importing again updates the same articles and collections instead of duplicating them, and **overwrites edits you made to imported articles** (and their imported translations). Translations you added here in other languages are kept. Articles and collections you deleted come back.

@@ -95,6 +95,7 @@ export default async function KnowledgePage({
               description: x.description ?? "",
               translations: parseCollectionTranslations(x.translations),
               source: sourceLabels[x.source],
+              articles: countBy.get(x.id) ?? 0,
             }))}
           />
         </div>
