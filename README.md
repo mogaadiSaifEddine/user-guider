@@ -65,6 +65,7 @@ Script tag attributes: `data-key` (required), `data-api` (API origin if not the 
 
 Any Node host plus PostgreSQL (Neon). Set `DATABASE_URL` (pooled), `DIRECT_URL` (direct), `AUTH_SECRET` and `NEXT_PUBLIC_APP_URL`, run `npm run build`, `npm run db:deploy`, `npm start`.
 `sdk.js` is cached for 5 minutes (`next.config.ts`).
+Step-by-step for an AWS Lightsail server with Caddy: [DEPLOY-LIGHTSAIL.md](DEPLOY-LIGHTSAIL.md).
 
 ## Not built yet
 
